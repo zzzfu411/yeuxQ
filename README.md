@@ -1,5 +1,9 @@
 # quantify
 
+> **新手入口:** 想学习量化完整流程,先读 [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) ——
+> 它把"研究报告 → 审查门 → 真实数据 → 周度流水线"的学习主线串成了可复制命令。
+> 本 README 其余部分是完整的操作 runbook。
+
 ## Real Data Handoff Checklist
 
 ### AKShare Smoke Evidence
