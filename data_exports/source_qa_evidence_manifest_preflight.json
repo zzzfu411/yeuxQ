@@ -1,0 +1,109 @@
+{
+  "status": "BLOCK",
+  "checklist_path": "data_exports\\data_source_qa.json",
+  "manifest_path": "data_exports\\source_qa_evidence_manifest.json",
+  "evidence_dir": "data_exports\\source_qa_evidence",
+  "required_attachment_ids": [
+    "source_identity",
+    "license_scope",
+    "price_adjustment",
+    "point_in_time",
+    "manual_signoff"
+  ],
+  "valid_required_ids": [],
+  "missing_required_ids": [
+    "source_identity",
+    "license_scope",
+    "price_adjustment",
+    "point_in_time",
+    "manual_signoff"
+  ],
+  "invalid_attachment_count": 0,
+  "findings": [
+    {
+      "status": "BLOCK",
+      "code": "SOURCE_QA_EVIDENCE_ATTACHMENT_MISSING",
+      "item_id": "source_identity",
+      "message": "Required source QA evidence attachment is missing or invalid.",
+      "fix": "Place a retained local evidence file under source_qa_evidence and regenerate the manifest.",
+      "evidence": {
+        "manifest_path": "data_exports\\source_qa_evidence_manifest.json",
+        "evidence_dir": "data_exports\\source_qa_evidence",
+        "target": "data_exports\\source_qa_evidence\\source_identity_receipt.png",
+        "question": "Can the vendor, terminal/product, export operator, and export time be identified?",
+        "required_evidence": "Filled source_metadata fields or a vendor export receipt.",
+        "seen_manifest_ids": []
+      }
+    },
+    {
+      "status": "BLOCK",
+      "code": "SOURCE_QA_EVIDENCE_ATTACHMENT_MISSING",
+      "item_id": "license_scope",
+      "message": "Required source QA evidence attachment is missing or invalid.",
+      "fix": "Place a retained local evidence file under source_qa_evidence and regenerate the manifest.",
+      "evidence": {
+        "manifest_path": "data_exports\\source_qa_evidence_manifest.json",
+        "evidence_dir": "data_exports\\source_qa_evidence",
+        "target": "data_exports\\source_qa_evidence\\license_scope_note.pdf",
+        "question": "Is the data license limited to lawful research/paper use in this project?",
+        "required_evidence": "License note, account permission, or vendor terms kept with the export.",
+        "seen_manifest_ids": []
+      }
+    },
+    {
+      "status": "BLOCK",
+      "code": "SOURCE_QA_EVIDENCE_ATTACHMENT_MISSING",
+      "item_id": "price_adjustment",
+      "message": "Required source QA evidence attachment is missing or invalid.",
+      "fix": "Place a retained local evidence file under source_qa_evidence and regenerate the manifest.",
+      "evidence": {
+        "manifest_path": "data_exports\\source_qa_evidence_manifest.json",
+        "evidence_dir": "data_exports\\source_qa_evidence",
+        "target": "data_exports\\source_qa_evidence\\price_adjustment_qfq.png",
+        "question": "Are OHLC prices exported with the configured adjustment method `qfq`?",
+        "required_evidence": "Vendor export setting screenshot or metadata note.",
+        "seen_manifest_ids": []
+      }
+    },
+    {
+      "status": "BLOCK",
+      "code": "SOURCE_QA_EVIDENCE_ATTACHMENT_MISSING",
+      "item_id": "point_in_time",
+      "message": "Required source QA evidence attachment is missing or invalid.",
+      "fix": "Place a retained local evidence file under source_qa_evidence and regenerate the manifest.",
+      "evidence": {
+        "manifest_path": "data_exports\\source_qa_evidence_manifest.json",
+        "evidence_dir": "data_exports\\source_qa_evidence",
+        "target": "data_exports\\source_qa_evidence\\point_in_time_note.md",
+        "question": "Are fundamentals and index constituents point-in-time or explicitly marked as non-PIT?",
+        "required_evidence": "Vendor documentation or a note that non-PIT data must remain research-only.",
+        "seen_manifest_ids": []
+      }
+    },
+    {
+      "status": "BLOCK",
+      "code": "SOURCE_QA_EVIDENCE_ATTACHMENT_MISSING",
+      "item_id": "manual_signoff",
+      "message": "Required source QA evidence attachment is missing or invalid.",
+      "fix": "Place a retained local evidence file under source_qa_evidence and regenerate the manifest.",
+      "evidence": {
+        "manifest_path": "data_exports\\source_qa_evidence_manifest.json",
+        "evidence_dir": "data_exports\\source_qa_evidence",
+        "target": "data_exports\\source_qa_evidence\\manual_signoff.md",
+        "question": "Has a human reviewed source QA before strategy research uses the cache?",
+        "required_evidence": "reviewed_by and reviewed_at filled in the metadata template or approval notes.",
+        "seen_manifest_ids": []
+      }
+    }
+  ],
+  "next_commands": [
+    ".\\.venv\\Scripts\\python.exe examples\\write_source_qa_evidence_manifest.py --checklist data_exports\\data_source_qa.json --evidence-dir data_exports\\source_qa_evidence --output-dir data_exports --strict"
+  ],
+  "prohibited_actions": [
+    "Do not fabricate evidence files to satisfy manifest coverage.",
+    "Do not use generated worksheet, plan, sample, placeholder, or README files as retained source evidence.",
+    "Do not treat manifest preflight PASS as source QA approval by itself.",
+    "Do not import offline data until strict source QA review passes.",
+    "Do not connect this workflow to real broker order submission."
+  ]
+}

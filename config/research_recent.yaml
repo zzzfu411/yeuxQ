@@ -1,0 +1,43 @@
+research:
+  # Recent A-share evidence window for the first-million research goal.
+  # End date is the last completed trading day before 2026-06-08.
+  start: "2024-06-03"
+  end: "2026-06-05"
+  in_sample_end: "2025-06-30"
+  out_sample_start: "2025-07-01"
+  initial_cash: 1000000.0
+  rebalance: monthly
+  benchmark:
+    - "000300"
+    - "000905"
+  allow_demo_data: false
+
+data:
+  source: akshare
+  cache_path: "./data_cache/research_recent.db"
+  adjust: qfq
+
+universe:
+  mode: all_a
+  index_code: "000906"
+  include_st: false
+  min_history_days: 120
+
+strategy:
+  name: multi_factor
+  n_holdings: 30
+  max_weight: 0.05
+
+risk:
+  max_drawdown_stop: 0.2
+
+broker:
+  commission_rate: 0.00025
+  min_commission: 5.0
+  stamp_tax: 0.0005
+  slippage_bps: 5
+  price_limit_pct: 0.10
+  lot_size: 100
+
+output:
+  results_dir: "./results/research_recent"

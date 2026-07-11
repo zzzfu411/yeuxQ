@@ -1,0 +1,44 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Tool caches
+.uv-cache/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv
+
+# Project-specific
+data_cache/
+results/
+logs/
+tmp/
+*.db
+*.sqlite
+*.sqlite3
+
+# data_exports/ holds regenerable CSV/QA *templates* (safe to commit) but is
+# also where real broker data, filled worksheets, and source-QA evidence land.
+# Keep templates; never commit real market data or retained evidence.
+data_exports/raw/*
+data_exports/source_qa_evidence/*
+data_exports/indices/*
+!data_exports/raw/README_raw_bars_dropzone.md
+!data_exports/source_qa_evidence/README.md
+!data_exports/source_qa_evidence/README_source_qa_evidence_dropzone.md
+data_exports/data_source_qa_answers.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store

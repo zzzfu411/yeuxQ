@@ -1,0 +1,134 @@
+{
+  "market": "A-share equities",
+  "frequency": "daily",
+  "start": "2024-06-03",
+  "end": "2026-06-05",
+  "min_symbols": 300,
+  "cache_path": "./data_cache/research_recent.db",
+  "price_adjustment": "qfq",
+  "universe": {
+    "mode": "all_a",
+    "index_code": "000906",
+    "include_st": false,
+    "min_history_days": 120
+  },
+  "files": [
+    {
+      "role": "bars",
+      "file_name": "bars.csv",
+      "path": "data_exports\\bars.csv",
+      "required": true,
+      "columns": [
+        "symbol",
+        "date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "amount"
+      ],
+      "description": "Daily OHLCV bars. One row per symbol and trading date."
+    },
+    {
+      "role": "stock_info",
+      "file_name": "stock_info.csv",
+      "path": "data_exports\\stock_info.csv",
+      "required": false,
+      "columns": [
+        "symbol",
+        "name",
+        "exchange",
+        "list_date",
+        "delist_date",
+        "industry",
+        "is_st"
+      ],
+      "description": "Static symbol metadata used for universe filtering and audit context."
+    },
+    {
+      "role": "fundamentals",
+      "file_name": "fundamentals.csv",
+      "path": "data_exports\\fundamentals.csv",
+      "required": false,
+      "columns": [
+        "symbol",
+        "date",
+        "pe_ttm",
+        "pb",
+        "roe",
+        "market_cap",
+        "turnover_rate"
+      ],
+      "description": "Point-in-time factor inputs for value, quality, size, and liquidity features."
+    },
+    {
+      "role": "calendar",
+      "file_name": "calendar.csv",
+      "path": "data_exports\\calendar.csv",
+      "required": false,
+      "columns": [
+        "date",
+        "is_open"
+      ],
+      "description": "Trading calendar. Closed days should use is_open=0 or be omitted."
+    },
+    {
+      "role": "suspensions",
+      "file_name": "suspensions.csv",
+      "path": "data_exports\\suspensions.csv",
+      "required": false,
+      "columns": [
+        "symbol",
+        "date",
+        "is_suspended"
+      ],
+      "description": "Suspension flags used by paper execution and manual-readiness gates."
+    },
+    {
+      "role": "index_constituents",
+      "file_name": "index_constituents.csv",
+      "path": "data_exports\\index_constituents.csv",
+      "required": false,
+      "columns": [
+        "index_code",
+        "date",
+        "symbol"
+      ],
+      "description": "Point-in-time index or research-universe membership snapshots."
+    }
+  ],
+  "acceptance_criteria": [
+    "bars.csv must cover the requested date range through the latest completed trading day.",
+    "bars.csv must contain at least 300 distinct A-share symbols.",
+    "Price adjustment must be consistent with the configured qfq/hfq/raw setting.",
+    "Template sample rows and demo data must be fully replaced before import.",
+    "stock_info should include ST and delist fields so investable filters can be audited.",
+    "calendar and suspensions should be supplied when available to support execution gates.",
+    "index_constituents should be point-in-time when used as the research universe.",
+    "data_source_qa_evidence_worksheet.csv should be filled from real export evidence before answers are written.",
+    "data_source_qa_answers.json must be filled and pass source QA preflight."
+  ],
+  "workflow_commands": [
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_export_templates.py --output-dir data_exports --overwrite",
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa.py --config config\\research_recent.yaml --output-dir data_exports --min-symbols 300",
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa_evidence_worksheet.py --checklist data_exports\\data_source_qa.json --output-dir data_exports",
+    ".\\.venv\\Scripts\\python.exe examples\\run_data_source_qa_worksheet_preflight.py --checklist data_exports\\data_source_qa.json --worksheet data_exports\\data_source_qa_evidence_worksheet.csv --output-dir data_exports",
+    ".\\.venv\\Scripts\\python.exe examples\\write_source_qa_evidence_manifest.py --checklist data_exports\\data_source_qa.json --evidence-dir data_exports\\source_qa_evidence --output-dir data_exports --strict",
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa_answers.py --checklist data_exports\\data_source_qa.json --worksheet data_exports\\data_source_qa_evidence_worksheet.csv --output data_exports\\data_source_qa_answers.json --evidence-manifest data_exports\\source_qa_evidence_manifest.json --require-evidence-manifest",
+    ".\\.venv\\Scripts\\python.exe examples\\run_source_qa_preflight.py --checklist data_exports\\data_source_qa.json --answers data_exports\\data_source_qa_answers.json --evidence-manifest data_exports\\source_qa_evidence_manifest.json --require-evidence-manifest --output-dir results\\import\\source_qa",
+    ".\\.venv\\Scripts\\python.exe examples\\run_data_source_qa_review.py --checklist data_exports\\data_source_qa.json --answers data_exports\\data_source_qa_answers.json --evidence-manifest data_exports\\source_qa_evidence_manifest.json --require-evidence-manifest --output-dir results\\import\\source_qa",
+    ".\\.venv\\Scripts\\python.exe examples\\run_source_qa_evidence_readiness.py --checklist data_exports\\data_source_qa.json --worksheet data_exports\\data_source_qa_evidence_worksheet.csv --answers data_exports\\data_source_qa_answers.json --evidence-manifest data_exports\\source_qa_evidence_manifest.json --require-evidence-manifest --output-dir results\\import\\source_qa",
+    ".\\.venv\\Scripts\\python.exe examples\\run_csv_intake_preview.py --data-dir data_exports --encoding auto --output-dir results\\import\\csv_preview",
+    ".\\.venv\\Scripts\\python.exe examples\\run_data_import_doctor.py --data-dir data_exports --config config\\research_recent.yaml --encoding auto --output-dir results\\import\\doctor",
+    ".\\.venv\\Scripts\\python.exe examples\\validate_research_csv.py --bars-csv data_exports\\bars.csv --stock-info-csv data_exports\\stock_info.csv --fundamentals-csv data_exports\\fundamentals.csv --calendar-csv data_exports\\calendar.csv --suspensions-csv data_exports\\suspensions.csv --index-constituents-csv data_exports\\index_constituents.csv --start 2024-06-03 --end 2026-06-05 --min-symbols 300 --encoding auto --output-dir results\\import\\recent_csv_validation",
+    ".\\.venv\\Scripts\\python.exe examples\\import_research_csv.py --cache ./data_cache/research_recent.db --bars-csv data_exports\\bars.csv --stock-info-csv data_exports\\stock_info.csv --fundamentals-csv data_exports\\fundamentals.csv --calendar-csv data_exports\\calendar.csv --suspensions-csv data_exports\\suspensions.csv --index-constituents-csv data_exports\\index_constituents.csv --validate --start 2024-06-03 --end 2026-06-05 --min-symbols 300 --encoding auto --output-dir results\\import\\recent_csv",
+    ".\\.venv\\Scripts\\python.exe examples\\run_real_data_bootstrap.py --config config\\research_recent.yaml --output-dir results\\bootstrap_recent --min-symbols 300 --as-of 2026-06-08"
+  ],
+  "safety_boundaries": [
+    "This request is for research and paper trading only.",
+    "Do not connect exported files to a real broker order workflow.",
+    "Do not treat data availability as a promise of strategy profitability.",
+    "After import, real_data_bootstrap and data_audit must pass before strategy evaluation."
+  ]
+}

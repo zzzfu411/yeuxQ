@@ -1,0 +1,235 @@
+{
+  "market": "A-share equities",
+  "frequency": "daily",
+  "start": "2024-06-03",
+  "end": "2026-06-05",
+  "as_of": "2026-07-06",
+  "min_symbols": 300,
+  "price_adjustment": "qfq",
+  "universe": {
+    "mode": "all_a",
+    "index_code": "000906",
+    "include_st": false,
+    "min_history_days": 120
+  },
+  "expected_files": [
+    {
+      "role": "bars",
+      "file_name": "bars.csv",
+      "path": "data_exports\\bars.csv",
+      "required": true,
+      "columns": [
+        "symbol",
+        "date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "amount"
+      ],
+      "description": "Daily OHLCV bars. One row per symbol and trading date."
+    },
+    {
+      "role": "stock_info",
+      "file_name": "stock_info.csv",
+      "path": "data_exports\\stock_info.csv",
+      "required": false,
+      "columns": [
+        "symbol",
+        "name",
+        "exchange",
+        "list_date",
+        "delist_date",
+        "industry",
+        "is_st"
+      ],
+      "description": "Static symbol metadata used for universe filtering and audit context."
+    },
+    {
+      "role": "fundamentals",
+      "file_name": "fundamentals.csv",
+      "path": "data_exports\\fundamentals.csv",
+      "required": false,
+      "columns": [
+        "symbol",
+        "date",
+        "pe_ttm",
+        "pb",
+        "roe",
+        "market_cap",
+        "turnover_rate"
+      ],
+      "description": "Point-in-time factor inputs for value, quality, size, and liquidity features."
+    },
+    {
+      "role": "calendar",
+      "file_name": "calendar.csv",
+      "path": "data_exports\\calendar.csv",
+      "required": false,
+      "columns": [
+        "date",
+        "is_open"
+      ],
+      "description": "Trading calendar. Closed days should use is_open=0 or be omitted."
+    },
+    {
+      "role": "suspensions",
+      "file_name": "suspensions.csv",
+      "path": "data_exports\\suspensions.csv",
+      "required": false,
+      "columns": [
+        "symbol",
+        "date",
+        "is_suspended"
+      ],
+      "description": "Suspension flags used by paper execution and manual-readiness gates."
+    },
+    {
+      "role": "index_constituents",
+      "file_name": "index_constituents.csv",
+      "path": "data_exports\\index_constituents.csv",
+      "required": false,
+      "columns": [
+        "index_code",
+        "date",
+        "symbol"
+      ],
+      "description": "Point-in-time index or research-universe membership snapshots."
+    }
+  ],
+  "source_metadata_template": {
+    "data_vendor_or_broker": "",
+    "terminal_or_product_name": "",
+    "export_operator": "",
+    "exported_at_local_time": "",
+    "market": "A-share equities",
+    "frequency": "daily",
+    "date_range": "2024-06-03 to 2026-06-05",
+    "price_adjustment": "qfq",
+    "encoding": "utf-8-sig or gbk",
+    "license_or_usage_scope": "research and paper trading only",
+    "known_limitations": "",
+    "reviewed_by": "",
+    "reviewed_at": ""
+  },
+  "checklist": [
+    {
+      "id": "source_identity",
+      "category": "source",
+      "review_stage": "source",
+      "severity": "BLOCK_IF_NO",
+      "question": "Can the vendor, terminal/product, export operator, and export time be identified?",
+      "required_evidence": "Filled source_metadata fields or a vendor export receipt.",
+      "why_it_matters": "Unidentified data cannot be reproduced or audited after a surprising backtest."
+    },
+    {
+      "id": "license_scope",
+      "category": "source",
+      "review_stage": "source",
+      "severity": "BLOCK_IF_NO",
+      "question": "Is the data license limited to lawful research/paper use in this project?",
+      "required_evidence": "License note, account permission, or vendor terms kept with the export.",
+      "why_it_matters": "The system must not rely on data that cannot be legally used or retained."
+    },
+    {
+      "id": "date_window",
+      "category": "coverage",
+      "review_stage": "csv_validation",
+      "severity": "BLOCK_IF_NO",
+      "question": "Does bars.csv cover the configured research window through the latest completed trading day?",
+      "required_evidence": "Doctor/CSV validation summary showing bars_start and bars_end.",
+      "why_it_matters": "Stale or partial bars can create false strategy stability."
+    },
+    {
+      "id": "symbol_breadth",
+      "category": "coverage",
+      "review_stage": "csv_validation",
+      "severity": "BLOCK_IF_NO",
+      "question": "Does the export contain enough A-share symbols for the configured minimum universe?",
+      "required_evidence": "CSV validation metric bars_symbol_count >= min_symbols.",
+      "why_it_matters": "A small universe can turn a broad-market strategy into a cherry-picked sample."
+    },
+    {
+      "id": "price_adjustment",
+      "category": "contract",
+      "review_stage": "source",
+      "severity": "BLOCK_IF_NO",
+      "question": "Are OHLC prices exported with the configured adjustment method `qfq`?",
+      "required_evidence": "Vendor export setting screenshot or metadata note.",
+      "why_it_matters": "Mixed raw/qfq/hfq prices invalidate returns, drawdowns, and factor ranks."
+    },
+    {
+      "id": "calendar",
+      "category": "execution",
+      "review_stage": "csv_validation",
+      "severity": "WATCH_IF_NO",
+      "question": "Is a trading calendar supplied or clearly inferable from bars.csv?",
+      "required_evidence": "calendar.csv or validation note that calendar was inferred.",
+      "why_it_matters": "Missing open-day evidence weakens missing-bar and paper execution checks."
+    },
+    {
+      "id": "suspensions_limits",
+      "category": "execution",
+      "review_stage": "csv_validation",
+      "severity": "WATCH_IF_NO",
+      "question": "Are suspensions and limit-up/limit-down constraints available or documented as missing?",
+      "required_evidence": "suspensions.csv plus vendor notes for unavailable limit flags.",
+      "why_it_matters": "Paper fills become too optimistic if non-tradable days are invisible."
+    },
+    {
+      "id": "st_delist_flags",
+      "category": "universe",
+      "review_stage": "csv_validation",
+      "severity": "WATCH_IF_NO",
+      "question": "Does stock_info include ST and delist fields for investable-universe audit?",
+      "required_evidence": "stock_info.csv columns is_st and delist_date.",
+      "why_it_matters": "ST/delist gaps can hide risks that manual trading must avoid."
+    },
+    {
+      "id": "point_in_time",
+      "category": "lookahead",
+      "review_stage": "source",
+      "severity": "BLOCK_IF_NO",
+      "question": "Are fundamentals and index constituents point-in-time or explicitly marked as non-PIT?",
+      "required_evidence": "Vendor documentation or a note that non-PIT data must remain research-only.",
+      "why_it_matters": "Non-point-in-time data can leak future information into strategy selection."
+    },
+    {
+      "id": "file_fingerprint",
+      "category": "reproducibility",
+      "review_stage": "csv_validation",
+      "severity": "BLOCK_IF_NO",
+      "question": "Will the imported files be fingerprinted and kept unchanged after validation?",
+      "required_evidence": "csv_validation dataset_fingerprint and file sha256 values.",
+      "why_it_matters": "Every research result must be traceable to the exact data batch used."
+    },
+    {
+      "id": "manual_signoff",
+      "category": "governance",
+      "review_stage": "source",
+      "severity": "BLOCK_IF_NO",
+      "question": "Has a human reviewed source QA before strategy research uses the cache?",
+      "required_evidence": "reviewed_by and reviewed_at filled in the metadata template or approval notes.",
+      "why_it_matters": "Human approval owns source risk; LLM output cannot bless uncertain data."
+    }
+  ],
+  "workflow_commands": [
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_export_request.py --config config\\research_recent.yaml --output-dir data_exports --min-symbols 300",
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa.py --config config\\research_recent.yaml --output-dir data_exports --min-symbols 300 --as-of 2026-07-06",
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa_evidence_worksheet.py --checklist data_exports\\data_source_qa.json --output-dir data_exports",
+    ".\\.venv\\Scripts\\python.exe examples\\write_source_qa_evidence_manifest.py --checklist data_exports\\data_source_qa.json --evidence-dir data_exports\\source_qa_evidence --output-dir data_exports --strict",
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa_answers.py --checklist data_exports\\data_source_qa.json --output data_exports\\data_source_qa_answers.json --evidence-manifest data_exports\\source_qa_evidence_manifest.json --require-evidence-manifest --vendor <vendor-or-broker> --terminal <terminal-name> --operator <operator> --exported-at <local-time> --price-adjustment qfq --price-adjustment-evidence <evidence> --license-evidence <evidence> --point-in-time-evidence <evidence-or-non-pit-note> --reviewed-by <name> --reviewed-at <date>",
+    ".\\.venv\\Scripts\\python.exe examples\\run_source_qa_preflight.py --checklist data_exports\\data_source_qa.json --answers data_exports\\data_source_qa_answers.json --output-dir results\\import\\source_qa",
+    ".\\.venv\\Scripts\\python.exe examples\\run_data_source_qa_review.py --checklist data_exports\\data_source_qa.json --answers data_exports\\data_source_qa_answers.json --evidence-manifest data_exports\\source_qa_evidence_manifest.json --require-evidence-manifest --output-dir results\\import\\source_qa",
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_export_templates.py --output-dir data_exports",
+    ".\\.venv\\Scripts\\python.exe examples\\run_offline_data_intake.py --data-dir data_exports --config config\\research_recent.yaml --output-dir results\\import\\offline_intake --raw-bars-csv <raw-vendor-bars.csv> --source-vendor <vendor-or-broker> --source-terminal <terminal-name> --source-operator <operator> --source-exported-at <local-time> --source-price-adjustment qfq --source-price-adjustment-evidence <evidence> --source-license-evidence <evidence> --source-point-in-time-evidence <evidence-or-non-pit-note> --source-reviewed-by <name> --source-reviewed-at <date> --min-symbols 300 --min-trading-days 240 --source-qa-answers data_exports\\data_source_qa_answers.json --as-of 2026-07-06"
+  ],
+  "safety_boundaries": [
+    "This QA checklist is for data sourcing, research, and paper trading only.",
+    "Do not use a source checklist as evidence that a strategy is profitable.",
+    "Do not continue while any BLOCK_IF_NO source question is unanswered or negative.",
+    "Do not connect these CSV exports to real broker order submission.",
+    "After CSV import, real_data_bootstrap, data_audit, robustness, and paper gates still decide readiness."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "manifest_type": "source_qa_evidence_manifest",
+  "checklist_path": "data_exports\\data_source_qa.json",
+  "evidence_dir": "data_exports\\source_qa_evidence",
+  "items": [],
+  "prohibited_actions": [
+    "Do not treat evidence attachment hashes as source QA approval by themselves.",
+    "Do not attach screenshots or documents that you are not allowed to retain for research audit.",
+    "Do not fabricate local files only to satisfy source QA evidence gates.",
+    "Do not connect this manifest to real broker order submission."
+  ]
+}

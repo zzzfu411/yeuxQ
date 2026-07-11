@@ -1,0 +1,3 @@
+symbol,name,exchange,list_date,delist_date,industry,is_st
+600001,SampleSSE,SSE,2000-01-01,,sample,0
+000001,SampleSZSE,SZSE,2000-01-01,,sample,0

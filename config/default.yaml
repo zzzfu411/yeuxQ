@@ -1,0 +1,43 @@
+backtest:
+  start: "2020-01-01"
+  end: "2025-01-01"
+  # 注:贵州茅台 ~1700/股,A 股最小 100 股 = 17 万,起始资金需要 100 万级别
+  # 才能展示完整买卖流程。低价股(如平安银行 10/股)用 10 万就够。
+  initial_cash: 1000000.0
+
+  # Commission: 万分之 2.5,最低 5 元(主流券商水平)
+  commission_rate: 0.00025
+  min_commission: 5.0
+
+  # 印花税:卖出 0.05%(2023 年下调后,买入无)
+  stamp_tax: 0.0005
+
+  # 滑点:basis points,5 = 0.05%
+  slippage_bps: 5
+
+data:
+  source: akshare
+  cache_path: "./data_cache/quotes.db"
+  # 默认前复权(qfq),复权方式:qfq=前复权 hfq=后复权 ""=不复权
+  adjust: qfq
+
+risk:
+  # 单股最大仓位占总资产比例
+  max_position_pct: 0.3
+  # 净值回撤超此阈值后停止开新仓
+  max_drawdown_stop: 0.2
+  # 头寸计算方式:fixed_pct=每次按总资产固定比例下单
+  sizer: fixed_pct
+  sizer_param: 0.2  # 20% 总资产
+
+strategy:
+  name: dual_ma
+  params:
+    short_window: 5
+    long_window: 20
+    universe:
+      - "600519"  # 贵州茅台
+
+output:
+  results_dir: "./results"
+  log_dir: "./logs"

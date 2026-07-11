@@ -1,0 +1,176 @@
+{
+  "checklist_path": "data_exports\\data_source_qa.json",
+  "rows": [
+    {
+      "row_type": "metadata",
+      "field_or_question_id": "data_vendor_or_broker",
+      "cli_argument": "--vendor",
+      "severity": "REQUIRED",
+      "question_or_field": "data_vendor_or_broker",
+      "required_evidence": "Exact vendor, broker, or terminal data source name.",
+      "why_it_matters": "Unidentified data cannot be reproduced or challenged after a surprising result.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "metadata",
+      "field_or_question_id": "terminal_or_product_name",
+      "cli_argument": "--terminal",
+      "severity": "REQUIRED",
+      "question_or_field": "terminal_or_product_name",
+      "required_evidence": "Terminal/product name and version when available.",
+      "why_it_matters": "Different products can apply different adjustments, universes, or field definitions.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "metadata",
+      "field_or_question_id": "export_operator",
+      "cli_argument": "--operator",
+      "severity": "REQUIRED",
+      "question_or_field": "export_operator",
+      "required_evidence": "Human or process that produced the export.",
+      "why_it_matters": "A human owner is needed when the export must be reproduced or corrected.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "metadata",
+      "field_or_question_id": "exported_at_local_time",
+      "cli_argument": "--exported-at",
+      "severity": "REQUIRED",
+      "question_or_field": "exported_at_local_time",
+      "required_evidence": "Local timestamp for the export batch.",
+      "why_it_matters": "The export time anchors freshness and prevents stale-data promotion.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "metadata",
+      "field_or_question_id": "price_adjustment",
+      "cli_argument": "--price-adjustment",
+      "severity": "REQUIRED",
+      "question_or_field": "price_adjustment",
+      "required_evidence": "Configured adjustment setting such as raw, qfq, or hfq.",
+      "why_it_matters": "Mixed price adjustment invalidates returns, drawdowns, and ranks.",
+      "answer": "qfq",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "metadata",
+      "field_or_question_id": "license_or_usage_scope",
+      "cli_argument": "--license-scope",
+      "severity": "REQUIRED",
+      "question_or_field": "license_or_usage_scope",
+      "required_evidence": "Allowed use scope from vendor terms, broker account, or internal policy.",
+      "why_it_matters": "The project must only use data it is allowed to retain and analyze.",
+      "answer": "research and paper trading only",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "metadata",
+      "field_or_question_id": "reviewed_by",
+      "cli_argument": "--reviewed-by",
+      "severity": "REQUIRED",
+      "question_or_field": "reviewed_by",
+      "required_evidence": "Human reviewer name or identifier.",
+      "why_it_matters": "Human signoff owns source risk; LLM output cannot bless uncertain data.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "metadata",
+      "field_or_question_id": "reviewed_at",
+      "cli_argument": "--reviewed-at",
+      "severity": "REQUIRED",
+      "question_or_field": "reviewed_at",
+      "required_evidence": "Review date or timestamp.",
+      "why_it_matters": "The review timestamp makes the evidence auditable.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "source_question",
+      "field_or_question_id": "source_identity",
+      "cli_argument": "--vendor/--terminal/--operator/--exported-at",
+      "severity": "BLOCK_IF_NO",
+      "question_or_field": "Can the vendor, terminal/product, export operator, and export time be identified?",
+      "required_evidence": "Filled source_metadata fields or a vendor export receipt.",
+      "why_it_matters": "Unidentified data cannot be reproduced or audited after a surprising backtest.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "source_question",
+      "field_or_question_id": "license_scope",
+      "cli_argument": "--license-evidence",
+      "severity": "BLOCK_IF_NO",
+      "question_or_field": "Is the data license limited to lawful research/paper use in this project?",
+      "required_evidence": "License note, account permission, or vendor terms kept with the export.",
+      "why_it_matters": "The system must not rely on data that cannot be legally used or retained.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "source_question",
+      "field_or_question_id": "price_adjustment",
+      "cli_argument": "--price-adjustment-evidence",
+      "severity": "BLOCK_IF_NO",
+      "question_or_field": "Are OHLC prices exported with the configured adjustment method `qfq`?",
+      "required_evidence": "Vendor export setting screenshot or metadata note.",
+      "why_it_matters": "Mixed raw/qfq/hfq prices invalidate returns, drawdowns, and factor ranks.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "source_question",
+      "field_or_question_id": "point_in_time",
+      "cli_argument": "--point-in-time-evidence",
+      "severity": "BLOCK_IF_NO",
+      "question_or_field": "Are fundamentals and index constituents point-in-time or explicitly marked as non-PIT?",
+      "required_evidence": "Vendor documentation or a note that non-PIT data must remain research-only.",
+      "why_it_matters": "Non-point-in-time data can leak future information into strategy selection.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    },
+    {
+      "row_type": "source_question",
+      "field_or_question_id": "manual_signoff",
+      "cli_argument": "--reviewed-by/--reviewed-at",
+      "severity": "BLOCK_IF_NO",
+      "question_or_field": "Has a human reviewed source QA before strategy research uses the cache?",
+      "required_evidence": "reviewed_by and reviewed_at filled in the metadata template or approval notes.",
+      "why_it_matters": "Human approval owns source risk; LLM output cannot bless uncertain data.",
+      "answer": "",
+      "evidence": "",
+      "notes": ""
+    }
+  ],
+  "workflow_commands": [
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa_evidence_worksheet.py --checklist data_exports\\data_source_qa.json --output-dir data_exports",
+    ".\\.venv\\Scripts\\python.exe examples\\fill_data_source_qa_evidence_worksheet.py --checklist data_exports\\data_source_qa.json --worksheet data_exports\\data_source_qa_evidence_worksheet.csv --vendor \"<vendor-or-broker>\" --terminal \"<terminal-name>\" --operator \"<operator>\" --exported-at \"<local-time>\" --price-adjustment \"<raw-or-qfq-or-hfq>\" --license-scope \"research and paper trading only\" --reviewed-by \"<name>\" --reviewed-at \"<YYYY-MM-DD>\" --source-identity-evidence \"<retained-source-identity-evidence>\" --license-evidence \"<retained-license-evidence>\" --price-adjustment-evidence \"<retained-price-adjustment-evidence>\" --point-in-time-evidence \"<retained-PIT-evidence-or-research-only-note>\" --manual-signoff-evidence \"<retained-human-review-evidence>\"",
+    ".\\.venv\\Scripts\\python.exe examples\\run_data_source_qa_worksheet_preflight.py --checklist data_exports\\data_source_qa.json --worksheet data_exports\\data_source_qa_evidence_worksheet.csv --output-dir data_exports",
+    ".\\.venv\\Scripts\\python.exe examples\\write_source_qa_evidence_manifest.py --checklist data_exports\\data_source_qa.json --evidence-dir data_exports\\source_qa_evidence --output-dir data_exports --strict",
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa_answers.py --checklist data_exports\\data_source_qa.json --worksheet data_exports\\data_source_qa_evidence_worksheet.csv --output data_exports\\data_source_qa_answers.json --evidence-manifest data_exports\\source_qa_evidence_manifest.json --require-evidence-manifest",
+    ".\\.venv\\Scripts\\python.exe examples\\run_source_qa_preflight.py --checklist data_exports\\data_source_qa.json --answers data_exports\\data_source_qa_answers.json --evidence-manifest data_exports\\source_qa_evidence_manifest.json --require-evidence-manifest --output-dir results\\import\\source_qa"
+  ],
+  "safety_boundaries": [
+    "This worksheet is a human evidence collection aid, not an automatic approval.",
+    "Do not invent answers or evidence to make source QA pass.",
+    "Leaving rows blank keeps the deterministic source QA and preflight gates BLOCK.",
+    "The worksheet cannot modify PASS/WATCH/BLOCK decisions.",
+    "This workflow is for research and paper trading only; it must not connect to a real broker."
+  ]
+}
