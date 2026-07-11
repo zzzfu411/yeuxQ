@@ -5,8 +5,8 @@ only a work order for offline validation; it never grants live-trading approval.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +15,6 @@ from quantify.research.candidate_hypotheses import (
     CandidateHypothesisCatalog,
     build_candidate_hypothesis_catalog,
 )
-
 
 QUEUE_STATUS = "WAITING_FOR_REAL_DATA"
 COMMON_REQUIRED_INPUTS = [

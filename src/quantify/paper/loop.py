@@ -1,9 +1,9 @@
 """Recoverable daily paper-trading loop for A-share research candidates."""
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
-import json
 from pathlib import Path
 from typing import Any
 
@@ -18,10 +18,10 @@ from quantify.research.candidates import (
     TrendFilteredTargetStrategy,
     candidate_spec_by_name,
 )
+from quantify.research.engine import _rebalance_days
 from quantify.research.factors import FactorPipeline
 from quantify.research.strategy import MultiFactorStrategyConfig, MultiFactorTargetStrategy
 from quantify.research.universe import UniverseConfig, UniverseFilter
-from quantify.research.engine import _rebalance_days
 
 
 @dataclass(frozen=True, slots=True)
@@ -244,7 +244,7 @@ def _restore_portfolio(root: Path, initial_cash: float, *, as_of: str = "") -> P
     if positions.empty:
         return portfolio
     for row in positions.itertuples(index=False):
-        symbol = str(getattr(row, "symbol"))
+        symbol = str(row.symbol)
         qty = int(getattr(row, "quantity", 0) or 0)
         if qty <= 0:
             continue
@@ -373,9 +373,9 @@ def _read_orders(path: Path) -> list[PaperOrder]:
     for row in frame.itertuples(index=False):
         orders.append(
             PaperOrder(
-                timestamp=datetime.fromisoformat(str(getattr(row, "timestamp"))[:10]),
-                symbol=str(getattr(row, "symbol")),
-                direction=Direction(str(getattr(row, "direction"))),
+                timestamp=datetime.fromisoformat(str(row.timestamp)[:10]),
+                symbol=str(row.symbol),
+                direction=Direction(str(row.direction)),
                 quantity=int(getattr(row, "quantity", 0) or 0),
                 price=float(getattr(row, "price", 0.0) or 0.0),
                 status=str(getattr(row, "status", "")),

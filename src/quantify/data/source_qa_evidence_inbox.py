@@ -6,14 +6,13 @@ approves source QA by itself.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
-from datetime import timezone
 import csv
 import hashlib
 import json
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Literal
 
 from quantify.data.source_qa import validate_source_qa_attachment
@@ -546,7 +545,7 @@ def _file_candidate(path: Path, source_ids: list[str]) -> SourceQAEvidenceInboxF
             exists=exists,
             size_bytes=int(stat.st_size) if stat else 0,
             modified_at_utc=(
-                datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat() if stat else ""
+                datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat() if stat else ""
             ),
             sha256=sha,
             inferred_id="",
@@ -578,7 +577,7 @@ def _file_candidate(path: Path, source_ids: list[str]) -> SourceQAEvidenceInboxF
         exists=exists,
         size_bytes=int(stat.st_size) if stat else 0,
         modified_at_utc=(
-            datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat() if stat else ""
+            datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat() if stat else ""
         ),
         sha256=sha,
         inferred_id=inferred_id,
@@ -841,20 +840,12 @@ def _worksheet_fill_command_review(
     for item in fill_args:
         if not item.ready:
             blockers.append(
-                "{item_id}: {source} value is not ready evidence for {arg}: {message}".format(
-                    item_id=item.item_id,
-                    source=item.source,
-                    arg=item.cli_argument,
-                    message=item.message,
-                )
+                f"{item.item_id}: {item.source} value is not ready evidence for {item.cli_argument}: {item.message}"
             )
             continue
         if item.status == "WATCH" or item.source == "suggested_file":
             warnings.append(
-                "{item_id}: {source} requires human confirmation before worksheet fill.".format(
-                    item_id=item.item_id,
-                    source=item.source,
-                )
+                f"{item.item_id}: {item.source} requires human confirmation before worksheet fill."
             )
     if blockers:
         status: EvidenceInboxStatus = "BLOCK"

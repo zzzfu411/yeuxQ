@@ -1,8 +1,8 @@
 """Generate a data-vendor export request for offline A-share research CSVs."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 

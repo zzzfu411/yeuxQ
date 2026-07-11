@@ -1,11 +1,11 @@
 """CSV data contract for offline A-share research imports."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import csv
-from datetime import UTC, datetime
 import hashlib
 import json
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -14,11 +14,13 @@ import pandas as pd
 from quantify.data.csv_research_importer import (
     _normalize_bars,
     _normalize_fundamentals,
-    _normalize_suspensions,
     _normalize_stock_info,
-    _read_csv as _read_research_csv,
+    _normalize_suspensions,
     _read_calendar,
     _read_index_constituents,
+)
+from quantify.data.csv_research_importer import (
+    _read_csv as _read_research_csv,
 )
 
 CSVStatus = Literal["PASS", "WATCH", "BLOCK"]

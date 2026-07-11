@@ -6,12 +6,12 @@ promotion gate and never grants paper, live, or broker permissions.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import csv
 import json
+from collections.abc import Iterable
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
-
+from typing import Any
 
 NEXT_EXPERIMENT_STATUS = "RESEARCH_ONLY"
 PROMOTION_DECISION = "BLOCK"

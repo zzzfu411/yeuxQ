@@ -7,9 +7,9 @@ authorize broker orders.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import csv
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -109,14 +109,7 @@ class FirstMillionEvidenceRankingDashboard:
             lines.append("| ---: | --- | --- | --- | --- | --- |")
             for item in self.items:
                 lines.append(
-                    "| {seq} | `{status}` | `{area}` | `{state}` | {required} | {action} |".format(
-                        seq=item.sequence,
-                        status=item.status,
-                        area=item.area,
-                        state=_cell(item.current_state),
-                        required=_cell(item.required_evidence),
-                        action=_cell(item.next_action),
-                    )
+                    f"| {item.sequence} | `{item.status}` | `{item.area}` | `{_cell(item.current_state)}` | {_cell(item.required_evidence)} | {_cell(item.next_action)} |"
                 )
         else:
             lines.append("- None.")

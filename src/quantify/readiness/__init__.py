@@ -1,6 +1,11 @@
 """Micro-live readiness gate."""
 from __future__ import annotations
 
+from quantify.readiness.capital_scaling import (
+    CapitalScalingPlan,
+    build_capital_scaling_plan,
+    write_capital_scaling_plan,
+)
 from quantify.readiness.gate import (
     ApprovalRecord,
     ReadinessResult,
@@ -8,11 +13,6 @@ from quantify.readiness.gate import (
     evaluate_micro_live_readiness,
     write_approval_record,
     write_readiness_outputs,
-)
-from quantify.readiness.capital_scaling import (
-    CapitalScalingPlan,
-    build_capital_scaling_plan,
-    write_capital_scaling_plan,
 )
 from quantify.readiness.target_plan import (
     ManualTargetPlan,

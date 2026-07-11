@@ -8,7 +8,12 @@ from pathlib import Path
 import pandas as pd
 from loguru import logger
 
-from quantify.goal import CapitalGoal, build_capital_goal_plan, screen_strategy_candidate, write_goal_plan
+from quantify.goal import (
+    CapitalGoal,
+    build_capital_goal_plan,
+    screen_strategy_candidate,
+    write_goal_plan,
+)
 
 
 def main() -> None:

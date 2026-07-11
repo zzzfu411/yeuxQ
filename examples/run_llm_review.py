@@ -11,7 +11,13 @@ from pathlib import Path
 
 from loguru import logger
 
-from quantify.llm import LLMClient, LLMClientConfig, LLMReviewPromptBuilder, ReviewThresholds, review_report
+from quantify.llm import (
+    LLMClient,
+    LLMClientConfig,
+    LLMReviewPromptBuilder,
+    ReviewThresholds,
+    review_report,
+)
 
 
 def main() -> None:

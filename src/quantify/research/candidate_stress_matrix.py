@@ -1,9 +1,9 @@
 """Research-only parameter and cost stress matrix for strategy candidates."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import csv
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -22,7 +22,6 @@ from quantify.research.factors import FactorPipeline
 from quantify.research.strategy import MultiFactorStrategyConfig, MultiFactorTargetStrategy
 from quantify.research.turnover import summarize_turnover
 from quantify.research.universe import UniverseConfig, UniverseFilter
-
 
 StressStatus = Literal["PASS", "WATCH", "BLOCK"]
 REPORT_STATUS = "RESEARCH_ONLY"
@@ -206,21 +205,7 @@ class CandidateStressMatrixReport:
         ]
         for summary in self.summaries:
             lines.append(
-                "| {candidate} | `{status}` | {count} | {passes} | {watch} | {block} | {baseline:.2%} | {worst_ret:.2%} | {worst_dd:.2%} | {worst_sharpe:.2f} | {reject:.2%} | {turnover:.2%} | {maintenance:.2%} |".format(
-                    candidate=summary.candidate,
-                    status=summary.status,
-                    count=summary.scenario_count,
-                    passes=summary.pass_count,
-                    watch=summary.watch_count,
-                    block=summary.block_count,
-                    baseline=summary.baseline_total_return,
-                    worst_ret=summary.worst_total_return,
-                    worst_dd=summary.worst_max_drawdown,
-                    worst_sharpe=summary.worst_sharpe_ratio,
-                    reject=summary.max_reject_rate,
-                    turnover=summary.max_turnover_pct,
-                    maintenance=summary.max_maintenance_turnover_pct,
-                )
+                f"| {summary.candidate} | `{summary.status}` | {summary.scenario_count} | {summary.pass_count} | {summary.watch_count} | {summary.block_count} | {summary.baseline_total_return:.2%} | {summary.worst_total_return:.2%} | {summary.worst_max_drawdown:.2%} | {summary.worst_sharpe_ratio:.2f} | {summary.max_reject_rate:.2%} | {summary.max_turnover_pct:.2%} | {summary.max_maintenance_turnover_pct:.2%} |"
             )
         lines.extend(["", "## Scenario Results", ""])
         lines.append(

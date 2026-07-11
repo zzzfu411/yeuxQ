@@ -1,10 +1,10 @@
 """Roll up recent candidate research into a single research-only focus report."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import date
 import csv
 import json
+from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -139,22 +139,7 @@ class RecentCandidateResearchReport:
         if self.candidate_summaries:
             for item in self.candidate_summaries:
                 lines.append(
-                    "| {rank} | `{candidate}` | `{selection}` | `{goal}` | `{wf}` | `{factor}` | `{regime}` | `{stress}` | `{ret}` | `{dd}` | `{sharpe}` | `{turnover}` | `{reject}` | `{report_dir}` |".format(
-                        rank=item.rank,
-                        candidate=item.candidate,
-                        selection=item.selection_decision,
-                        goal=item.capital_goal_fit_status,
-                        wf=item.walk_forward_status,
-                        factor=item.factor_status,
-                        regime=item.regime_status,
-                        stress=item.stress_status,
-                        ret=_fmt_pct(item.annualized_return),
-                        dd=_fmt_pct(item.max_drawdown),
-                        sharpe=_fmt_float(item.sharpe_ratio),
-                        turnover=_fmt_pct(item.avg_turnover_pct),
-                        reject=_fmt_pct(item.reject_rate),
-                        report_dir=_cell(item.report_dir),
-                    )
+                    f"| {item.rank} | `{item.candidate}` | `{item.selection_decision}` | `{item.capital_goal_fit_status}` | `{item.walk_forward_status}` | `{item.factor_status}` | `{item.regime_status}` | `{item.stress_status}` | `{_fmt_pct(item.annualized_return)}` | `{_fmt_pct(item.max_drawdown)}` | `{_fmt_float(item.sharpe_ratio)}` | `{_fmt_pct(item.avg_turnover_pct)}` | `{_fmt_pct(item.reject_rate)}` | `{_cell(item.report_dir)}` |"
                 )
                 lines.append(f"  - Reason: {item.reason}")
                 lines.append(f"  - Next command: `{item.next_command}`")

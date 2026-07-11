@@ -5,9 +5,9 @@ clear gates, create evidence, choose strategies, or authorize live trading.
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import date
-import json
 from pathlib import Path
 from typing import Any, Literal
 
@@ -879,9 +879,7 @@ def _missing_evidence(
     items.extend(_strategy_goal_gap_missing_evidence(strategy_goal_gap))
     if ranking_status.artifact and ranking_status.status != "PASS":
         items.append(
-            "strategy_ranking: formal candidate ranking is disabled; {issue}".format(
-                issue=ranking_status.first_blocker or ranking_status.ranking_gate_basis,
-            )
+            f"strategy_ranking: formal candidate ranking is disabled; {ranking_status.first_blocker or ranking_status.ranking_gate_basis}"
         )
     for section in source_readiness.get("sections", []) or []:
         if not isinstance(section, dict) or _status(section.get("status")) == "PASS":

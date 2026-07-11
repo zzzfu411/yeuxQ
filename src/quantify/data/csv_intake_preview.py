@@ -1,10 +1,11 @@
 """Lightweight CSV intake preview before guarded offline import."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 import pandas as pd
 
@@ -16,8 +17,8 @@ from quantify.data.csv_research_importer import (
     _normalize_fundamentals,
     _normalize_stock_info,
     _normalize_suspensions,
-    _read_csv,
     _read_calendar,
+    _read_csv,
     _read_index_constituents,
     _rename_columns,
 )

@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from quantify.core.event import SignalEvent
 from quantify.core.bar import Bar
+from quantify.core.event import SignalEvent
 
 
 class Strategy(ABC):

@@ -6,8 +6,8 @@ implement this interface so the rest of the system stays market-agnostic.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from datetime import date
-from typing import Iterator
 
 import pandas as pd
 

@@ -5,9 +5,9 @@ not create evidence, import data, approve strategies, or authorize broker use.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import csv
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -100,14 +100,7 @@ class DataIntakeStatusReport:
             lines.append("| ---: | --- | --- | --- | --- | --- |")
             for item in self.items:
                 lines.append(
-                    "| {seq} | `{status}` | `{area}` | `{state}` | `{target}` | {action} |".format(
-                        seq=item.sequence,
-                        status=item.status,
-                        area=item.area,
-                        state=_cell(item.current_state),
-                        target=_cell(item.target),
-                        action=_cell(item.next_action),
-                    )
+                    f"| {item.sequence} | `{item.status}` | `{item.area}` | `{_cell(item.current_state)}` | `{_cell(item.target)}` | {_cell(item.next_action)} |"
                 )
         else:
             lines.append("- None.")

@@ -1,10 +1,10 @@
 """Goal-level evidence audit for the first-million compounding objective."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import date
 import hashlib
 import json
+from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any, Literal
 
@@ -999,9 +999,7 @@ def _run_manifest_status(root: Path) -> GoalEvidenceItem:
     status: GoalStatusDecision = "PASS"
     data_version = payload.get("data_version", {}) if isinstance(payload, dict) else {}
     data_version = data_version if isinstance(data_version, dict) else {}
-    if bool(payload.get("demo_data_used", False)):
-        status = "BLOCK"
-    elif not str(data_version.get("csv_dataset_fingerprint", "") or "").strip():
+    if bool(payload.get("demo_data_used", False)) or not str(data_version.get("csv_dataset_fingerprint", "") or "").strip():
         status = "BLOCK"
     return GoalEvidenceItem("run_manifest", status, artifact, _manifest_message(payload))
 

@@ -17,6 +17,7 @@ Fill model:
 from __future__ import annotations
 
 from dataclasses import dataclass
+
 from loguru import logger
 
 from quantify.core.bar import Bar

@@ -14,9 +14,9 @@ Schema:
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterator
 from datetime import date, datetime
 from pathlib import Path
-from typing import Iterator
 
 import pandas as pd
 

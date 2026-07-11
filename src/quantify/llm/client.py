@@ -6,14 +6,13 @@ the deterministic gate decision and never talks to broker code.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import os
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
 
 from quantify.llm.reviewer import PromptPack
-
 
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
@@ -32,7 +31,7 @@ class LLMClientConfig:
         *,
         model: str | None = None,
         timeout_seconds: float = 60.0,
-    ) -> "LLMClientConfig":
+    ) -> LLMClientConfig:
         return cls(
             base_url=os.getenv("OPENAI_BASE_URL", DEFAULT_OPENAI_BASE_URL),
             api_key=os.getenv("OPENAI_API_KEY"),

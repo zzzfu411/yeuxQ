@@ -6,9 +6,9 @@ broker instructions.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import csv
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -109,14 +109,7 @@ class EvidenceIntakeKit:
             lines.append("| --- | --- | --- | --- | --- | --- |")
             for item in self.files:
                 lines.append(
-                    "| `{type}` | `{item}` | `{required}` | `{target}` | `{staging}` | `{state}` |".format(
-                        type=item.item_type,
-                        item=item.item_id,
-                        required=item.required,
-                        target=item.target_path,
-                        staging=item.staging_path,
-                        state=item.current_state,
-                    )
+                    f"| `{item.item_type}` | `{item.item_id}` | `{item.required}` | `{item.target_path}` | `{item.staging_path}` | `{item.current_state}` |"
                 )
         else:
             lines.append("- None.")

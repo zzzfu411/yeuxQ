@@ -1,8 +1,8 @@
 """Import externally prepared CSV datasets into the research SQLite cache."""
 from __future__ import annotations
 
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Any
 
 import pandas as pd

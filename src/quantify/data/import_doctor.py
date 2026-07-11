@@ -2,16 +2,16 @@
 from __future__ import annotations
 
 import csv
-from dataclasses import dataclass, field
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from quantify.data.csv_contract import (
+    RESEARCH_CSV_SCHEMAS,
     CSVStatus,
     CSVValidationFinding,
     CSVValidationReport,
-    RESEARCH_CSV_SCHEMAS,
     validate_research_csvs,
 )
 

@@ -6,9 +6,9 @@ trading, or generate broker instructions.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import csv
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +18,6 @@ from quantify.research.candidate_experiment_queue import (
 )
 from quantify.research.candidate_stress_matrix import default_candidate_stress_scenarios
 from quantify.research.candidates import CandidateSpec, default_candidate_specs
-
 
 DESIGN_STATUS = "WAITING_FOR_REAL_DATA"
 REQUIRED_BEFORE_EXECUTION = [
@@ -160,18 +159,7 @@ class CandidateExperimentDesignMatrix:
         )
         for row in self.rows:
             lines.append(
-                "| {priority} | `{candidate}` | `{scenario}` | `{family}` | {holdings} | {weight:.2%} | `{rebalance}` | {cost:.2f} | `{trend}` | `{command}` |".format(
-                    priority=row.priority,
-                    candidate=row.candidate,
-                    scenario=row.scenario,
-                    family=row.scenario_family,
-                    holdings=row.n_holdings,
-                    weight=row.max_weight,
-                    rebalance=row.rebalance,
-                    cost=row.cost_multiplier,
-                    trend=row.trend_filter,
-                    command=row.command_hint,
-                )
+                f"| {row.priority} | `{row.candidate}` | `{row.scenario}` | `{row.scenario_family}` | {row.n_holdings} | {row.max_weight:.2%} | `{row.rebalance}` | {row.cost_multiplier:.2f} | `{row.trend_filter}` | `{row.command_hint}` |"
             )
         lines.extend(["", "## Command Sequence"])
         for index, command in enumerate(self.command_sequence, start=1):

@@ -1,8 +1,8 @@
 """Paper daily review artifacts derived from a research report directory."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd

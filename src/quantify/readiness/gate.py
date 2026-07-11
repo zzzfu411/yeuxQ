@@ -5,10 +5,10 @@ orders and never connects to live trading infrastructure.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import hashlib
 import json
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -129,7 +129,7 @@ def write_approval_record(
     record = ApprovalRecord(
         approval_required=approval_required,
         approved_by=approved_by,
-        approved_at=datetime.now(timezone.utc).isoformat(),
+        approved_at=datetime.now(UTC).isoformat(),
         approval_notes=approval_notes,
         allowed_stage=allowed_stage,
         evidence_snapshot=_approval_evidence_snapshot(root),

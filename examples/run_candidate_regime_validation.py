@@ -13,8 +13,8 @@ from loguru import logger
 from quantify.data.provider import DataProvider
 from quantify.data.storage import BarStorage
 from quantify.research.candidate_cli_guard import CandidateCliGateError, enforce_candidate_cli_gate
-from quantify.research.demo_data import seed_demo_data
 from quantify.research.candidates import candidate_specs_for_names
+from quantify.research.demo_data import seed_demo_data
 from quantify.research.regime_validation import (
     run_candidate_regime_validation,
     write_candidate_regime_validation_report,

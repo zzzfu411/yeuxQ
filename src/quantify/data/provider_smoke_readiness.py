@@ -6,9 +6,9 @@ research-ready, source-QA approved, or usable for trading.
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import date
-import json
 from pathlib import Path
 from typing import Any, Literal
 
@@ -389,10 +389,10 @@ def _watch_items(
         )
     if data_sufficiency == "WATCH":
         items.append(
-            (
+            
                 "Smoke sample is not sufficient for broad research by itself "
                 f"(symbols={imported_symbols}/{min_symbols}, trading_days={calendar_days}/{min_trading_days})."
-            )
+            
         )
     return items
 

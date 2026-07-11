@@ -5,14 +5,14 @@ concrete export and source-QA steps. It does not weaken any deterministic gate.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import csv
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-from quantify.data.export_request import DataExportRequest, build_data_export_request
 from quantify.data.csv_intake_preview import build_csv_intake_preview
+from quantify.data.export_request import DataExportRequest, build_data_export_request
 from quantify.data.gap_action_plan import DataGapActionPlan, build_data_gap_action_plan
 from quantify.data.source_qa import (
     REQUIRED_SOURCE_METADATA,
@@ -2076,21 +2076,21 @@ def _operator_status_next_actions(
         ]
         if worksheet_rows:
             actions.append(
-                (
+                
                     f"Fill {len(worksheet_rows)} open source QA worksheet rows using "
                     "source_qa_worksheet_todo.csv, then run worksheet preflight before "
                     "regenerating data_source_qa_answers.json."
-                )
+                
             )
             command = str(worksheet_rows[0].get("next_command") or "").strip()
             if command:
                 actions.append(f"After filling source QA worksheet evidence, run worksheet preflight: {command}")
         if attachment_rows:
             actions.append(
-                (
+                
                     f"Prepare {len(attachment_rows)} local source QA evidence attachments using "
                     "source_qa_attachment_todo.csv, then regenerate source_qa_evidence_manifest.json."
-                )
+                
             )
             command = str(attachment_rows[0].get("next_command") or "").strip()
             if command:
@@ -2098,10 +2098,10 @@ def _operator_status_next_actions(
     if export_rows:
         files = ", ".join(str(row.get("file_name", "")) for row in export_rows[:6])
         actions.append(
-            (
+            
                 f"Replace or verify {len(export_rows)} data export files using "
                 f"data_export_todo.csv. First files: {files}."
-            )
+            
         )
     if not open_rows and packet.decision != "PASS":
         actions.append(

@@ -8,8 +8,8 @@ from loguru import logger
 
 from quantify.data.raw_bars_discovery import (
     build_raw_bars_discovery_report,
-    write_raw_bars_dropzone_kit,
     write_raw_bars_discovery_report,
+    write_raw_bars_dropzone_kit,
 )
 
 

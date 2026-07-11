@@ -13,7 +13,6 @@ from quantify.data.source_qa import (
 )
 from quantify.data.source_qa_worksheet_fill import fill_source_qa_evidence_worksheet
 
-
 DEFAULT_TDX_VENDOR = "TongDaXin local .day files"
 DEFAULT_TDX_TERMINAL = "TongDaXin"
 TDX_OHLCV_ONLY_PIT_NOTE = (

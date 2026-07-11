@@ -6,13 +6,14 @@ broker or upgrades deterministic decisions.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
-from pathlib import Path
 import shlex
 import subprocess
 import sys
-from typing import Any, Callable, Literal
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Literal
 
 FOUNDATIONAL_EVIDENCE: tuple[tuple[str, str, str | None], ...] = (
     ("summary", "summary.json", None),

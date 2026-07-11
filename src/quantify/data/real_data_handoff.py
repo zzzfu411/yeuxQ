@@ -1,15 +1,18 @@
 """Operational handoff checklist for recent real A-share data."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
 from quantify.data.csv_contract import RESEARCH_CSV_SCHEMAS
 from quantify.data.csv_intake_preview import build_csv_intake_preview
 from quantify.data.gap_action_plan import DataGapActionPlan, build_data_gap_action_plan
-from quantify.data.offline_package import OfflineDataPackageReport, build_offline_data_package_report
+from quantify.data.offline_package import (
+    OfflineDataPackageReport,
+    build_offline_data_package_report,
+)
 from quantify.utils.config import load_config
 
 HandoffStatus = Literal["PASS", "WATCH", "BLOCK"]

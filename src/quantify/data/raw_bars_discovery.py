@@ -6,12 +6,12 @@ not approve source QA, strategy research, or broker activity.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import json
+import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
-import zipfile
 
 from quantify.data.vendor_bars_normalizer import normalize_vendor_bars
 from quantify.utils.config import load_config

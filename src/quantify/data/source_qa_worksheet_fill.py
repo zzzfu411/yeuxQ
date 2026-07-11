@@ -1,11 +1,11 @@
 """Fill source QA evidence worksheets from explicit operator inputs."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import csv
 import json
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from quantify.data.source_qa import (

@@ -147,8 +147,8 @@ def _html_report(title: str, summary: dict[str, object], result: ResearchResult)
 
 def research_evidence_digest(
     *,
-    audit: "DataAuditReport | None" = None,
-    manifest: "RunManifest | None" = None,
+    audit: DataAuditReport | None = None,
+    manifest: RunManifest | None = None,
 ) -> dict[str, object]:
     """Build a compact evidence digest to embed in summary.json."""
     digest: dict[str, object] = {}

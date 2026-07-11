@@ -6,11 +6,10 @@ candidate into paper, micro-live readiness, live trading, or broker execution.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
 
 PRECHECK_STATUS = "RESEARCH_ONLY"
 PROMOTION_DECISION = "BLOCK"

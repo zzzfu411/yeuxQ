@@ -1,13 +1,13 @@
 """Receive staged first-million evidence files without weakening gates."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import csv
 import hashlib
 import json
-from pathlib import Path
 import re
 import shutil
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
 
 from quantify.data.raw_bars_discovery import build_raw_bars_discovery_report
@@ -113,15 +113,7 @@ class EvidenceIntakeReceipt:
             lines.append("| --- | --- | --- | --- | --- | --- | --- |")
             for item in self.items:
                 lines.append(
-                    "| `{status}` | `{action}` | `{type}` | `{item_id}` | `{staging}` | `{target}` | {message} |".format(
-                        status=item.status,
-                        action=item.action,
-                        type=item.item_type,
-                        item_id=item.item_id,
-                        staging=item.staging_path,
-                        target=item.target_path,
-                        message=_cell(item.message),
-                    )
+                    f"| `{item.status}` | `{item.action}` | `{item.item_type}` | `{item.item_id}` | `{item.staging_path}` | `{item.target_path}` | {_cell(item.message)} |"
                 )
         else:
             lines.append("- No intake manifest rows were found.")

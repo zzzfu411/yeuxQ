@@ -1,8 +1,8 @@
 """Walk-forward validation across strategy candidates."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -10,8 +10,12 @@ from quantify.analytics.metrics import compute_report
 from quantify.core.portfolio import Portfolio
 from quantify.data.provider import DataProvider
 from quantify.engine.paper_broker import PaperBroker, PaperBrokerConfig
-from quantify.research.candidates import CandidateSpec, TrendFilteredTargetStrategy, default_candidate_specs
-from quantify.research.candidates import runtime_market_regime
+from quantify.research.candidates import (
+    CandidateSpec,
+    TrendFilteredTargetStrategy,
+    default_candidate_specs,
+    runtime_market_regime,
+)
 from quantify.research.engine import ResearchEngine
 from quantify.research.factors import FactorPipeline
 from quantify.research.strategy import MultiFactorStrategyConfig, MultiFactorTargetStrategy
@@ -120,22 +124,7 @@ class CandidateWalkForwardReport:
         ]
         for summary in self.summaries:
             lines.append(
-                "| {candidate} | `{status}` | {windows} | {passes} | {watch} | {block} | {positive:.2%} | {worst_ret:.2%} | {worst_dd:.2%} | {ret:.2%} | {dd:.2%} | {sharpe:.2f} | {reject:.2%} | {trend_days} |".format(
-                    candidate=summary.candidate,
-                    status=summary.status,
-                    windows=summary.window_count,
-                    passes=summary.pass_count,
-                    watch=summary.watch_count,
-                    block=summary.block_count,
-                    positive=summary.positive_return_ratio,
-                    worst_ret=summary.worst_total_return,
-                    worst_dd=summary.worst_max_drawdown,
-                    ret=summary.avg_total_return,
-                    dd=summary.avg_max_drawdown,
-                    sharpe=summary.avg_sharpe_ratio,
-                    reject=summary.avg_reject_rate,
-                    trend_days=summary.trend_filter_active_days,
-                )
+                f"| {summary.candidate} | `{summary.status}` | {summary.window_count} | {summary.pass_count} | {summary.watch_count} | {summary.block_count} | {summary.positive_return_ratio:.2%} | {summary.worst_total_return:.2%} | {summary.worst_max_drawdown:.2%} | {summary.avg_total_return:.2%} | {summary.avg_max_drawdown:.2%} | {summary.avg_sharpe_ratio:.2f} | {summary.avg_reject_rate:.2%} | {summary.trend_filter_active_days} |"
             )
         lines.extend(["", "## Warnings"])
         lines.extend(f"- {warning}" for warning in self.warnings) if self.warnings else lines.append("- None.")

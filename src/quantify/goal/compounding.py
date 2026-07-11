@@ -1,8 +1,8 @@
 """Compounding-path review for the first-million capital objective."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from math import isfinite
 from pathlib import Path
 from typing import Any, Literal

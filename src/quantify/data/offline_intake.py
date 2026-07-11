@@ -1,10 +1,9 @@
 """Guarded offline CSV intake pipeline for recent A-share research data."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-from dataclasses import replace
 import hashlib
 import json
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -24,7 +23,10 @@ from quantify.data.vendor_bars_normalizer import (
     normalize_vendor_bars,
     write_vendor_bars_normalization_report,
 )
-from quantify.ops.bootstrap import build_real_data_bootstrap_report, write_real_data_bootstrap_report
+from quantify.ops.bootstrap import (
+    build_real_data_bootstrap_report,
+    write_real_data_bootstrap_report,
+)
 from quantify.utils.config import load_config
 
 IntakeStatus = Literal["PASS", "WATCH", "BLOCK"]

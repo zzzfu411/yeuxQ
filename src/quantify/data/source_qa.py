@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import csv
-from dataclasses import dataclass
-from datetime import datetime
-from datetime import timezone
 import hashlib
 import json
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Literal
 
 from quantify.data.csv_contract import RESEARCH_CSV_SCHEMAS
@@ -1049,7 +1048,7 @@ def build_source_qa_evidence_manifest(
                     size_bytes=int(stat.st_size),
                     modified_at_utc=datetime.fromtimestamp(
                         stat.st_mtime,
-                        tz=timezone.utc,
+                        tz=UTC,
                     ).isoformat(),
                 )
             )

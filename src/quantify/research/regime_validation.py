@@ -1,8 +1,8 @@
 """Regime-stratified validation for strategy candidates."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -153,19 +153,7 @@ class CandidateRegimeValidationReport:
         ]
         for summary in self.summaries:
             lines.append(
-                "| {candidate} | `{status}` | {regimes} | {known} | {adverse} | {passes} | {watch} | {block} | {ret:.2%} | {dd:.2%} | {sharpe:.2f} |".format(
-                    candidate=summary.candidate,
-                    status=summary.status,
-                    regimes=summary.regime_count,
-                    known=summary.known_regime_count,
-                    adverse=summary.adverse_regime_window_count,
-                    passes=summary.pass_bucket_count,
-                    watch=summary.watch_bucket_count,
-                    block=summary.block_bucket_count,
-                    ret=summary.avg_total_return,
-                    dd=summary.avg_max_drawdown,
-                    sharpe=summary.avg_sharpe_ratio,
-                )
+                f"| {summary.candidate} | `{summary.status}` | {summary.regime_count} | {summary.known_regime_count} | {summary.adverse_regime_window_count} | {summary.pass_bucket_count} | {summary.watch_bucket_count} | {summary.block_bucket_count} | {summary.avg_total_return:.2%} | {summary.avg_max_drawdown:.2%} | {summary.avg_sharpe_ratio:.2f} |"
             )
         lines.extend(["", "## Regime Buckets", ""])
         lines.append(
@@ -174,19 +162,7 @@ class CandidateRegimeValidationReport:
         lines.append("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
         for bucket in self.buckets:
             lines.append(
-                "| {candidate} | `{regime}` | `{status}` | {windows} | {passes} | {watch} | {block} | {ret:.2%} | {dd:.2%} | {sharpe:.2f} | {reject:.2%} |".format(
-                    candidate=bucket.candidate,
-                    regime=bucket.regime_label,
-                    status=bucket.status,
-                    windows=bucket.window_count,
-                    passes=bucket.pass_count,
-                    watch=bucket.watch_count,
-                    block=bucket.block_count,
-                    ret=bucket.avg_total_return,
-                    dd=bucket.avg_max_drawdown,
-                    sharpe=bucket.avg_sharpe_ratio,
-                    reject=bucket.avg_reject_rate,
-                )
+                f"| {bucket.candidate} | `{bucket.regime_label}` | `{bucket.status}` | {bucket.window_count} | {bucket.pass_count} | {bucket.watch_count} | {bucket.block_count} | {bucket.avg_total_return:.2%} | {bucket.avg_max_drawdown:.2%} | {bucket.avg_sharpe_ratio:.2f} | {bucket.avg_reject_rate:.2%} |"
             )
         lines.extend(["", "## Warnings"])
         lines.extend(f"- {warning}" for warning in self.warnings) if self.warnings else lines.append("- None.")

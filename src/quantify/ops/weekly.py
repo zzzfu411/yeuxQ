@@ -1,9 +1,9 @@
 """Weekly operating review for research-to-paper quant workflows."""
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import date
-import json
 from pathlib import Path
 from typing import Any, Literal
 
@@ -343,9 +343,7 @@ def _decision(components: list[WeeklyReviewComponent]) -> WeeklyDecision:
 def _blockers(components: list[WeeklyReviewComponent]) -> list[str]:
     blockers = []
     for component in components:
-        if component.status == "BLOCK":
-            blockers.append(f"{component.name}: {component.summary}")
-        elif component.status in {"MISSING", "UNKNOWN"} and component.name != "readiness":
+        if component.status == "BLOCK" or component.status in {"MISSING", "UNKNOWN"} and component.name != "readiness":
             blockers.append(f"{component.name}: {component.summary}")
     return blockers
 

@@ -6,9 +6,9 @@ strategies, or produce broker instructions.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import csv
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -104,15 +104,7 @@ class EvidenceWorkOrder:
             lines.append("| ---: | --- | --- | --- | ---: | --- | --- |")
             for batch in self.batches:
                 lines.append(
-                    "| {seq} | `{status}` | `{priority}` | `{batch}` | {count} | `{target}` | `{command}` |".format(
-                        seq=batch.sequence,
-                        status=batch.status,
-                        priority=batch.priority,
-                        batch=batch.batch_id,
-                        count=batch.item_count,
-                        target=batch.target_artifact,
-                        command=batch.command_after_completion,
-                    )
+                    f"| {batch.sequence} | `{batch.status}` | `{batch.priority}` | `{batch.batch_id}` | {batch.item_count} | `{batch.target_artifact}` | `{batch.command_after_completion}` |"
                 )
         else:
             lines.append("- None.")

@@ -6,9 +6,9 @@ readiness, even when every acquisition stage completes.
 """
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
-import json
 from pathlib import Path
 from typing import Any, Literal
 

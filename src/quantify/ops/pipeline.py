@@ -1,9 +1,9 @@
 """One-command weekly workflow for research-to-paper evidence generation."""
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import datetime
-import json
 from pathlib import Path
 from typing import Any, Literal
 
@@ -17,15 +17,18 @@ from quantify.engine.paper_broker import PaperBroker, PaperBrokerConfig
 from quantify.goal import CapitalGoal, build_capital_goal_status, write_capital_goal_status
 from quantify.llm import LLMReviewPromptBuilder, review_report
 from quantify.market import detect_market_regime, write_market_regime_report
-from quantify.ops.bootstrap import build_real_data_bootstrap_report, write_real_data_bootstrap_report
+from quantify.ops.bootstrap import (
+    build_real_data_bootstrap_report,
+    write_real_data_bootstrap_report,
+)
 from quantify.ops.data_coverage import analyze_data_coverage, write_data_coverage_report
 from quantify.ops.promotion import write_strategy_promotion_review
+from quantify.ops.real_data_gate import evaluate_real_data_gate, write_real_data_gate
 from quantify.ops.recent_candidate_research import (
     build_recent_candidate_research_report,
     write_recent_candidate_research_report,
 )
 from quantify.ops.registry import update_candidate_registry
-from quantify.ops.real_data_gate import evaluate_real_data_gate, write_real_data_gate
 from quantify.ops.run_manifest import build_run_manifest, write_run_manifest
 from quantify.ops.weekly import WeeklyReview, build_weekly_review, write_weekly_review
 from quantify.paper import (
@@ -41,13 +44,13 @@ from quantify.readiness import (
     write_manual_target_plan,
     write_readiness_outputs,
 )
-from quantify.research.candidate_walk_forward import (
-    run_candidate_walk_forward,
-    write_candidate_walk_forward_report,
-)
 from quantify.research.candidate_factor_diagnostics import (
     run_candidate_factor_diagnostics,
     write_candidate_factor_diagnostics_report,
+)
+from quantify.research.candidate_walk_forward import (
+    run_candidate_walk_forward,
+    write_candidate_walk_forward_report,
 )
 from quantify.research.candidates import run_candidate_selection, write_candidate_selection_report
 from quantify.research.demo_data import seed_demo_data

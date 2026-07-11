@@ -1,43 +1,21 @@
 """Operating rhythm reports for long-running quant research."""
 from __future__ import annotations
 
-from quantify.ops.data_coverage import (
-    DataCoverageReport,
-    analyze_data_coverage,
-    write_data_coverage_report,
-)
 from quantify.ops.bootstrap import (
     RealDataBootstrapReport,
     build_real_data_bootstrap_report,
     write_real_data_bootstrap_report,
 )
-from quantify.ops.first_million_readiness import (
-    FirstMillionReadinessCard,
-    FirstMillionReadinessGate,
-    build_first_million_readiness_card,
-    write_first_million_readiness_card,
+from quantify.ops.data_coverage import (
+    DataCoverageReport,
+    analyze_data_coverage,
+    write_data_coverage_report,
 )
-from quantify.ops.first_million_daily_brief import (
-    FirstMillionDailyBrief,
-    FirstMillionDailyBriefGate,
-    FirstMillionDailyBriefRankingStatus,
-    FirstMillionDailyBriefTask,
-    build_first_million_daily_brief,
-    write_first_million_daily_brief,
-)
-from quantify.ops.recent_candidate_research import (
-    RecentCandidateResearchReport,
-    RecentResearchCandidate,
-    build_recent_candidate_research_report,
-    discover_recent_candidate_report_dirs,
-    resolve_recent_candidate_research_dir,
-    write_recent_candidate_research_report,
-)
-from quantify.ops.first_million_resolution import (
-    FirstMillionResolutionPlan,
-    FirstMillionResolutionTask,
-    build_first_million_resolution_plan,
-    write_first_million_resolution_plan,
+from quantify.ops.data_intake_status import (
+    DataIntakeStatusItem,
+    DataIntakeStatusReport,
+    build_data_intake_status,
+    write_data_intake_status,
 )
 from quantify.ops.evidence_intake_kit import (
     EvidenceIntakeKit,
@@ -51,17 +29,31 @@ from quantify.ops.evidence_work_order import (
     build_evidence_work_order,
     write_evidence_work_order,
 )
+from quantify.ops.first_million_daily_brief import (
+    FirstMillionDailyBrief,
+    FirstMillionDailyBriefGate,
+    FirstMillionDailyBriefRankingStatus,
+    FirstMillionDailyBriefTask,
+    build_first_million_daily_brief,
+    write_first_million_daily_brief,
+)
 from quantify.ops.first_million_evidence_ranking_dashboard import (
     FirstMillionEvidenceRankingDashboard,
     FirstMillionEvidenceRankingDashboardItem,
     build_first_million_evidence_ranking_dashboard,
     write_first_million_evidence_ranking_dashboard,
 )
-from quantify.ops.data_intake_status import (
-    DataIntakeStatusItem,
-    DataIntakeStatusReport,
-    build_data_intake_status,
-    write_data_intake_status,
+from quantify.ops.first_million_readiness import (
+    FirstMillionReadinessCard,
+    FirstMillionReadinessGate,
+    build_first_million_readiness_card,
+    write_first_million_readiness_card,
+)
+from quantify.ops.first_million_resolution import (
+    FirstMillionResolutionPlan,
+    FirstMillionResolutionTask,
+    build_first_million_resolution_plan,
+    write_first_million_resolution_plan,
 )
 from quantify.ops.pipeline import WeeklyPipelineResult, run_weekly_pipeline
 from quantify.ops.promotion import (
@@ -73,6 +65,14 @@ from quantify.ops.real_data_gate import (
     RealDataGateResult,
     evaluate_real_data_gate,
     write_real_data_gate,
+)
+from quantify.ops.recent_candidate_research import (
+    RecentCandidateResearchReport,
+    RecentResearchCandidate,
+    build_recent_candidate_research_report,
+    discover_recent_candidate_report_dirs,
+    resolve_recent_candidate_research_dir,
+    write_recent_candidate_research_report,
 )
 from quantify.ops.registry import CandidateRegistry, update_candidate_registry
 from quantify.ops.strategy_discovery_plan import (

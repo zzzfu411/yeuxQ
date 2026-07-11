@@ -15,7 +15,7 @@ Notes on look-ahead:
 from __future__ import annotations
 
 from collections import deque
-from typing import Iterable
+from collections.abc import Iterable
 
 from quantify.core.bar import Bar
 from quantify.core.event import Direction, SignalEvent

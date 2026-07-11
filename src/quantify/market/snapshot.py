@@ -6,8 +6,8 @@ cache-derived market_regime report or relax deterministic strategy gates.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from math import isfinite, sqrt
 from pathlib import Path
 from typing import Any, Literal

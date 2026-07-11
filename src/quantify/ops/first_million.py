@@ -1,9 +1,9 @@
 """Guarded one-command pipeline for the first-million research objective."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -11,45 +11,46 @@ from quantify.data.acquisition_plan import (
     build_recent_data_acquisition_plan_from_config,
     write_recent_data_acquisition_plan,
 )
-from quantify.data.export_request import build_data_export_request, write_data_export_request
+from quantify.data.cache_metadata import (
+    build_promotion_metadata_check,
+    write_promotion_metadata_check,
+)
+from quantify.data.csv_intake_preview import build_csv_intake_preview, write_csv_intake_preview
 from quantify.data.evidence_packet import (
     build_data_evidence_action_packet,
     build_operator_handoff_status,
     write_data_evidence_action_packet,
 )
+from quantify.data.export_request import build_data_export_request, write_data_export_request
 from quantify.data.gap_action_plan import build_data_gap_action_plan, write_data_gap_action_plan
-from quantify.data.csv_intake_preview import build_csv_intake_preview, write_csv_intake_preview
-from quantify.data.cache_metadata import (
-    build_promotion_metadata_check,
-    write_promotion_metadata_check,
-)
 from quantify.data.intake_router import build_data_intake_router, write_data_intake_router
 from quantify.data.offline_intake import run_offline_data_intake
-from quantify.data.ohlcv_intake_closeout import run_ohlcv_intake_closeout
 from quantify.data.offline_package import (
     build_offline_data_package_report,
     format_source_provenance,
     write_offline_data_package_report,
 )
-from quantify.data.raw_bars_discovery import (
-    build_raw_bars_discovery_report,
-    write_raw_bars_discovery_report,
-)
 from quantify.data.ohlcv_experiment_package import (
     build_ohlcv_experiment_package_preflight,
     write_ohlcv_experiment_package_preflight,
 )
+from quantify.data.ohlcv_intake_closeout import run_ohlcv_intake_closeout
+from quantify.data.provider import DataProvider
 from quantify.data.provider_smoke_readiness import (
     build_provider_smoke_readiness,
     write_provider_smoke_readiness,
 )
-from quantify.data.real_data_handoff import (
-    build_real_data_handoff_checklist,
-    write_real_data_handoff_checklist,
+from quantify.data.raw_bars_discovery import (
+    build_raw_bars_discovery_report,
+    write_raw_bars_discovery_report,
 )
 from quantify.data.real_data_batch_onboarding import (
     build_real_data_batch_onboarding,
     write_real_data_batch_onboarding,
+)
+from quantify.data.real_data_handoff import (
+    build_real_data_handoff_checklist,
+    write_real_data_handoff_checklist,
 )
 from quantify.data.source_qa import (
     build_data_source_qa,
@@ -62,26 +63,27 @@ from quantify.data.source_qa import (
     write_data_source_qa_evidence_worksheet_preflight,
     write_data_source_qa_review,
 )
-from quantify.data.source_qa_preflight import build_source_qa_preflight, write_source_qa_preflight
-from quantify.data.source_qa_readiness import (
-    build_source_qa_evidence_readiness,
-    write_source_qa_evidence_readiness,
+from quantify.data.source_qa_closeout import build_source_qa_closeout, write_source_qa_closeout
+from quantify.data.source_qa_evidence_inbox import (
+    build_source_qa_evidence_inbox,
+    write_source_qa_evidence_inbox,
 )
 from quantify.data.source_qa_operator_packet import (
     build_source_qa_operator_packet,
     write_source_qa_evidence_dropzone_kit,
     write_source_qa_operator_packet,
 )
-from quantify.data.source_qa_evidence_inbox import (
-    build_source_qa_evidence_inbox,
-    write_source_qa_evidence_inbox,
+from quantify.data.source_qa_preflight import build_source_qa_preflight, write_source_qa_preflight
+from quantify.data.source_qa_readiness import (
+    build_source_qa_evidence_readiness,
+    write_source_qa_evidence_readiness,
 )
-from quantify.data.source_qa_closeout import build_source_qa_closeout, write_source_qa_closeout
+from quantify.data.storage import BarStorage
+from quantify.data.tdx_day import export_tdx_day_to_csv
 from quantify.data.tdx_discovery import (
     build_tdx_day_discovery_report,
     write_tdx_day_discovery_report,
 )
-from quantify.data.tdx_day import export_tdx_day_to_csv
 from quantify.data.tdx_source_qa import (
     build_tdx_source_qa_answers,
     write_tdx_source_qa_answers,
@@ -93,18 +95,18 @@ from quantify.data.vendor_bars_normalizer import (
 )
 from quantify.goal import CapitalGoal, build_capital_goal_status, write_capital_goal_status
 from quantify.goal.compounding import build_compounding_path_review, write_compounding_path_review
+from quantify.goal.status import _evaluate_cache_gate
 from quantify.market import (
-    build_market_index_discovery_report,
     build_market_context_operator_packet,
     build_market_context_readiness_from_payload,
-    write_market_index_discovery_report,
+    build_market_index_discovery_report,
     write_market_context_operator_packet,
     write_market_context_readiness,
+    write_market_index_discovery_report,
 )
-from quantify.ops.first_million_readiness import (
-    build_first_million_readiness_card,
-    write_first_million_readiness_card,
-)
+from quantify.ops.data_intake_status import build_data_intake_status, write_data_intake_status
+from quantify.ops.evidence_intake_kit import build_evidence_intake_kit, write_evidence_intake_kit
+from quantify.ops.evidence_work_order import build_evidence_work_order, write_evidence_work_order
 from quantify.ops.first_million_daily_brief import (
     build_first_million_daily_brief,
     write_first_million_daily_brief,
@@ -113,16 +115,13 @@ from quantify.ops.first_million_evidence_ranking_dashboard import (
     build_first_million_evidence_ranking_dashboard,
     write_first_million_evidence_ranking_dashboard,
 )
+from quantify.ops.first_million_readiness import (
+    build_first_million_readiness_card,
+    write_first_million_readiness_card,
+)
 from quantify.ops.first_million_resolution import (
     build_first_million_resolution_plan,
     write_first_million_resolution_plan,
-)
-from quantify.ops.evidence_intake_kit import build_evidence_intake_kit, write_evidence_intake_kit
-from quantify.ops.evidence_work_order import build_evidence_work_order, write_evidence_work_order
-from quantify.ops.data_intake_status import build_data_intake_status, write_data_intake_status
-from quantify.ops.strategy_discovery_plan import (
-    build_strategy_discovery_plan,
-    write_strategy_discovery_plan,
 )
 from quantify.ops.pipeline import run_weekly_pipeline
 from quantify.ops.run_manifest import build_run_manifest, write_run_manifest
@@ -130,24 +129,23 @@ from quantify.ops.strategy_brief import (
     build_first_million_strategy_brief,
     write_first_million_strategy_brief,
 )
-from quantify.data.provider import DataProvider
-from quantify.data.storage import BarStorage
-from quantify.goal.status import _evaluate_cache_gate
-from quantify.research.candidate_experiment_queue import (
-    build_candidate_experiment_queue,
-    write_candidate_experiment_queue,
-)
-from quantify.research.candidate_experiment_design import (
-    build_candidate_experiment_design_matrix,
-    write_candidate_experiment_design_matrix,
+from quantify.ops.strategy_discovery_plan import (
+    build_strategy_discovery_plan,
+    write_strategy_discovery_plan,
 )
 from quantify.research.candidate_experiment_completion import (
     build_candidate_experiment_completion,
     write_candidate_experiment_completion,
 )
+from quantify.research.candidate_experiment_design import (
+    build_candidate_experiment_design_matrix,
+    write_candidate_experiment_design_matrix,
+)
+from quantify.research.candidate_experiment_execution import (
+    PROHIBITED_ACTIONS as CANDIDATE_EXECUTION_PROHIBITED_ACTIONS,
+)
 from quantify.research.candidate_experiment_execution import (
     CandidateExperimentExecutionReport,
-    PROHIBITED_ACTIONS as CANDIDATE_EXECUTION_PROHIBITED_ACTIONS,
     run_candidate_experiment_execution,
     write_candidate_experiment_execution,
 )
@@ -155,13 +153,17 @@ from quantify.research.candidate_experiment_launch import (
     build_candidate_experiment_launch,
     write_candidate_experiment_launch,
 )
-from quantify.research.candidate_experiment_run_packet import (
-    build_candidate_experiment_run_packet,
-    write_candidate_experiment_run_packet,
+from quantify.research.candidate_experiment_queue import (
+    build_candidate_experiment_queue,
+    write_candidate_experiment_queue,
 )
 from quantify.research.candidate_experiment_readiness import (
     build_candidate_experiment_readiness,
     write_candidate_experiment_readiness,
+)
+from quantify.research.candidate_experiment_run_packet import (
+    build_candidate_experiment_run_packet,
+    write_candidate_experiment_run_packet,
 )
 from quantify.research.candidate_hypotheses import (
     build_candidate_hypothesis_catalog,

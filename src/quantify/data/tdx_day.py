@@ -1,12 +1,12 @@
 """Convert TongDaXin .day daily bar files into the offline CSV contract."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
 import json
-from pathlib import Path
 import re
 import struct
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
 from typing import Any, Literal
 
 import pandas as pd

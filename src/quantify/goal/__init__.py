@@ -1,6 +1,12 @@
 """Capital-goal planning and strategy candidate screening."""
 from __future__ import annotations
 
+from quantify.goal.compounding import (
+    CompoundingPathFinding,
+    CompoundingPathReview,
+    build_compounding_path_review,
+    write_compounding_path_review,
+)
 from quantify.goal.planner import (
     CapitalGoal,
     CapitalGoalPlan,
@@ -14,12 +20,6 @@ from quantify.goal.status import (
     GoalEvidenceItem,
     build_capital_goal_status,
     write_capital_goal_status,
-)
-from quantify.goal.compounding import (
-    CompoundingPathFinding,
-    CompoundingPathReview,
-    build_compounding_path_review,
-    write_compounding_path_review,
 )
 
 __all__ = [

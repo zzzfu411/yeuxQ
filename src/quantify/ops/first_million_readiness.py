@@ -1,16 +1,16 @@
 """Single-screen readiness card for the first-million research workflow."""
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import date
-import json
 from pathlib import Path
 from typing import Any, Literal
 
 from quantify.data.cache_metadata import build_promotion_metadata_check, cache_metadata_blockers
+from quantify.data.offline_package import format_source_provenance
 from quantify.data.provider import DataProvider
 from quantify.data.storage import BarStorage
-from quantify.data.offline_package import format_source_provenance
 from quantify.goal.status import _evaluate_cache_gate
 
 ReadinessStatus = Literal["PASS", "WATCH", "BLOCK", "MISSING", "UNKNOWN"]

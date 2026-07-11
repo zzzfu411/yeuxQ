@@ -1,9 +1,9 @@
 """Gate that verifies cached A-share data is real, recent, and broad enough."""
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import date
-import json
 from pathlib import Path
 from typing import Any, Literal
 

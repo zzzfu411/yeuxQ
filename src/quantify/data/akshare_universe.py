@@ -5,15 +5,14 @@ approve source QA, run strategy research, or create broker instructions.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
 from quantify.data.akshare_compat import ak
-
 
 PROHIBITED_ACTIONS = [
     "Do not treat a generated symbol file as source-QA approval.",

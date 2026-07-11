@@ -1,8 +1,8 @@
 """Promotion review for strategy registry candidates."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -101,26 +101,7 @@ class StrategyPromotionReview:
         ]
         for candidate in self.candidates:
             lines.append(
-                "| {name} | `{decision}` | {obs} | {passes} | {cwf_obs} | {cwf_pass} | {cwf_ratio:.2%} | {cwf_positive:.2%} | {cwf_worst_return:.2%} | {cwf_worst_drawdown:.2%} | {regime_obs} | {regime_pass} | {adverse:.1f} | {ret:.2%} | {req:.2%} | {dd:.2%} | {budget:.2%} | {sharpe:.2f} |".format(
-                    name=candidate.name,
-                    decision=candidate.decision,
-                    obs=candidate.real_observations,
-                    passes=candidate.real_pass_count,
-                    cwf_obs=candidate.real_candidate_walk_forward_observations,
-                    cwf_pass=candidate.real_candidate_walk_forward_pass_count,
-                    cwf_ratio=candidate.real_candidate_walk_forward_pass_ratio,
-                    cwf_positive=candidate.real_candidate_walk_forward_positive_return_ratio,
-                    cwf_worst_return=candidate.real_worst_candidate_walk_forward_return,
-                    cwf_worst_drawdown=candidate.real_worst_candidate_walk_forward_drawdown,
-                    regime_obs=candidate.real_candidate_regime_observations,
-                    regime_pass=candidate.real_candidate_regime_pass_count,
-                    adverse=candidate.real_candidate_regime_adverse_windows,
-                    ret=candidate.real_avg_annualized_return,
-                    req=candidate.required_annual_return,
-                    dd=candidate.real_avg_max_drawdown,
-                    budget=candidate.drawdown_budget,
-                    sharpe=candidate.real_avg_sharpe_ratio,
-                )
+                f"| {candidate.name} | `{candidate.decision}` | {candidate.real_observations} | {candidate.real_pass_count} | {candidate.real_candidate_walk_forward_observations} | {candidate.real_candidate_walk_forward_pass_count} | {candidate.real_candidate_walk_forward_pass_ratio:.2%} | {candidate.real_candidate_walk_forward_positive_return_ratio:.2%} | {candidate.real_worst_candidate_walk_forward_return:.2%} | {candidate.real_worst_candidate_walk_forward_drawdown:.2%} | {candidate.real_candidate_regime_observations} | {candidate.real_candidate_regime_pass_count} | {candidate.real_candidate_regime_adverse_windows:.1f} | {candidate.real_avg_annualized_return:.2%} | {candidate.required_annual_return:.2%} | {candidate.real_avg_max_drawdown:.2%} | {candidate.drawdown_budget:.2%} | {candidate.real_avg_sharpe_ratio:.2f} |"
             )
         lines.extend(["", "## Findings"])
         for candidate in self.candidates:

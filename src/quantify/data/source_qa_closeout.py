@@ -7,9 +7,9 @@ instructions.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import csv
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -221,15 +221,7 @@ class SourceQACloseout:
             lines.append("| ---: | --- | --- | --- | --- | --- | --- |")
             for action in self.actions:
                 lines.append(
-                    "| {seq} | `{priority}` | `{status}` | `{category}` | `{item}` | `{target}` | `{command}` |".format(
-                        seq=action.sequence,
-                        priority=action.priority,
-                        status=action.status,
-                        category=action.category,
-                        item=action.item,
-                        target=action.target,
-                        command=_cell(action.command),
-                    )
+                    f"| {action.sequence} | `{action.priority}` | `{action.status}` | `{action.category}` | `{action.item}` | `{action.target}` | `{_cell(action.command)}` |"
                 )
         else:
             lines.append("- None.")

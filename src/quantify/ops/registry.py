@@ -1,9 +1,9 @@
 """Persistent strategy candidate registry for long-horizon comparison."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import json
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -91,7 +91,7 @@ def update_candidate_registry(
     candidate_regime = _read_json(report_root / "candidate_regime_validation_report.json")
     candidate_regime_summaries = _candidate_regime_summaries(candidate_regime)
     run_id = report_root.name
-    recorded_at = datetime.now(timezone.utc).isoformat()
+    recorded_at = datetime.now(UTC).isoformat()
 
     run_record = {
         "run_id": run_id,

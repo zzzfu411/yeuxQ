@@ -6,8 +6,8 @@ not a broker instruction, and not permission to promote capital.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +18,6 @@ from quantify.research.factors import (
     ShortMomentumFactor,
     VeryLowVolatilityFactor,
 )
-
 
 CATALOG_STATUS = "RESEARCH_ONLY"
 DEFAULT_PROHIBITED_ACTIONS = [

@@ -1,10 +1,10 @@
 """Normalize raw broker/vendor daily bars into the offline research bars.csv contract."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import UTC, datetime
 import hashlib
 import json
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 

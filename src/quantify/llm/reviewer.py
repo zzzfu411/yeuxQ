@@ -11,8 +11,8 @@ The deterministic gate is always authoritative. LLM output is advisory.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
@@ -78,7 +78,7 @@ class ResearchSnapshot:
     run_manifest: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_report_dir(cls, report_dir: str | Path) -> "ResearchSnapshot":
+    def from_report_dir(cls, report_dir: str | Path) -> ResearchSnapshot:
         root = Path(report_dir)
         data_audit = _read_json(root / "data_audit.json")
         run_manifest = _read_json(root / "run_manifest.json")

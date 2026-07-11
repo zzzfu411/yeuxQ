@@ -11,14 +11,14 @@ Caching strategy:
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import date, datetime, timedelta
-from typing import Iterator
 
 import pandas as pd
 from loguru import logger
 
-from quantify.data.akshare_compat import ak
 from quantify.core.bar import Bar
+from quantify.data.akshare_compat import ak
 from quantify.data.base import DataFeed
 from quantify.data.storage import BarStorage
 
