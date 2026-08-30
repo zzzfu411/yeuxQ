@@ -12,13 +12,13 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from yeuxq.api.deps import get_v1_service_provider, init_container, shutdown_container
-from yeuxq.api.routes_analyze import router as analyze_router
-from yeuxq.api.routes_backtest import router as backtest_router
-from yeuxq.api.routes_market import router as market_router
-from yeuxq.api.routes_orderflow import router as orderflow_router
-from yeuxq.api.routes_research import router as research_router
-from yeuxq.api.routes_scan import router as scan_router
+from yeuxq.api.advisory_app import create_advisory_app
+from yeuxq.api.deps import (
+    get_advisory_service_provider,
+    get_v1_service_provider,
+    init_container,
+    shutdown_container,
+)
 from yeuxq.api.routes_v1 import create_v1_router
 from yeuxq.security import RuntimeSecrets, validate_serve_security
 from yeuxq.settings import PACKAGE_ROOT, PROJECT_ROOT, Settings, get_settings
@@ -29,6 +29,8 @@ _NO_CACHE = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     "Pragma": "no-cache",
     "Expires": "0",
+    "Content-Security-Policy": "frame-ancestors 'none'",
+    "X-Frame-Options": "DENY",
 }
 
 
@@ -99,12 +101,11 @@ def create_app(
             return await call_next(request)
 
     app.include_router(create_v1_router(get_v1_service_provider()))
-    app.include_router(market_router)
-    app.include_router(analyze_router)
-    app.include_router(backtest_router)
-    app.include_router(scan_router)
-    app.include_router(research_router)
-    app.include_router(orderflow_router)
+    app.mount(
+        "/api/v1/advisory",
+        create_advisory_app(get_advisory_service_provider()),
+        name="advisory-v1",
+    )
 
     integration_dir = PROJECT_ROOT / "integration" if PROJECT_ROOT is not None else None
     if integration_dir is not None and integration_dir.is_dir():

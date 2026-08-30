@@ -181,6 +181,10 @@ button { font-family: inherit; }
 }
 .tool:hover { color: var(--label); background: var(--s2); }
 .tool:active { background: var(--s3); }
+.tool:disabled, .btn:disabled, .check:has(input:disabled) {
+  cursor: not-allowed; opacity: .48;
+}
+.tool:disabled:hover, .btn:disabled:hover { color: var(--tertiary); background: transparent; }
 .check { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--faint); cursor: pointer; user-select: none; }
 .check input { accent-color: var(--acc); }
 .status { font-size: 11px; color: var(--faint); margin-left: auto; font-variant-numeric: tabular-nums; }
@@ -612,4 +616,40 @@ table.scan button:hover { color: var(--label); background: var(--s3); }
     flex-direction: row; align-items: center; padding: 16px 20px;
   }
   .cell.is-focus .cell-b { grid-column: 1; grid-row: 2; }
+}
+
+@media (max-width: 640px) {
+  html, body, .app { width: 100%; max-width: 100%; }
+  html, body { overflow-x: hidden; }
+  .topbar {
+    display: grid; grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "brand" "search" "actions";
+    align-items: center; gap: 8px; width: 100%; padding: 10px 12px;
+  }
+  .brand { grid-area: brand; }
+  .search-row {
+    grid-area: search; width: 100%; min-width: 0; flex-wrap: wrap;
+  }
+  .search-box { width: auto; flex: 1 1 220px; min-width: 0; }
+  .hot { width: 100%; flex-wrap: wrap; }
+  .top-actions {
+    grid-area: actions; width: 100%; min-width: 0; margin-left: 0;
+    flex-wrap: wrap; justify-content: flex-start;
+  }
+  .scope-band {
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    align-items: start; gap: 5px 9px; padding: 7px 12px;
+  }
+  .scope-band span { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; }
+  .scope-band a { justify-self: end; }
+  .tape {
+    height: auto; min-height: 30px; padding: 6px 12px;
+    flex-wrap: wrap; gap: 5px 12px; overflow: hidden; white-space: normal;
+  }
+  .tape-right { width: 100%; margin-left: 0; flex-wrap: wrap; gap: 5px 12px; }
+  .stage { overflow-x: hidden; overflow-y: auto; }
+  .quote-head { padding-inline: 14px; }
+  .tools { padding-inline: 12px; gap: 7px; }
+  .khud { padding-inline: 14px; }
+  .rail { padding-inline: 8px; }
 }

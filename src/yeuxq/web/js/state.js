@@ -23,6 +23,17 @@ export const state = {
   lastAction: {},
   engine: null,       // /api/analyze meta.engine
   flows: [],          // analyze 返回的主力净流入，供看图 context
+  v1: {
+    available: false,
+    integration: null,
+    observations: [],
+    readiness: null,
+    runId: '',
+    freshness: 'UNKNOWN',
+    provenance: {},
+    fetchedAt: null,
+    errors: {},
+  },
 };
 
 const handlers = {};

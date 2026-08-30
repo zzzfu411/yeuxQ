@@ -299,7 +299,7 @@ P3 与相关安全/路径/状态合同定向验收 51 项通过、2 项因 Windo
 验收：OpenAPI/contract snapshot、输入模糊测试、路径穿越测试和无网络启动测试通过；不存在
 order/account/broker endpoint；实时 endpoint 响应固定含 advisory 边界。
 
-### Phase 4 — Clean-room frontend and continuous UI status（进行中）
+### Phase 4 — Clean-room frontend and continuous UI status（已完成）
 
 工作包：
 
@@ -312,9 +312,12 @@ order/account/broker endpoint；实时 endpoint 响应固定含 advisory 边界�
 - 对研报 Markdown、symbol、文件名和 API 错误做输出编码。
 
 验收：状态页与 JSON 一致；窄屏/桌面、空数据、stale、BLOCK、网络失败和长文本截图测试通过；
-页面没有“立即买入/卖出”“胜率保证”“已接实盘”等误导性表述。
+页面没有“立即买入/卖出”“胜率保证”“已接实盘”等误导性表述。Phase 4 最终证据记录在
+`docs/phase4_frontend_acceptance.md`：`tests/yeuxq` 为 266 passed、3 skipped，完整 Python
+回归为 1305 passed、3 skipped；桌面 `1440x1000` 与移动 `390x844` 均无横向溢出，浏览器
+请求只落在 bounded `/api/v1/*` GET 合同，生成、扫描、订单流和 AI 看图保持 fail-closed。
 
-### Phase 5 — Research integration and regression hardening（未开始）
+### Phase 5 — Research integration and regression hardening（进行中）
 
 工作包：
 
@@ -325,8 +328,10 @@ order/account/broker endpoint；实时 endpoint 响应固定含 advisory 边界�
 - 新增端到端用例：provider → observation → API → UI；
 - 新增反向安全用例：observation 无法升级 gate、LLM 无法升级 gate、API 无法下单。
 
-验收：原有 quantify 测试无回归；新增合同/集成测试通过；P0 风险关闭；P1 风险都有 owner、
-期限或显式接受记录；关键结果包含可复查的命令、提交 SHA 和输出摘要。
+当前入口：Phase 4 已切换为 `completed`，状态 UI 显示 `5/7 · 71%`，本阶段负责将已有边界
+固化为 CI、parity、存储恢复、发行包合规和反向安全门禁。验收：原有 quantify 测试无回归；
+新增合同/集成测试通过；P0 风险关闭；P1 风险都有 owner、期限或显式接受记录；关键结果包含
+可复查的命令、提交 SHA 和输出摘要。
 
 ### Phase 6 — Release, migration and deprecation（未开始）
 

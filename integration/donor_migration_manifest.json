@@ -82,10 +82,17 @@
         "id": "api_and_web_safety",
         "scope": [
           "src/yeuxq/api/routes_*.py",
+          "src/yeuxq/api/advisory_app.py",
+          "src/yeuxq/services/advisory_workbench.py",
+          "src/yeuxq/services/report_read_facade.py",
           "src/yeuxq/web/**"
         ],
-        "changes": "Strict identifiers, no arbitrary path disclosure, fail-closed rich-text rendering, no broker/live execution surface, and read-only integration navigation were added after donor migration.",
+        "changes": "Strict identifiers, root-confined report reads, GET-only advisory facades, fail-closed evidence timing, zero-network generation controls, no broker/live execution surface, and read-only integration navigation were added after donor migration.",
         "evidence": [
+          "tests/yeuxq/test_advisory_api_contract.py",
+          "tests/yeuxq/test_frontend_runtime_safety.py",
+          "tests/yeuxq/test_frontend_v1_boundary.py",
+          "tests/yeuxq/test_report_read_facade.py",
           "tests/yeuxq/test_v1_api_contract.py",
           "tests/yeuxq/test_web_assets.py",
           "tests/yeuxq/donor/test_agentic_reports.py",
@@ -254,14 +261,14 @@
       "source": "src/stock_v2/api/app.py",
       "target": "src/yeuxq/api/app.py",
       "source_sha256": "b78867ca4191e888f37166cd6b5b6b2a8dc8b5294f610b7eccaa124353e56a37",
-      "target_sha256": "9925a5896ddd7386908917ae0101dcf832204fe102cbebf00af2184f28d55cd6",
+      "target_sha256": "49dc39a81c29c149f594dda82b7996ded47e84c4a41e1d734f2c70ef34aad3b1",
       "disposition": "migrated_namespace_and_api_security_hardening"
     },
     {
       "source": "src/stock_v2/api/deps.py",
       "target": "src/yeuxq/api/deps.py",
       "source_sha256": "c7e9cea780f28aca6ac2332c6e8fbd542e61a91b50bcb54920ed3e35c791c832",
-      "target_sha256": "c087e761e75d82a2530ae795122761134e9685dd1c7936c7ad4982a93494397b",
+      "target_sha256": "5652ea558edc55511ef118719b59eff012c9ce9fc3ba6c58e17daef8647d217c",
       "disposition": "migrated_namespace_and_api_security_hardening"
     },
     {
@@ -450,7 +457,7 @@
       "source": "src/stock_v2/services/analyze.py",
       "target": "src/yeuxq/services/analyze.py",
       "source_sha256": "d65d9484a8fe3f7624266d02f37698dc3107279f8eaf6ea3b3e4160e75b62bb0",
-      "target_sha256": "d54eee37fa8f65b1132529afd632040205b257124fbe14b12231aa3085c13d83",
+      "target_sha256": "35ed20b882e104447af060780eb4b5d09fdfce4ea7a3b5f347cc45de6dc8a624",
       "disposition": "migrated_namespace_and_correctness_hardening"
     },
     {
@@ -562,22 +569,22 @@
       "source": "web/css/app.css",
       "target": "src/yeuxq/web/css/app.css",
       "source_sha256": "fbfe9edd2c8e0e9d42bbe85b00c5934d07259227667768fecfb323823977aeca",
-      "target_sha256": "3858801173c19d5a449615619149865422efa5cc0f6ae6c0592023ddbfce490e",
+      "target_sha256": "3f3b0c3f02298ab9a7ab16db105fe159c1e85be627637a7d1a1ce1fa142b7a78",
       "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/index.html",
       "target": "src/yeuxq/web/index.html",
       "source_sha256": "a767ad6f08103205e90b5833f9ab11b2262739c51e5b7f655ed82ca9ec39b0af",
-      "target_sha256": "ec26bb4a59a239f254fd340148f02040b0225a4298cccc1c3bd8d83487ac7bf2",
+      "target_sha256": "e33b7c556081cbd00328bf6cb70fc9c36dc83cb154fe7a15c83d81660c38f65f",
       "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/js/api.js",
       "target": "src/yeuxq/web/js/api.js",
       "source_sha256": "1751a408c11d9093bba9fc389c26adc93e594d0b0b26178d29229389f02a1463",
-      "target_sha256": "1751a408c11d9093bba9fc389c26adc93e594d0b0b26178d29229389f02a1463",
-      "disposition": "migrated_web_first_party_verbatim"
+      "target_sha256": "c047ec1c3b86455c3881c8c4d024e619652eeacc77209fbae18b1d8a922f6647",
+      "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/js/cells.js",
@@ -590,50 +597,50 @@
       "source": "web/js/charts.js",
       "target": "src/yeuxq/web/js/charts.js",
       "source_sha256": "911a4a7a8346774dfb7e6bdddd59e9a805526518b05effef07d9af7e81580ca8",
-      "target_sha256": "a7b6d5c2dd42e45b38ed8ce3a1bafbac37349606de88cc62aeef6e3cbdfdc705",
+      "target_sha256": "b83565c03b8556cb911940ee3fe1c073f9c9a16b4cca4fdeaefa36d38a6897ff",
       "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/js/main.js",
       "target": "src/yeuxq/web/js/main.js",
       "source_sha256": "7f4c77559e7eca38e75a5cedd827f7e285cf325c269160ec9982e4d1622b173d",
-      "target_sha256": "7f4c77559e7eca38e75a5cedd827f7e285cf325c269160ec9982e4d1622b173d",
-      "disposition": "migrated_web_first_party_verbatim"
+      "target_sha256": "f27407a51973add7bd2af581ca5816f9829164248729e4140ccd3ebf87e3169f",
+      "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/js/orderflow.js",
       "target": "src/yeuxq/web/js/orderflow.js",
       "source_sha256": "90a972b745afdf0f92545bedeb2adb2dec83e5d9261604476c12b76797035b28",
-      "target_sha256": "90a972b745afdf0f92545bedeb2adb2dec83e5d9261604476c12b76797035b28",
-      "disposition": "migrated_web_first_party_verbatim"
+      "target_sha256": "ccc99e95d2792f1198823c5efbb5f919ddf1e9b3d16d063e0060919baf8094e2",
+      "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/js/panels.js",
       "target": "src/yeuxq/web/js/panels.js",
       "source_sha256": "8abc45aae725a5aced79461146b0bfaeb6150bc680a24892ba9950da33dc6eb3",
-      "target_sha256": "8abc45aae725a5aced79461146b0bfaeb6150bc680a24892ba9950da33dc6eb3",
-      "disposition": "migrated_web_first_party_verbatim"
+      "target_sha256": "26ed0b6392d26544ba771e6731280e752d9cabeaa93c1d30f4f314d5f82b33fe",
+      "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/js/rail.js",
       "target": "src/yeuxq/web/js/rail.js",
       "source_sha256": "7090180936014098815d14baaf2176127d0933aa603a19894980a6eb3a851f1d",
-      "target_sha256": "7090180936014098815d14baaf2176127d0933aa603a19894980a6eb3a851f1d",
-      "disposition": "migrated_web_first_party_verbatim"
+      "target_sha256": "11b94d8819c7770f4a3ee85c019421085d2eaa0e2b623b378ae30520f0d02d63",
+      "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/js/research.js",
       "target": "src/yeuxq/web/js/research.js",
       "source_sha256": "b6619081d84fd7aa382dfbb78bac2200da865642b96e81557319c68040aa57c5",
-      "target_sha256": "4b18cafc72ceb69a6564d4fddd2b3006c57a044d5c98e52e6de684c7f3bb372e",
+      "target_sha256": "f49f4a2e65f3ae7140e0ef765dc4eef7214bba3d01083e7a67293f5a579ea760",
       "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/js/state.js",
       "target": "src/yeuxq/web/js/state.js",
       "source_sha256": "09fa46c0d9e69031ab35f8253ba041bc10cd5e7072a6961f31d6ee0937fe8d57",
-      "target_sha256": "09fa46c0d9e69031ab35f8253ba041bc10cd5e7072a6961f31d6ee0937fe8d57",
-      "disposition": "migrated_web_first_party_verbatim"
+      "target_sha256": "fdb75e6e59bfd086c8294dde1e388a65157baed8daf2f8722249191881ceb403",
+      "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/js/trace.js",
@@ -653,7 +660,7 @@
       "source": "web/js/vision.js",
       "target": "src/yeuxq/web/js/vision.js",
       "source_sha256": "a6f4c8e3773c6fc1a409e488f8a19b5a5245e567ed9ad434dd05855760c06ecc",
-      "target_sha256": "7d0428bca50752527f9da0548fb69c97ec79b2ef27059073633a1ed7d8afdcf0",
+      "target_sha256": "f01aa0e135492026f34b2d2bf37420c67a87006c65938a0d030d1566ff527bb9",
       "disposition": "migrated_web_first_party_hardened"
     },
     {

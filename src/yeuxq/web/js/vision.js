@@ -1,22 +1,21 @@
-/* AI 看图：截取当前 K线+资金流图，发给 Grok 做大资金研判 */
+/* AI 看图：保留本地预览与历史只读；远程生成在统一前端中显式禁用。 */
 import { state } from './state.js';
 import { $, setTxt, esc, md2html, toast } from './util.js';
-import { getJSON, postJSON } from './api.js';
+import { getAdvisoryReport, listAdvisoryReports } from './api.js';
 import { chart, flowChart } from './charts.js';
 import { openCell, setDot } from './cells.js';
-import { TaskProgress, kindLabel, remainLabel } from './research.js';
+import { kindLabel, remainLabel } from './research.js';
 import {
   renderToolTrace, bindToolTrace, agenticMetaBits, agenticBudgetHtml,
-  mergeAbortSignals, AGENTIC_TIMEOUT_MS,
 } from './trace.js';
 
 export { renderToolTrace };
 
 const SNAP_BG = '#0a0b0e';
 const SNAP_GAP = '#262a33';
-const DEFAULT_PREV = '点工具栏「AI 看图」研判当前图表';
-const DEFAULT_META = 'Grok 会自行检索资讯并调取本地资金流/财务数据交叉核对后再出稿。截图即你当前看到的 K线+资金流图。默认保存 24 小时。';
-const VISION_TIMEOUT_MS = AGENTIC_TIMEOUT_MS; // 后端硬上限约 300 秒，这里留 60 秒余量覆盖图片上传与响应传输
+const DEFAULT_PREV = '历史看图报告只读；生成暂不可用';
+const DEFAULT_META =
+  'UNAVAILABLE：统一工作台只读展示已保存的看图报告，不会截取或上传当前图表。';
 
 function hasSeriesData(inst) {
   try {
@@ -95,32 +94,6 @@ function hhmm(d = new Date()) {
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
 
-/* 调查阶段拉长：截图几秒 → 自主调查（最长）→ 成稿 → 落盘 */
-class VisionProgress extends TaskProgress {
-  start() {
-    const sig = super.start();
-    const t = this.host.querySelector('.task');
-    if (t) t.classList.add('vision-task');
-    return sig;
-  }
-  tick() {
-    const sec = (Date.now() - this.t0) / 1000;
-    let idx = 0;
-    if (sec >= 6) idx = 1;
-    if (sec >= 100) idx = 2;
-    if (sec >= 160) idx = 3;
-    const stageEl = this.host.querySelector('.task-stage');
-    const timeEl = this.host.querySelector('.task-time');
-    if (stageEl) {
-      stageEl.textContent = idx === 1
-        ? (this.stages[1] + '… 模型正在自行检索资讯并核对本地数据，通常 1–3 分钟')
-        : (this.stages[idx] + '…');
-    }
-    if (timeEl) timeEl.textContent = sec.toFixed(0) + 's';
-    this.host.querySelectorAll('.task-steps i').forEach((el, i) => el.classList.toggle('done', i <= idx));
-  }
-}
-
 export function buildVisionMetaHtml(r, saved, ttl) {
   const newsTag = r.news_ok === true ? '资讯✓' : r.news_ok === false ? '资讯✗' : '无资讯';
   const visTag = r.vision ? '带图' : '纯数据(图未送达)';
@@ -185,7 +158,8 @@ function paintVision(md, meta, items, current, extra) {
   if ($('visionMeta')) $('visionMeta').textContent = meta || '';
   if ($('visionBody')) {
     if (!md) {
-      $('visionBody').innerHTML = '<div class="disc">还没有看图研判。点工具栏「AI 看图」截取当前图表。</div>';
+      $('visionBody').innerHTML =
+        '<div class="disc">没有可读的历史看图报告；统一工作台不提供生成或上传。</div>';
     } else {
       $('visionBody').innerHTML = renderToolTrace(extra) + `<div class="md">${md2html(md)}</div>`;
       bindToolTrace($('visionBody'));
@@ -196,22 +170,42 @@ function paintVision(md, meta, items, current, extra) {
 
 async function openSavedVision(reportId) {
   if (!reportId) return;
-  const one = await getJSON(`/api/research/reports/${encodeURIComponent(reportId)}`);
-  if (!one.ok) { toast(one.error || '读取失败'); return; }
-  const list = await getJSON(`/api/research/reports?symbol=${encodeURIComponent(state.symbol)}`);
-  const items = (list.items || []).filter((it) => it.kind === 'vision');
-  const ttl = list.ttl_hours || one.ttl_hours || 24;
-  const chip = extractVisionChip(one.markdown);
-  paintVision(one.markdown, `已保存 · ${kindLabel(one.kind)} · ${one.stamp} · ${remainLabel(one.ttl_remain_sec, ttl)}`, items, one.report_id, one);
-  setTxt('visionPrev', `看图 ${one.stamp || ''}`.trim());
-  setVisionChip(chip.label, chip.cls);
-  openCell('vision');
+  const symbol = state.symbol;
+  try {
+    const one = await getAdvisoryReport(reportId);
+    if (symbol !== state.symbol) return;
+    if (!one.ok) { toast(one.error || '读取失败'); return; }
+    const list = await listAdvisoryReports(symbol, { limit: 12 });
+    if (symbol !== state.symbol) return;
+    const items = (list.items || []).filter((it) => it.kind === 'vision');
+    const ttl = list.ttl_hours || one.ttl_hours || 24;
+    const chip = extractVisionChip(one.markdown);
+    paintVision(
+      one.markdown,
+      `已保存 · ${kindLabel(one.kind)} · ${one.stamp} · ${remainLabel(one.ttl_remain_sec, ttl)}`,
+      items,
+      one.report_id,
+      one,
+    );
+    setTxt('visionPrev', `看图 ${one.stamp || ''}`.trim());
+    setVisionChip(chip.label, chip.cls);
+    openCell('vision');
+  } catch (error) {
+    if (symbol !== state.symbol) return;
+    toast(error?.message || '读取失败');
+  }
 }
 
 export async function loadSavedVision(symbol) {
   if (!symbol || !$('visionBody')) return;
+  $('visionMeta').textContent = `${symbol} · 历史看图报告读取中…`;
+  $('visionBody').textContent = '…';
+  paintVisionHist([], '');
+  setTxt('visionPrev', '历史看图报告读取中…');
+  setVisionChip('—', '');
+  setDot('vision', '');
   try {
-    const r = await getJSON(`/api/research/reports?symbol=${encodeURIComponent(symbol)}`);
+    const r = await listAdvisoryReports(symbol, { limit: 12 });
     if (symbol !== state.symbol) return;
     const items = (r.items || []).filter((it) => it.kind === 'vision');
     const ttl = r.ttl_hours || 24;
@@ -223,7 +217,7 @@ export async function loadSavedVision(symbol) {
       return;
     }
     const last = items[0];
-    const one = await getJSON(`/api/research/reports/${encodeURIComponent(last.report_id)}`);
+    const one = await getAdvisoryReport(last.report_id);
     if (symbol !== state.symbol) return;
     if (!one.ok) { paintVision('', one.error || '读取失败', items, ''); return; }
     const chip = extractVisionChip(one.markdown);
@@ -232,64 +226,21 @@ export async function loadSavedVision(symbol) {
     setVisionChip(chip.label, chip.cls);
     setDot('vision', 'acc');
   } catch (e) {
+    if (symbol !== state.symbol) return;
     if (e.name !== 'AbortError') paintVision('', e.message, [], '');
   }
 }
 
 export async function runVision() {
-  if (!state.symbol) { toast('先研判一只股票'); return; }
   openCell('vision');
-  setDot('vision', 'acc');
-  const task = new VisionProgress($('visionBody'), ['截取图表', 'Grok 自主调查（检索 + 数据核对）', '综合研判成稿', '落盘保存']);
-  const taskSignal = task.start();
-  const timeoutCtrl = new AbortController();
-  const timeoutId = setTimeout(() => timeoutCtrl.abort(), VISION_TIMEOUT_MS);
-  const signal = mergeAbortSignals(taskSignal, timeoutCtrl.signal);
-  setTxt('visionPrev', '看图中…');
-  try {
-    let image = '';
-    try { image = await captureChartImage(); } catch (e) { image = ''; }
-    const r = await postJSON('/api/research/vision', {
-      symbol: state.symbol,
-      name: state.quoteName || '',
-      view: state.view,
-      range: state.range,
-      ind: state.ind,
-      image,
-      context: buildContext(),
-      deep: $('deepMode').checked,
-      with_news: true,
-    }, { signal });
-    clearTimeout(timeoutId);
-    task.finish();
-    if (r.ok === false) {
-      const err = r.error || '失败';
-      $('visionBody').textContent = err;
-      setTxt('visionPrev', err);
-      setVisionChip('失败', '');
-      return;
-    }
-    showVisionSuccess(r);
-    const saved = r.report_id || '';
-    try {
-      const list = await getJSON(`/api/research/reports?symbol=${encodeURIComponent(state.symbol)}`);
-      if (state.symbol) {
-        const items = (list.items || []).filter((it) => it.kind === 'vision');
-        paintVisionHist(items, saved);
-      }
-    } catch (e) { /* 后端未落盘时保留当前渲染 */ }
-    openCell('vision');
-  } catch (e) {
-    clearTimeout(timeoutId);
-    if (e.name === 'AbortError') {
-      if (task.cancelled) return;
-      task.finish();
-      $('visionBody').textContent = '调查超时（已等待 6 分钟）。可点取消后重试，或稍后再试。';
-      setTxt('visionPrev', '超时');
-      return;
-    }
-    task.finish();
-    $('visionBody').textContent = e.message;
-    setTxt('visionPrev', e.message);
+  setDot('vision', '');
+  if ($('visionMeta')) {
+    $('visionMeta').textContent = 'UNAVAILABLE · RESEARCH ONLY · 不会截取或上传图表';
   }
+  if ($('visionBody')) {
+    $('visionBody').textContent =
+      'AI 看图生成暂不可用；本操作只更新界面，不会发起网络请求。';
+  }
+  setTxt('visionPrev', 'AI 看图生成暂不可用');
+  setVisionChip('BLOCK', '');
 }

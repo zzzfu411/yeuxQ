@@ -14,11 +14,13 @@ from yeuxq.providers.composite import CompositeMarketData
 from yeuxq.providers.orderflow import OrderFlowProvider
 from yeuxq.scan.worker import ScanWorker
 from yeuxq.services.analyze import AnalyzeService
+from yeuxq.services.advisory_workbench import AdvisoryWorkbenchService
 from yeuxq.services.backtest import BacktestService
 from yeuxq.security import RuntimeSecrets
 from yeuxq.services.integration_status import IntegrationStatusService
 from yeuxq.services.observation import ObservationService
 from yeuxq.services.research_facade import ResearchReadinessFacade
+from yeuxq.services.report_read_facade import ReportReadFacade
 from yeuxq.settings import PROJECT_ROOT, Settings, get_settings
 from yeuxq.storage.cache import MemoryCache
 from yeuxq.storage.kline_store import KlineStore
@@ -70,6 +72,7 @@ class AppContainer:
     scan: ScanWorker
     research: ResearchService
     report_store: ReportStore
+    advisory: AdvisoryWorkbenchService
     v1: V1Services
 
 
@@ -112,6 +115,11 @@ def init_container(
         replace_same_kind=settings.research.replace_same_kind,
         max_bytes=settings.research.max_report_bytes,
     )
+    report_read_facade = ReportReadFacade(
+        settings.resolve_data_path(settings.research.report_dir),
+        ttl_hours=settings.research.ttl_hours,
+        max_bytes=settings.research.max_report_bytes,
+    )
     research = ResearchService(
         analyze,
         public_config=settings.research,
@@ -130,6 +138,11 @@ def init_container(
         observation_service=observation_service,
         research_readiness=ResearchReadinessFacade(_canonical_results_root(settings)),
     )
+    advisory = AdvisoryWorkbenchService(
+        data=data,
+        analyze=analyze,
+        reports=report_read_facade,
+    )
     _container = AppContainer(
         settings=settings,
         secrets=runtime_secrets,
@@ -142,6 +155,7 @@ def init_container(
         scan=scan,
         research=research,
         report_store=report_store,
+        advisory=advisory,
         v1=v1,
     )
     return _container
@@ -181,6 +195,39 @@ class ContainerV1ServiceProvider:
 
 def get_v1_service_provider() -> ContainerV1ServiceProvider:
     return ContainerV1ServiceProvider()
+
+
+class ContainerAdvisoryServiceProvider:
+    """Resolve only the read-only advisory service capabilities lazily."""
+
+    @staticmethod
+    def _services() -> AdvisoryWorkbenchService:
+        return get_container().advisory
+
+    def search_instruments(self, keyword: str, limit: int):
+        return self._services().search_instruments(keyword, limit)
+
+    def watchlist_quotes(self, symbols: list[str]):
+        return self._services().watchlist_quotes(symbols)
+
+    def market_overview(self):
+        return self._services().market_overview()
+
+    def symbol_analysis(self, symbol: str, period: str):
+        return self._services().symbol_analysis(symbol, period)
+
+    def symbol_minute(self, symbol: str):
+        return self._services().symbol_minute(symbol)
+
+    def list_reports(self, subject: str | None, limit: int):
+        return self._services().list_reports(subject, limit)
+
+    def get_report(self, report_id: str):
+        return self._services().get_report(report_id)
+
+
+def get_advisory_service_provider() -> ContainerAdvisoryServiceProvider:
+    return ContainerAdvisoryServiceProvider()
 
 
 def shutdown_container() -> None:

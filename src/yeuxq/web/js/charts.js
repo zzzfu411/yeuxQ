@@ -106,6 +106,14 @@ function xCat(data, show, gridIdx) {
   };
 }
 
+function researchSignalLabel(value) {
+  return String(value || '')
+    .replaceAll('买点', '偏多结构')
+    .replaceAll('卖点', '偏空结构')
+    .replaceAll('买入', '偏多')
+    .replaceAll('卖出', '偏空');
+}
+
 export function paintHud(i) {
   const box = $('kHud');
   if (!box) return;
@@ -159,9 +167,9 @@ export function renderKline() {
   const vols = ks.map((k) => ({ value: k.volume, itemStyle: { color: k.close >= k.open ? C.up + '99' : C.down + '99' } }));
   const plan = state.signal?.trade_plan || {};
   const markPoints = [], markLines = [];
-  if (plan.stop_loss) markLines.push({ yAxis: plan.stop_loss, lineStyle: { color: C.down, type: 'dashed', width: 1 }, label: { formatter: '止损 ' + fmtPx(plan.stop_loss), color: C.down, position: 'insideEndTop', fontSize: 10 } });
-  if (plan.target_price) markLines.push({ yAxis: plan.target_price, lineStyle: { color: C.up, type: 'dashed', width: 1 }, label: { formatter: '目标 ' + fmtPx(plan.target_price), color: C.up, position: 'insideEndTop', fontSize: 10 } });
-  if (plan.entry_price) markLines.push({ yAxis: plan.entry_price, lineStyle: { color: C.ma5, type: 'dotted', width: 1 }, label: { formatter: '入场 ' + fmtPx(plan.entry_price), color: C.ma5, position: 'insideEndTop', fontSize: 10 } });
+  if (plan.stop_loss) markLines.push({ yAxis: plan.stop_loss, lineStyle: { color: C.down, type: 'dashed', width: 1 }, label: { formatter: '风险阈值 ' + fmtPx(plan.stop_loss), color: C.down, position: 'insideEndTop', fontSize: 10 } });
+  if (plan.target_price) markLines.push({ yAxis: plan.target_price, lineStyle: { color: C.up, type: 'dashed', width: 1 }, label: { formatter: '情景目标 ' + fmtPx(plan.target_price), color: C.up, position: 'insideEndTop', fontSize: 10 } });
+  if (plan.entry_price) markLines.push({ yAxis: plan.entry_price, lineStyle: { color: C.ma5, type: 'dotted', width: 1 }, label: { formatter: '参考位 ' + fmtPx(plan.entry_price), color: C.ma5, position: 'insideEndTop', fontSize: 10 } });
   const last = ks[ks.length - 1];
   if (last) markLines.push({ yAxis: last.close, lineStyle: { color: last.close >= last.open ? C.up : C.down, type: 'dashed', width: 1, opacity: 0.55 }, label: { formatter: fmtPx(last.close), color: last.close >= last.open ? C.up : C.down, position: 'end', fontSize: 10 } });
   const ch = state.chan || {};
@@ -169,11 +177,12 @@ export function renderKline() {
     const k = ks.find((x) => x.date === s.date);
     if (!k) return;
     const buy = (s.type || '').startsWith('buy');
+    const label = researchSignalLabel(s.type_name);
     markPoints.push({
-      name: s.type_name, coord: [s.date, buy ? k.low : k.high],
+      name: label, coord: [s.date, buy ? k.low : k.high],
       symbol: 'triangle', symbolRotate: buy ? 0 : 180, symbolSize: 10,
       itemStyle: { color: buy ? C.up : C.down },
-      label: { show: true, formatter: s.type_name, fontSize: 9, position: buy ? 'bottom' : 'top', color: buy ? C.up : C.down, distance: 4 },
+      label: { show: true, formatter: label, fontSize: 9, position: buy ? 'bottom' : 'top', color: buy ? C.up : C.down, distance: 4 },
     });
   });
   const markArea = (ch.zhongshus || []).slice(-4).map((z) => [

@@ -88,6 +88,9 @@ def test_page_is_offline_only_and_exposes_read_only_integration_boundary() -> No
     )
     assert not re.search(external_reference, first_party_text, re.IGNORECASE)
     assert "connect-src 'self'" in index
+    app = (ROOT / "src" / "yeuxq" / "api" / "app.py").read_text(encoding="utf-8")
+    assert '"Content-Security-Policy": "frame-ancestors \'none\'"' in app
+    assert '"X-Frame-Options": "DENY"' in app
     assert 'href="/integration/"' in index
     assert "RESEARCH ONLY" in index
     assert "NO BROKER" in index
@@ -103,6 +106,39 @@ def test_frontend_does_not_handle_credentials_or_call_brokerage_write_routes() -
     assert not re.search(write_routes, source, re.IGNORECASE)
     assert "WebSocket(" not in source
     assert "EventSource(" not in source
+
+
+def test_workbench_uses_only_the_bounded_v1_facade_for_integration_evidence() -> None:
+    api = (WEB / "js" / "api.js").read_text(encoding="utf-8")
+    main = (WEB / "js" / "main.js").read_text(encoding="utf-8")
+    state = (WEB / "js" / "state.js").read_text(encoding="utf-8")
+    index = (WEB / "index.html").read_text(encoding="utf-8")
+    combined = "\n".join((api, main, state, index))
+
+    assert "const V1 = '/api/v1';" in api
+    for bounded_path in (
+        "/integration/status",
+        "/observations?limit=",
+        "/observations/capture",
+        "/research/runs?limit=",
+        "/research/readiness/",
+    ):
+        assert bounded_path in api
+    assert "getV1IntegrationStatus" in main
+    assert "listV1Observations" in main
+    assert "getV1CanonicalReadiness" in main
+    assert "captureLocalResearchObservation" in main
+    assert not re.search(r"fetch\([^)]*(?:integration_status\.json|micro_live_readiness)", combined)
+
+    assert 'id="v1BoundaryStatus"' in index
+    assert 'id="evidenceCard"' in index
+    assert 'id="btnCaptureObs"' in index
+    assert "本地 research observation" in combined
+    for contract_term in ("UNAVAILABLE", "freshness", "provenance"):
+        assert contract_term in combined
+
+    prohibited = r"/api/(?:broker|orders?|positions?|accounts?|execution|live|trade)(?:[/?'\"]|$)"
+    assert not re.search(prohibited, combined, re.IGNORECASE)
 
 
 def test_markdown_renderer_fails_closed_to_escaped_text() -> None:

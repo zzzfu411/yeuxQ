@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta name="referrer" content="no-referrer" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>yeuxQ · Quant Research Workbench</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23121418'/%3E%3Cpath d='M3 10.5 6 7l2.5 2.5L13 5' stroke='%2362d0c0' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="static/css/app.css" />
@@ -38,8 +38,9 @@
     </div>
     <div class="top-actions">
       <a class="status-link" href="/integration/" aria-label="查看只读集成状态">集成状态</a>
-      <button class="btn" id="btnScan">扫描</button>
-      <button class="btn accent" id="btnBrief">晨报</button>
+      <button class="btn" id="btnEvidence" title="查看 bounded facade 的来源与新鲜度">证据</button>
+      <button class="btn" id="btnScan" disabled aria-disabled="true" title="UNAVAILABLE：扫描尚未进入只读 advisory 合同">扫描</button>
+      <button class="btn accent" id="btnBrief" disabled aria-disabled="true" title="UNAVAILABLE：晨报生成已关闭，仅可读取历史报告">晨报</button>
       <div class="seg" id="modeSeg">
         <button class="on" id="mt-pro">专家</button>
         <button id="mt-simple">小白</button>
@@ -53,6 +54,7 @@
   <div class="scope-band" role="status">
     <strong>RESEARCH ONLY</strong>
     <span>NO BROKER · 只读观察与回放，不连接实盘账户，不提供交易执行</span>
+    <span id="v1BoundaryStatus">BOUNDED FACADE · UNAVAILABLE · freshness UNKNOWN</span>
     <a href="/integration/">查看集成状态</a>
   </div>
 
@@ -102,14 +104,15 @@
           <button data-ind="wr">WR</button>
         </div>
         <span class="tools-gap"></span>
-        <button class="tool" id="btnBacktest">回测</button>
-        <button class="tool" id="btnCompare">对照</button>
-        <button class="tool" id="btnOrderFlow">大单</button>
-        <button class="tool" id="btnNews">资讯</button>
-        <button class="tool" id="btnReport">速报</button>
-        <button class="tool" id="btnEarnings">财报</button>
-        <button class="tool" id="btnVision" title="截取当前图表发给 Grok 研判大资金">AI 看图</button>
-        <label class="check"><input type="checkbox" id="deepMode" /> 深检索</label>
+        <button class="tool" id="btnBacktest" disabled aria-disabled="true" title="UNAVAILABLE：donor 回测未接入 canonical gate">回测</button>
+        <button class="tool" id="btnCompare" disabled aria-disabled="true" title="UNAVAILABLE：donor 对照未接入 canonical gate">对照</button>
+        <button class="tool" id="btnOrderFlow" disabled aria-disabled="true" title="UNAVAILABLE：订单流未进入 advisory 合同">大单</button>
+        <button class="tool" id="btnNews" disabled aria-disabled="true" title="UNAVAILABLE：生成已关闭，仅可读取历史报告">资讯</button>
+        <button class="tool" id="btnReport" disabled aria-disabled="true" title="UNAVAILABLE：生成已关闭，仅可读取历史报告">速报</button>
+        <button class="tool" id="btnEarnings" disabled aria-disabled="true" title="UNAVAILABLE：生成已关闭，仅可读取历史报告">财报</button>
+        <button class="tool" id="btnVision" disabled aria-disabled="true" title="UNAVAILABLE：看图生成已关闭，仅可读取历史报告">AI 看图</button>
+        <button class="tool" id="btnCaptureObs" title="仅保存本地 research observation，不触发交易">保存本地观察</button>
+        <label class="check"><input type="checkbox" id="deepMode" disabled aria-disabled="true" /> 深检索</label>
         <span id="status" class="status"></span>
       </div>
       <div id="kHud" class="khud"></div>
@@ -120,7 +123,7 @@
     <aside class="rail" id="rail">
       <section class="hero" id="sumCard">
         <div class="hero-top">
-          <span class="hero-kicker">今日判断</span>
+          <span class="hero-kicker">研究判断</span>
           <span class="hero-engine" id="engineTag" title="信号引擎状态"></span>
         </div>
         <div class="hero-main">
@@ -146,7 +149,7 @@
         <article class="cell" data-key="plan" id="planCard">
           <button type="button" class="cell-h" aria-expanded="false">
             <span class="cell-dot" data-dot="plan"></span>
-            <span class="cell-copy"><span class="cell-name">操作计划</span><span class="cell-prev" id="planPrev">入手 / 止损 / 目标</span></span>
+            <span class="cell-copy"><span class="cell-name">研究情景</span><span class="cell-prev" id="planPrev">参考位 / 风险阈值 / 情景目标</span></span>
             <span class="cell-trail"><span class="cell-chip" id="planChip">—</span><span class="chev"></span></span>
           </button>
           <div class="cell-b"><div class="inner" id="planBody">—</div></div>
@@ -182,7 +185,7 @@
         <article class="cell" data-key="sig" id="sigCard">
           <button type="button" class="cell-h" aria-expanded="false">
             <span class="cell-dot" data-dot="sig"></span>
-            <span class="cell-copy"><span class="cell-name">买卖信号</span><span class="cell-prev" id="sigPrev">展开查看明细</span></span>
+            <span class="cell-copy"><span class="cell-name">多空信号</span><span class="cell-prev" id="sigPrev">展开查看明细</span></span>
             <span class="cell-trail"><span class="cell-chip" id="sigChip">—</span><span class="chev"></span></span>
           </button>
           <div class="cell-b"><div class="inner" id="sigBody">—</div></div>
@@ -223,22 +226,36 @@
 
       <div class="g-label">资金与研究</div>
       <div class="group">
+        <article class="cell" data-key="evidence" id="evidenceCard">
+          <button type="button" class="cell-h" aria-expanded="false">
+            <span class="cell-dot" data-dot="evidence"></span>
+            <span class="cell-copy"><span class="cell-name">集成与 Canonical 证据</span><span class="cell-prev" id="evidencePrev">UNAVAILABLE · freshness UNKNOWN</span></span>
+            <span class="cell-trail"><span class="cell-chip warn" id="evidenceChip">BLOCK</span><span class="chev"></span></span>
+          </button>
+          <div class="cell-b"><div class="inner">
+            <div class="disc"><b>Integration Status</b><div id="integrationEvidence">UNAVAILABLE · provenance 未加载</div></div>
+            <div class="disc"><b>Canonical Readiness</b><div id="readinessEvidence">UNAVAILABLE · provenance 未加载</div></div>
+            <div class="disc"><b>Local Research Observations</b><div id="observationEvidence">UNAVAILABLE · freshness UNKNOWN</div></div>
+            <div class="disc">“保存本地观察”仅写入本机研究日志；不产生委托，不连接账户，不改变 canonical gate。</div>
+            <button class="btn" id="btnEvidenceRefresh" type="button">刷新 bounded facade</button>
+          </div></div>
+        </article>
         <article class="cell pro" data-key="of" id="ofCard">
           <button type="button" class="cell-h" aria-expanded="false">
             <span class="cell-dot" data-dot="of"></span>
-            <span class="cell-copy"><span class="cell-name">大单 / 大宗</span><span class="cell-prev" id="ofPrev">点工具栏「大单」加载</span></span>
+            <span class="cell-copy"><span class="cell-name">大单 / 大宗</span><span class="cell-prev" id="ofPrev">UNAVAILABLE · research-only</span></span>
             <span class="cell-trail"><span class="cell-chip" id="ofChip">—</span><span class="chev"></span></span>
           </button>
-          <div class="cell-b"><div class="inner" id="ofBody">公开行情无真暗盘。</div></div>
+          <div class="cell-b"><div class="inner" id="ofBody">UNAVAILABLE · 订单流未进入只读 advisory 合同。</div></div>
         </article>
         <article class="cell" data-key="vision" id="visionCard">
           <button type="button" class="cell-h" aria-expanded="false">
             <span class="cell-dot" data-dot="vision"></span>
-            <span class="cell-copy"><span class="cell-name">看图 · 大资金</span><span class="cell-prev" id="visionPrev">点工具栏「AI 看图」研判当前图表</span></span>
+            <span class="cell-copy"><span class="cell-name">历史看图报告</span><span class="cell-prev" id="visionPrev">只读历史 · 生成 UNAVAILABLE</span></span>
             <span class="cell-trail"><span class="cell-chip" id="visionChip">—</span><span class="chev"></span></span>
           </button>
           <div class="cell-b"><div class="inner">
-            <div id="visionMeta" class="disc">截图即你当前看到的 K线+资金流图，含时间线与指标。默认保存 24 小时。</div>
+            <div id="visionMeta" class="disc">只读历史报告；看图生成 UNAVAILABLE，不会发送截图或请求。</div>
             <div class="ai-hist" id="visionHist"></div>
             <div class="md" id="visionBody"></div>
           </div></div>
@@ -246,19 +263,19 @@
         <article class="cell" data-key="bt" id="btCard">
           <button type="button" class="cell-h" aria-expanded="false">
             <span class="cell-dot" data-dot="bt"></span>
-            <span class="cell-copy"><span class="cell-name">回测对照</span><span class="cell-prev" id="btPrev">点工具栏「回测」或「对照」</span></span>
+            <span class="cell-copy"><span class="cell-name">Donor 回测对照</span><span class="cell-prev" id="btPrev">UNAVAILABLE · 不影响 canonical gate</span></span>
             <span class="cell-trail"><span class="cell-chip" id="btChip">—</span><span class="chev"></span></span>
           </button>
-          <div class="cell-b"><div class="inner" id="btBody">尚未运行。</div></div>
+          <div class="cell-b"><div class="inner" id="btBody">UNAVAILABLE · donor 回测未接入 canonical gate。</div></div>
         </article>
         <article class="cell" data-key="ai" id="aiCard">
           <button type="button" class="cell-h" aria-expanded="false">
             <span class="cell-dot" data-dot="ai"></span>
-            <span class="cell-copy"><span class="cell-name">研报 · grok-4.6</span><span class="cell-prev" id="aiPrev">资讯 / 速报 / 财报</span></span>
-            <span class="cell-trail"><span class="cell-chip" id="aiChip">YeuX</span><span class="chev"></span></span>
+            <span class="cell-copy"><span class="cell-name">历史研报</span><span class="cell-prev" id="aiPrev">只读历史 · 生成 UNAVAILABLE</span></span>
+            <span class="cell-trail"><span class="cell-chip" id="aiChip">—</span><span class="chev"></span></span>
           </button>
           <div class="cell-b"><div class="inner">
-            <div id="aiMeta" class="disc">默认保存 24 小时；再次生成同类型会覆盖旧稿。</div>
+            <div id="aiMeta" class="disc">只读历史报告；所有生成操作均为 UNAVAILABLE。</div>
             <div class="ai-hist" id="aiHist"></div>
             <div class="md" id="aiBody"></div>
           </div></div>
@@ -266,11 +283,11 @@
         <article class="cell" data-key="brief" id="briefCard">
           <button type="button" class="cell-h" aria-expanded="false">
             <span class="cell-dot" data-dot="brief"></span>
-            <span class="cell-copy"><span class="cell-name">自选晨报</span><span class="cell-prev" id="briefPrev">点顶栏「晨报」生成自选一览</span></span>
+            <span class="cell-copy"><span class="cell-name">历史自选晨报</span><span class="cell-prev" id="briefPrev">只读历史 · 生成 UNAVAILABLE</span></span>
             <span class="cell-trail"><span class="cell-chip" id="briefChip">—</span><span class="chev"></span></span>
           </button>
           <div class="cell-b"><div class="inner">
-            <div id="briefMeta" class="disc">先☆自选，再生成。默认保存 24 小时。</div>
+            <div id="briefMeta" class="disc">只读历史晨报；生成 UNAVAILABLE。</div>
             <div class="md" id="briefBody"></div>
           </div></div>
         </article>
@@ -293,11 +310,11 @@
 <div class="overlay" id="scanOv">
   <div class="modal">
     <header>
-      <span>扫描买入 <em>股票池 / 自选，非全 A</em></span>
+      <span>扫描能力 <em>RESEARCH ONLY</em></span>
       <button class="btn icon" id="scanClose">✕</button>
     </header>
     <div class="body">
-      <div id="scanStage" class="disc">准备</div>
+      <div id="scanStage" class="disc">UNAVAILABLE · 扫描尚未进入只读 advisory 合同</div>
       <div class="pbar"><i id="scanBar"></i></div>
       <div id="scanStat" class="disc"></div>
       <table class="scan"><thead><tr><th>#</th><th>代码</th><th>名称</th><th>动作</th><th>分</th><th>涨跌</th><th></th></tr></thead><tbody id="scanTb"></tbody></table>

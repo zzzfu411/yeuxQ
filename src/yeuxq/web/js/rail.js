@@ -5,6 +5,20 @@ import { setDot } from './cells.js';
 
 const RING_LEN = 226.2; // 2πr, r=36
 
+function researchLabel(value) {
+  return String(value || '')
+    .replaceAll('强烈买入', '强偏多')
+    .replaceAll('强烈卖出', '强偏空')
+    .replaceAll('买入', '偏多')
+    .replaceAll('卖出', '偏空')
+    .replaceAll('买点', '偏多结构')
+    .replaceAll('卖点', '偏空结构')
+    .replaceAll('止损', '风险阈值')
+    .replaceAll('入场', '参考位')
+    .replaceAll('目标', '情景目标')
+    .replaceAll('仓位', '风险暴露');
+}
+
 export function renderQuote(q) {
   if (!q) {
     $('quoteBar').innerHTML = `<div class="qh-left"><div class="qh-name">—</div><div class="qh-code">输入代码研判</div></div><div class="qh-px"><div class="px">—</div><div class="chg">—</div></div>`;
@@ -37,6 +51,43 @@ export function renderEngineTag(engine) {
   }
 }
 
+export function renderAnalysisUnavailable(symbol, reason = 'UNAVAILABLE') {
+  renderQuote(null);
+  const message = `${symbol || '当前标的'} · ${reason === 'LOADING' ? '加载中' : 'UNAVAILABLE · ' + reason}`;
+  const code = $('quoteBar')?.querySelector('.qh-code');
+  if (code) code.textContent = message;
+  renderEngineTag(null);
+  $('sumBadge').className = 'badge watch';
+  $('sumBadge').textContent = reason === 'LOADING' ? '加载中' : 'UNAVAILABLE';
+  $('sumScore').className = '';
+  $('sumScore').textContent = '—';
+  $('sumLead').textContent = message;
+  $('sumWarn').style.display = 'none';
+  $('sumWarn').textContent = '';
+  $('engineBanner').replaceChildren();
+  $('sumFoot').textContent = 'advisory unavailable · canonical gate 未改变 · 非投资建议';
+  const ring = $('ringVal');
+  if (ring) ring.style.strokeDashoffset = String(RING_LEN);
+
+  const cards = [
+    ['plan', 'planBody', 'planPrev', 'planChip'],
+    ['risk', 'riskBody', 'riskPrev', 'riskChip'],
+    ['pred', 'predBody', 'predPrev', 'predChip'],
+    ['mod', 'modBody', 'modPrev', 'modChip'],
+    ['sig', 'sigBody', 'sigPrev', 'sigChip'],
+    ['mom', 'momBody', 'momPrev', 'momChip'],
+    ['lvl', 'lvlBody', 'lvlPrev', 'lvlChip'],
+    ['cl', 'clBody', 'clPrev', 'clChip'],
+    ['clm', 'clmBody', 'clmPrev', 'clmChip'],
+  ];
+  cards.forEach(([key, bodyId, previewId, chipId]) => {
+    $(bodyId).textContent = message;
+    setTxt(previewId, reason === 'LOADING' ? '加载中' : 'UNAVAILABLE');
+    setTxt(chipId, '—');
+    setDot(key, reason === 'LOADING' ? 'acc' : 'warn');
+  });
+}
+
 function engineBanner(engine) {
   if (engine && engine.available === false) {
     return `<div class="hero-warn" style="display:block">引擎降级：Rust 核不可用，当前为 Python 回退，对称卖出 / ATR 仓位规则未生效。</div>`;
@@ -48,7 +99,7 @@ export function renderAll(sig, pred, ch, meta) {
   const t = tone(sig.action);
   const badge = $('sumBadge');
   badge.className = 'badge ' + t;
-  badge.textContent = sig.action || '观望';
+  badge.textContent = `规则 ${researchLabel(sig.action || '中性')}`;
   const sc = $('sumScore');
   sc.className = cls(sig.action);
   sc.textContent = sig.score ?? '—';
@@ -58,10 +109,10 @@ export function renderAll(sig, pred, ch, meta) {
     ring.style.strokeDashoffset = String(RING_LEN * (1 - v / 100));
     ring.style.stroke = t === 'buy' ? 'var(--up)' : t === 'sell' ? 'var(--dn)' : 'var(--warn)';
   }
-  $('sumLead').textContent = sig.plain_summary || '';
+  $('sumLead').textContent = researchLabel(sig.plain_summary || '');
   const warnEl = $('sumWarn');
   const veto = sig.original_action && sig.original_action !== sig.action
-    ? `优化 ${sig.original_action}→${sig.action} ${sig.veto_reason || ''}` : '';
+    ? `规则修正 ${researchLabel(sig.original_action)}→${researchLabel(sig.action)} ${researchLabel(sig.veto_reason || '')}` : '';
   if (veto) {
     warnEl.style.display = 'block';
     warnEl.textContent = veto;
@@ -71,20 +122,22 @@ export function renderAll(sig, pred, ch, meta) {
   }
   const bannerHost = $('engineBanner');
   if (bannerHost) bannerHost.innerHTML = engineBanner(meta?.engine);
-  $('sumFoot').textContent = `风险 ${sig.risk_level || '—'} · 强度 ${sig.signal_strength || '—'} · 置信 ${sig.confidence || '—'} · 非投资建议`;
+  const evidence = meta?.advisory_evidence || {};
+  const authority = evidence.provenance?.authority || 'yeuxq/advisory-workbench';
+  $('sumFoot').textContent = `advisory ${evidence.availability || 'UNKNOWN'} · freshness ${evidence.freshness || 'UNKNOWN'} · provenance ${authority} · canonical=false · 非投资建议`;
 
-  /* 操作计划 */
+  /* 研究情景 */
   const p = sig.trade_plan || {};
   $('planBody').innerHTML = `<div class="tri">
-    <div><small>入手</small><b>${p.entry_price ?? '—'}</b></div>
-    <div><small>止损</small><b class="dn">${p.stop_loss ?? '—'}</b></div>
-    <div><small>目标</small><b class="up">${p.target_price ?? '—'}</b></div>
+    <div><small>参考位</small><b>${p.entry_price ?? '—'}</b></div>
+    <div><small>风险阈值</small><b class="dn">${p.stop_loss ?? '—'}</b></div>
+    <div><small>情景目标</small><b class="up">${p.target_price ?? '—'}</b></div>
   </div>
-  <div class="row"><span>仓位</span><b>${esc(sig.position_advice || p.position_size || '—')}</b></div>
+  <div class="row"><span>风险暴露参考</span><b>${esc(researchLabel(sig.position_advice || p.position_size || '—'))}</b></div>
   <div class="row"><span>盈亏比</span><b>${p.risk_reward_ratio ?? sig.risk_reward ?? '—'}</b></div>
-  <div class="row"><span>周期</span><b>${esc(p.holding_period || '中线')}</b></div>
-  <div class="disc">${esc(p.notes || '')}</div>`;
-  setTxt('planPrev', `入手 ${p.entry_price ?? '—'} · 止损 ${p.stop_loss ?? '—'}`);
+  <div class="row"><span>观察周期</span><b>${esc(p.holding_period || '中线')}</b></div>
+  <div class="disc">${esc(researchLabel(p.notes || ''))}</div>`;
+  setTxt('planPrev', `参考位 ${p.entry_price ?? '—'} · 风险阈值 ${p.stop_loss ?? '—'}`);
   setTxt('planChip', p.risk_reward_ratio ?? sig.risk_reward ?? '—');
   setDot('plan', sig.action?.includes('买') ? 'up' : sig.action?.includes('卖') ? 'dn' : '');
 
@@ -102,14 +155,14 @@ export function renderAll(sig, pred, ch, meta) {
   setTxt('modChip', topK === '—' ? '—' : `${topK} ${topV}`);
   setDot('mod', topV >= 70 ? 'up' : topV >= 55 ? 'acc' : '');
 
-  /* 买卖信号 */
+  /* 正负向技术规则 */
   const buys = sig.buy_signals || [], sells = sig.sell_signals || [];
   $('sigBody').innerHTML = [
-    ...buys.map((s, i) => `<div class="sig-buy">${i < 2 ? '【核】' : ''} 买 ${esc(s)}</div>`),
-    ...sells.map((s) => `<div class="sig-sell">卖 ${esc(s)}</div>`),
+    ...buys.map((s, i) => `<div class="sig-buy">${i < 2 ? '【核】' : ''} 正向 ${esc(researchLabel(s))}</div>`),
+    ...sells.map((s) => `<div class="sig-sell">负向 ${esc(researchLabel(s))}</div>`),
   ].join('') || '—';
-  setTxt('sigPrev', buys[0] || sells[0] || '暂无信号');
-  setTxt('sigChip', `买${buys.length} 卖${sells.length}`);
+  setTxt('sigPrev', researchLabel(buys[0] || sells[0] || '暂无规则触发'));
+  setTxt('sigChip', `正${buys.length} 负${sells.length}`);
   setDot('sig', buys.length > sells.length ? 'up' : sells.length > buys.length ? 'dn' : '');
 
   /* 动量质量 */
@@ -168,12 +221,12 @@ export function renderChanlunDaily(ch) {
   }
   const sigs = ch.signals || [], zs = ch.zhongshus || [], px = ch.current_price;
   const cur = px != null ? zs.find((z) => px >= z.zd && px <= z.zg) : null;
-  let html = `<div class="plain"><b>白话</b> ${esc(ch.summary || '暂无买卖点')}</div>`;
+  let html = `<div class="plain"><b>白话</b> ${esc(researchLabel(ch.summary || '暂无多空结构'))}</div>`;
   if (cur) html += `<div class="zs">现价 ${px} 在中枢 [${cur.zd}–${cur.zg}] 内</div>`;
   html += sigs.map((s) => `<div class="${(s.type || '').startsWith('buy') ? 'sig-buy' : 'sig-sell'}">${esc(s.type_name)} ${esc(s.description || '')} <span class="disc">${esc(s.date || '')}</span></div>`).join('');
   html += `<div class="disc pro">${ch.fractal_count || 0}分型 / ${ch.stroke_count || 0}笔 / ${ch.zhongshu_count || 0}中枢</div>`;
   $('clBody').innerHTML = html;
-  setTxt('clPrev', clip(ch.summary || '暂无买卖点', 22));
+  setTxt('clPrev', clip(researchLabel(ch.summary || '暂无多空结构'), 22));
   setTxt('clChip', `${ch.zhongshu_count || 0}中枢`);
   setDot('cl', sigs.length ? 'acc' : '');
 }

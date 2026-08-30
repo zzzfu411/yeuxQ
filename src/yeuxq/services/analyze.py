@@ -166,6 +166,8 @@ class AnalyzeService:
         )
 
         signal = signal_to_dict(result)
+        chanlun = daily_result_to_dict(analyze_chanlun_daily(klines))
+        chanlun["current_price"] = klines[-1].close
 
         return {
             "symbol": symbol,
@@ -175,6 +177,7 @@ class AnalyzeService:
             "prediction": signal.get("prediction"),
             "klines": [kline_to_dict(k) for k in klines[-120:]],
             "flows": [flow_to_dict(f) for f in flows],
+            "chanlun": {"symbol": symbol, "period": period, **chanlun},
             "breadth": breadth,
             "meta": {
                 "engine_version": self.settings.app.version,
@@ -223,6 +226,30 @@ class AnalyzeService:
         minute = self.data.fetch_minute(symbol)
         data = analyze_chanlun_minute(minute)
         return {"symbol": symbol, **data}
+
+    def minute_snapshot(self, symbol: str) -> dict[str, Any]:
+        """Return minute series and Chanlun analysis from the same provider snapshot."""
+
+        minute = self.data.fetch_minute(symbol)
+        if minute is None:
+            return {"symbol": symbol, "error": "无法获取分时"}
+        payload = {
+            "symbol": symbol,
+            "times": minute.times,
+            "prices": minute.prices,
+            "avg": minute.avg_prices,
+            "volumes": minute.volumes,
+            "pre_close": minute.pre_close,
+            "name": minute.name,
+            "high": minute.high,
+            "low": minute.low,
+        }
+        chanlun = analyze_chanlun_minute(minute)
+        return {
+            "symbol": symbol,
+            "minute": payload,
+            "chanlun": {"symbol": symbol, **chanlun},
+        }
 
     def realtime_flow_payload(self, symbol: str) -> dict[str, Any]:
         flows, diagnostic = self._fetch(

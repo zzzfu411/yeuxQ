@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-08-30T23:00:41+08:00",
+  "updated_at": "2026-08-30T23:59:00+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "quantify/yeuxQ",
@@ -23,12 +23,12 @@
   },
   "overall": {
     "status": "in_progress",
-    "active_phase": "frontend",
-    "completed_phases": 4,
+    "active_phase": "hardening",
+    "completed_phases": 5,
     "total_phases": 7,
-    "progress_percent": 57,
+    "progress_percent": 71,
     "release_readiness": "BLOCK",
-    "release_block_reason": "The unified API is complete, but donor redistribution rights, credential rotation, project licensing, frontend semantics and hardening remain open.",
+    "release_block_reason": "Phase 4 frontend and bounded advisory acceptance passed; Phase 5/6 hardening and donor redistribution rights, credential rotation and project licensing remain open.",
     "operating_boundary": "research_only_advisory_only"
   },
   "frontend_sync": {
@@ -44,18 +44,18 @@
     "refresh_strategy": "etag_or_updated_at_polling",
     "update_rule": "implementation_tests_evidence_and_status_change_must_share_one_commit",
     "last_event": {
-      "phase": "unified_api",
+      "phase": "frontend",
       "status": "completed",
-      "message": "The production application now mounts a versioned API backed by explicit observation, integration-status and canonical research-readiness facades; offline, OpenAPI and negative execution-surface contracts passed Phase 3 acceptance."
+      "message": "Clean-room frontend, bounded advisory GET facades, root-confined historical reads, responsive desktop/mobile layout and fail-closed browser acceptance passed Phase 4; hardening is now active."
     }
   },
   "verification": {
-    "verified_at": "2026-08-30T23:00:41+08:00",
+    "verified_at": "2026-08-30T23:59:00+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
       "status": "PASS",
-      "passed": 228,
+      "passed": 266,
       "failed": 0,
       "skipped": 3,
       "scope": [
@@ -64,17 +64,17 @@
     },
     "full_tests": {
       "status": "PASS",
-      "passed": 1266,
+      "passed": 1305,
       "failed": 0,
       "skipped": 3,
-      "duration_seconds": 1649.70,
+      "duration_seconds": 1195.35,
       "scope": [
         "tests"
       ]
     },
     "secret_scan": {
       "status": "PASS",
-      "candidate_files": 630,
+      "candidate_files": 723,
       "scope": "canonical_git_candidates"
     },
     "distribution_build": {
@@ -83,8 +83,8 @@
       "contains_quantify": true,
       "contains_yeuxq": true,
       "artifacts": [
-        "quantify-0.1.0.tar.gz",
-        "quantify-0.1.0-py3-none-any.whl"
+        "dist-phase4/quantify-0.1.0.tar.gz",
+        "dist-phase4/quantify-0.1.0-py3-none-any.whl"
       ]
     },
     "visual_qa": {
@@ -98,13 +98,15 @@
     "diff_check": "PASS",
     "notes": [
       "Pytest cache writes were disabled for the acceptance run; no cache warning was emitted.",
-      "Playwright verified the static projection on desktop and mobile and confirmed offline requests reset all displayed evidence to BLOCK.",
+      "Phase 4 targeted acceptance passed 266 tests; the full Python regression passed 1305 tests with three Windows symlink-permission skips.",
+      "Playwright verified the static projection on desktop and mobile; controlled API failures reset all displayed evidence to UNAVAILABLE/BLOCK.",
+      "Normal browser service sessions had zero console errors or warnings; synthetic offline/503 sessions record browser transport diagnostics separately.",
       "Donor credential findings are not included in values or logs; two credentials require owner rotation.",
       "Phase 2 added 226 passing yeuxQ tests with three Windows symlink-permission skips, plus three passing Rust tests.",
       "Python is canonical by default; Rust is development-only, explicitly selected and falls back without exposing internal errors.",
       "A wheel-like extraction smoke test served the packaged Web UI and kept writable data outside site-packages.",
       "The production app mounts only bounded v1 observation, integration-status and canonical readiness facades; OpenAPI contains no account, broker, order, cancel, trade or execution endpoint.",
-      "The complete Python regression passed 1266 tests with three Windows symlink-permission skips; one Starlette TestClient deprecation warning remains tracked for hardening."
+      "Rust workspace tests passed 3 cases and all 10 first-party browser JavaScript modules passed node syntax checks; one Starlette TestClient deprecation warning remains tracked for hardening."
     ]
   },
   "boundaries": {
@@ -280,31 +282,51 @@
       "id": "frontend",
       "order": 4,
       "name": "Clean-room frontend and continuous status UI",
-      "status": "in_progress",
-      "progress_percent": 0,
+      "status": "completed",
+      "progress_percent": 100,
       "started_at": "2026-08-30",
-      "completed_at": null,
+      "completed_at": "2026-08-30",
       "owner": "integration",
       "evidence": [
-        "docs/30_Stock_Integration_Plan.md#phase-4--clean-room-frontend-and-continuous-ui-status-进行中"
+        "docs/30_Stock_Integration_Plan.md#phase-4--clean-room-frontend-and-continuous-ui-status-已完成",
+        "docs/phase4_frontend_acceptance.md",
+        "src/yeuxq/api/advisory_app.py",
+        "src/yeuxq/services/advisory_workbench.py",
+        "src/yeuxq/services/report_read_facade.py",
+        "src/yeuxq/web/index.html",
+        "src/yeuxq/web/css/app.css",
+        "src/yeuxq/web/js",
+        "tests/yeuxq/test_advisory_api_contract.py",
+        "tests/yeuxq/test_frontend_runtime_safety.py",
+        "tests/yeuxq/test_frontend_v1_boundary.py",
+        "tests/yeuxq/test_report_read_facade.py",
+        "tests/yeuxq/test_web_assets.py",
+        "output/playwright/phase4/.playwright-cli/page-2026-08-30T16-15-09-279Z.png",
+        "output/playwright/phase4/.playwright-cli/page-2026-08-30T16-22-39-179Z.png"
       ],
       "acceptance": [
         "UI status matches this JSON and shows invalid state as BLOCK.",
         "Observation source, timestamps, freshness and unavailable state are visible.",
         "Observation signals, research gates and paper simulation are visually distinct.",
-        "No v4 expressive code or assets are reused."
+        "No v4 expressive code or assets are reused.",
+        "Desktop 1440x1000 and mobile 390x844 browser acceptance show no horizontal overflow or off-screen controls.",
+        "Unavailable generation, scan, order-flow and AI controls remain disabled and requests are bounded to read-only v1 GET contracts."
       ]
     },
     {
       "id": "hardening",
       "order": 5,
       "name": "Research integration and regression hardening",
-      "status": "not_started",
+      "status": "in_progress",
       "progress_percent": 0,
-      "started_at": null,
+      "started_at": "2026-08-30",
       "completed_at": null,
-      "owner": "unassigned",
-      "evidence": [],
+      "owner": "integration",
+      "evidence": [
+        "docs/30_Stock_Integration_Plan.md#phase-5--research-integration-and-regression-hardening-进行中",
+        ".github/workflows/ci.yml",
+        "tests/test_ci_workflow.py"
+      ],
       "acceptance": [
         "Existing quantify regression suite passes.",
         "Observation cannot upgrade research gates.",
@@ -512,7 +534,7 @@
     {
       "order": 4,
       "phase": "frontend",
-      "action": "Connect the clean-room workbench to v1 facades and label buy, sell and scan outputs as bounded analysis rather than trading instructions.",
+      "action": "Complete Phase 5 parity, storage/recovery, distribution-compliance and reverse-boundary tests while retaining research-only semantics.",
       "blocking": false
     },
     {

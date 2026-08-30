@@ -1,10 +1,16 @@
 /* 自选 / 历史 / 一览 弹出层 + 扫描弹窗 + 大盘状态条 */
 import { state, bus, LS } from './state.js';
-import { $, jget, jset, esc, setTxt } from './util.js';
-import { getJSON, postJSON } from './api.js';
+import { $, jget, jset, esc } from './util.js';
+import { getAdvisoryMarketOverview, getAdvisoryWatchlistQuotes } from './api.js';
 
 export function watchList() { return jget(LS.watch) || []; }
 export function histList() { return jget(LS.hist) || []; }
+
+export function percentEvidence(value) {
+  const number = value == null || value === '' ? null : Number(value);
+  if (!Number.isFinite(number)) return { text: 'UNKNOWN', className: 'dim' };
+  return { text: `${number}%`, className: number >= 0 ? 'up' : 'dn' };
+}
 
 export function saveWatch(a) { jset(LS.watch, a); renderWatch(); }
 
@@ -50,14 +56,27 @@ function switchTab(t) {
 async function loadOverview() {
   const w = watchList();
   if (!w.length) { $('wpOv').innerHTML = '<div class="wp-empty">先加自选</div>'; return; }
-  const rows = await Promise.all(w.slice(0, 12).map(async (x) => {
-    try {
-      const q = await getJSON(`/api/quote?symbol=${x.code}`);
-      return `<div class="wp-item" data-code="${esc(x.code)}"><span class="wp-code">${esc(x.code)}</span><span class="wp-name">${esc(q.name || x.name)}</span><span class="${(q.pct || 0) >= 0 ? 'up' : 'dn'}">${q.pct ?? '—'}%</span></div>`;
-    } catch (e) { return ''; }
-  }));
-  $('wpOv').innerHTML = rows.join('');
-  $('wpOv').querySelectorAll('.wp-item').forEach((el) => { el.onclick = () => bus.emit('analyze', el.dataset.code); });
+  const selected = w.slice(0, 12);
+  try {
+    const response = await getAdvisoryWatchlistQuotes(selected.map((item) => item.code));
+    const quotes = new Map((response.items || []).map((quote) => [
+      String(quote.symbol || '').slice(0, 6),
+      quote,
+    ]));
+    $('wpOv').innerHTML = selected.map((item) => {
+      const quote = quotes.get(item.code);
+      if (!quote) {
+        return `<div class="wp-item" data-code="${esc(item.code)}"><span class="wp-code">${esc(item.code)}</span><span class="wp-name">${esc(item.name || '')}</span><span class="dim">UNAVAILABLE</span></div>`;
+      }
+      const pct = percentEvidence(quote.pct);
+      return `<div class="wp-item" data-code="${esc(item.code)}"><span class="wp-code">${esc(item.code)}</span><span class="wp-name">${esc(quote.name || item.name)}</span><span class="${pct.className}">${esc(pct.text)}</span></div>`;
+    }).join('');
+    $('wpOv').querySelectorAll('.wp-item').forEach((el) => {
+      el.onclick = () => bus.emit('analyze', el.dataset.code);
+    });
+  } catch (error) {
+    $('wpOv').innerHTML = '<div class="wp-empty">UNAVAILABLE · advisory 自选报价暂不可用</div>';
+  }
 }
 
 export function bindPanels() {
@@ -73,48 +92,25 @@ export function bindPanels() {
   });
 }
 
-/* ---------- 扫描 ---------- */
-let scanTimer = null;
-
-async function openScan() {
-  $('scanOv').classList.add('show');
-  const w = watchList().map((x) => x.code);
-  await postJSON('/api/scan/start', w.length ? { symbols: w } : {});
-  pollScan();
-}
-
-function pollScan() {
-  clearInterval(scanTimer);
-  scanTimer = setInterval(async () => {
-    let s;
-    try { s = await getJSON('/api/scan'); } catch (e) { return; }
-    const tot = s.total || 1, p = s.progress || 0;
-    $('scanStage').textContent = s.stage || s.status || '';
-    $('scanBar').style.width = (p / tot * 100) + '%';
-    $('scanStat').textContent = `${p}/${tot}`;
-    $('scanTb').innerHTML = (s.results || []).map((r, i) =>
-      `<tr><td>${i + 1}</td><td>${esc(r.symbol)}</td><td>${esc(r.name || '')}</td><td><b>${esc(r.action || '')}</b></td><td>${r.score ?? ''}</td><td class="${(r.pct || 0) >= 0 ? 'up' : 'dn'}">${r.pct ?? ''}</td><td><button data-c="${esc(r.symbol)}">开</button></td></tr>`
-    ).join('');
-    $('scanTb').querySelectorAll('button').forEach((b) => {
-      b.onclick = () => { $('scanOv').classList.remove('show'); bus.emit('analyze', b.dataset.c); };
-    });
-    if (s.status === 'done' || s.status === 'error' || s.status === 'idle') clearInterval(scanTimer);
-  }, 800);
-}
-
 export function bindScan() {
-  $('btnScan').onclick = openScan;
-  $('scanClose').onclick = () => { $('scanOv').classList.remove('show'); clearInterval(scanTimer); };
+  const trigger = $('btnScan');
+  trigger.disabled = true;
+  trigger.setAttribute('aria-disabled', 'true');
+  trigger.title = 'UNAVAILABLE：扫描尚未进入只读 advisory 合同';
+  trigger.onclick = null;
+  $('scanClose').onclick = () => { $('scanOv').classList.remove('show'); };
   $('scanOv').addEventListener('click', (e) => {
-    if (e.target === $('scanOv')) { $('scanOv').classList.remove('show'); clearInterval(scanTimer); }
+    if (e.target === $('scanOv')) $('scanOv').classList.remove('show');
   });
 }
 
 /* ---------- 大盘状态条 ---------- */
 export async function loadMarket() {
   try {
-    const m = await getJSON('/api/market/overview');
+    const m = await getAdvisoryMarketOverview();
     const last = m.last || {}, br = m.breadth || {};
+    const evidence = m._evidence || {};
+    const marketChange = percentEvidence(m.change_pct);
     const eng = state.engine;
     const engHtml = eng
       ? (eng.available
@@ -123,13 +119,13 @@ export async function loadMarket() {
       : '';
     $('marketBar').innerHTML = `
       <span class="tape-item">上证 <b>${last.close ?? '—'}</b></span>
-      <span class="tape-item ${(m.change_pct || 0) >= 0 ? 'up' : 'dn'}">${m.change_pct ?? ''}%</span>
+      <span class="tape-item ${marketChange.className}">${esc(marketChange.text)}</span>
       <span class="tape-sep"></span>
       <span class="tape-item">涨 <b class="up">${br.up ?? '—'}</b> / 跌 <b class="dn">${br.down ?? '—'}</b></span>
       <span class="tape-sep"></span>
-      <span class="tape-item dim">公开行情 · 无暗盘</span>
+      <span class="tape-item dim">ADVISORY · ${esc(evidence.freshness || 'UNKNOWN')} · 非 canonical</span>
       <span class="tape-right">${engHtml}<span class="tape-item dim">研报留存 24h</span></span>`;
   } catch (e) {
-    $('marketBar').innerHTML = '<span class="tape-item dim">大盘暂不可用</span>';
+    $('marketBar').innerHTML = '<span class="tape-item dim">UNAVAILABLE · advisory 大盘数据暂不可用</span>';
   }
 }
