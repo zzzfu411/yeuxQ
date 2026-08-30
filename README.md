@@ -1,4 +1,37 @@
-# quantify
+# yeuxQ
+
+证据门控的 A 股量化研究与仿真系统（Python 包名 `quantify`，用 `uv` 管理环境）。
+
+把交易拆成一条**可复现、可审计、可暂停**的流水线：本地 SQLite 缓存 → 多因子选股 → `PaperBroker` 模拟 A 股撮合（T+1、涨跌停、整手、佣金印花税）→ HTML 研究报告 → 确定性 `PASS / WATCH / BLOCK` 审查门。默认**不连券商、不调用付费 LLM**。历史回测不是收益承诺。
+
+## 产品一览
+
+下面三张图来自本仓库一次**真实跑通**（Linux：`uv sync` 后按 [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) 第 1–2 步）：
+
+```bash
+uv run python examples/run_research.py --config config/research.yaml
+uv run python examples/run_llm_review.py --report-dir results/research/<timestamp> --stage paper
+```
+
+`config/research.yaml` 是 2020–2021 教学窗口。本地研究缓存为空时，引擎会播种 **demo / teaching cache**（标的为 `DEMO001`…）。审查门因此给出 **BLOCK**——这正是系统要展示的纪律，不是一次“曲线好看就能晋级”的回测。图中数字来自这次教学跑，**不是实盘账户，也不是编造的收益**。
+
+### 研究报告
+
+![教学缓存跑出的 HTML 研究报告：核心指标、实验假设、数据证据](docs/screenshots/research_report.png)
+
+同一份 `html_report.html`：风险提示、收益/回撤/夏普、`demo_data_used: True`、数据审计 `WATCH`、以及“Research simulation only; no broker or live trading connection.”
+
+### 净值与回撤
+
+![同一教学跑的净值曲线与回撤图](docs/screenshots/equity_drawdown.png)
+
+报告目录里的 `drawdown.png`：PaperBroker 仿真净值 + 买卖标记 + 回撤。前期走平是教学缓存里策略尚未建仓的真实轨迹。
+
+### 审查门（PASS / WATCH / BLOCK）
+
+![paper 阶段确定性审查门：因 DEMO 标的给出 BLOCK](docs/screenshots/paper_gate_card.png)
+
+对同一报告执行 `run_llm_review.py --stage paper`（默认不调外部模型）。确定性门因 `DEMO_SYMBOLS_IN_ARTIFACTS` **BLOCK**，并列出 WATCH 项（数据审计、非 PIT 股票池、拒单率、缺失 walk-forward / benchmark 证据）。允许继续研究迭代；禁止连券商、自动晋级、用 LLM 覆盖风控。
 
 > **新手入口:** 想学习量化完整流程,先读 [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) ——
 > 它把"研究报告 → 审查门 → 真实数据 → 周度流水线"的学习主线串成了可复制命令。
