@@ -60,7 +60,7 @@ Place retained source-QA evidence files here before generating the strict manife
 6.
 
 ```powershell
-.\.venv\Scripts\python.exe examples\run_source_qa_evidence_inbox.py --data-dir data_exports --report-dir results\first_million
+.\.venv\Scripts\python.exe examples\run_source_qa_evidence_inbox.py --data-dir data_exports --report-dir results\prospective\guard_v1_20260716\operational_status
 ```
 
 7.

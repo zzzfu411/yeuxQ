@@ -101,7 +101,10 @@ def write_paper_daily_review(report_dir: str | Path, output_dir: str | Path | No
     out.mkdir(parents=True, exist_ok=True)
     if (root / "paper_state.json").exists() and (root / "paper_daily.csv").exists():
         return _write_loop_daily_review(root, out)
+    return _write_research_execution_preview(root, out)
 
+
+def _write_research_execution_preview(root: Path, out: Path) -> Path:
     equity = _read_csv(root / "equity.csv")
     positions = _read_csv(root / "positions.csv")
     orders = _read_csv(root / "orders.csv")
@@ -115,7 +118,7 @@ def write_paper_daily_review(report_dir: str | Path, output_dir: str | Path | No
         else 0.0
     )
     rejected_count = _rejected_order_count(orders)
-    state = PaperDailyState(
+    preview = PaperDailyState(
         as_of=as_of,
         observed_days=len(equity),
         last_equity=last_equity,
@@ -124,24 +127,106 @@ def write_paper_daily_review(report_dir: str | Path, output_dir: str | Path | No
         order_count=len(orders),
         rejected_order_count=rejected_count,
     )
-
-    (out / "paper_state.json").write_text(
-        json.dumps(state.to_dict(), ensure_ascii=False, indent=2),
+    preview_payload = {
+        "evidence_scope": "research_execution_preview",
+        "promotion_eligible": False,
+        "backtest": preview.to_dict(),
+        "message": (
+            "Historical research execution is not a continuous paper account and does not "
+            "count toward paper observation days."
+        ),
+    }
+    (out / "research_execution_preview.json").write_text(
+        json.dumps(preview_payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    latest_positions.to_csv(out / "paper_positions.csv", index=False)
-    orders.to_csv(out / "paper_orders.csv", index=False)
+    (out / "research_execution_preview.md").write_text(
+        _research_execution_preview_markdown(preview_payload),
+        encoding="utf-8",
+    )
+    for stale_name in ("paper_state.json", "paper_positions.csv", "paper_orders.csv"):
+        (out / stale_name).unlink(missing_ok=True)
+    payload = {
+        "status": "BLOCK",
+        "code": "NO_CONTINUOUS_PAPER_RUN",
+        "as_of": "",
+        "state": {
+            "as_of": "",
+            "observed_days": 0,
+            "last_equity": 0.0,
+            "cash_estimate": 0.0,
+            "position_count": 0,
+            "order_count": 0,
+            "rejected_order_count": 0,
+            "broker_connection": "none",
+        },
+        "execution_quality": {
+            "order_count": 0,
+            "rejected_order_count": 0,
+            "reject_rate": 0.0,
+        },
+        "target_deviation": {
+            "max_abs_target_deviation": 0.0,
+            "max_deviation_symbol": "",
+        },
+        "research_execution_preview": preview_payload,
+        "manual_review_questions": [
+            "Start an isolated local paper loop only after a candidate passes deterministic entry gates."
+        ],
+        "prohibited_actions": [
+            "Do not count historical backtest days toward the continuous paper observation period.",
+            "Do not treat this research preview as paper, micro-live, or broker permission.",
+        ],
+    }
     (out / "paper_daily_review.json").write_text(
-        json.dumps(state.review_payload(), ensure_ascii=False, indent=2),
+        json.dumps(payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    (out / "paper_daily_review.md").write_text(state.to_markdown(), encoding="utf-8")
+    (out / "paper_daily_review.md").write_text(
+        _no_continuous_paper_markdown(payload),
+        encoding="utf-8",
+    )
     return out
 
 
 def _write_loop_daily_review(root: Path, out: Path) -> Path:
     state_payload = _read_json(root / "paper_state.json")
     daily = _read_csv(root / "paper_daily.csv")
+    state_gaps = _paper_loop_state_gaps(root, state_payload, daily)
+    if state_gaps:
+        payload = {
+            "status": "BLOCK",
+            "code": "INVALID_PAPER_LOOP_STATE",
+            "as_of": str(state_payload.get("as_of", "") or ""),
+            "candidate": str(state_payload.get("candidate", "") or ""),
+            "state": state_payload,
+            "gaps": state_gaps,
+            "execution_quality": {
+                "order_count": 0,
+                "rejected_order_count": 0,
+                "reject_rate": 0.0,
+            },
+            "target_deviation": {
+                "max_abs_target_deviation": 0.0,
+                "max_deviation_symbol": "",
+            },
+            "manual_review_questions": [
+                "Rebuild the state directory with run_paper_loop before continuing observation."
+            ],
+            "prohibited_actions": [
+                "Do not repair or promote an unbound legacy paper state by hand.",
+                "Do not count invalid state rows toward paper stability.",
+            ],
+        }
+        (out / "paper_daily_review.json").write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        (out / "paper_daily_review.md").write_text(
+            _invalid_paper_loop_markdown(payload),
+            encoding="utf-8",
+        )
+        return out
     orders = _read_csv(root / "paper_orders.csv")
     positions = _read_csv(root / "paper_positions.csv")
     latest = daily.iloc[-1].to_dict() if not daily.empty else {}
@@ -207,6 +292,83 @@ def _write_loop_daily_review(root: Path, out: Path) -> Path:
     )
     (out / "paper_daily_review.md").write_text(_loop_review_markdown(payload), encoding="utf-8")
     return out
+
+
+def _paper_loop_state_gaps(
+    root: Path,
+    state: dict,
+    daily: pd.DataFrame,
+) -> list[str]:
+    gaps: list[str] = []
+    candidate = str(state.get("candidate", "") or "").strip()
+    if not candidate:
+        gaps.append("paper_state.json is missing candidate.")
+    run_context = state.get("run_context")
+    if not isinstance(run_context, dict) or not run_context:
+        gaps.append("paper_state.json is missing run_context.")
+        run_context = {}
+    backend = run_context.get("backend", {}) if isinstance(run_context, dict) else {}
+    if not isinstance(backend, dict) or backend.get("type") != "local_paper":
+        gaps.append("paper_state.json run_context backend is not local_paper.")
+    if str(backend.get("broker_connection", "") or "") not in {"", "none"}:
+        gaps.append("paper_state.json run_context backend has a broker connection.")
+    for section in ("data", "strategy", "broker"):
+        if not isinstance(run_context.get(section), dict) or not run_context.get(section):
+            gaps.append(f"paper_state.json run_context is missing {section}.")
+    run_record = _read_json(root / "paper_loop_run.json")
+    if not run_record:
+        gaps.append("paper_loop_run.json checkpoint is missing.")
+    if daily.empty:
+        gaps.append("paper_daily.csv has no continuous observations.")
+    else:
+        observed_days = int(state.get("observed_days", 0) or 0)
+        if observed_days != len(daily):
+            gaps.append("paper_state observed_days does not match paper_daily.csv rows.")
+        candidates = {
+            str(item)
+            for item in daily.get("candidate", pd.Series(dtype=str)).dropna().unique().tolist()
+            if str(item)
+        }
+        if candidate and candidates != {candidate}:
+            gaps.append("paper_daily.csv candidate history does not match paper_state.json.")
+    return gaps
+
+
+def _research_execution_preview_markdown(payload: dict[str, object]) -> str:
+    backtest = payload.get("backtest", {})
+    assert isinstance(backtest, dict)
+    return (
+        "# Research Execution Preview\n\n"
+        f"- As of: `{backtest.get('as_of', '')}`\n"
+        f"- Backtest days: {backtest.get('observed_days', 0)}\n"
+        f"- Historical orders: {backtest.get('order_count', 0)}\n"
+        "- Promotion eligible: `False`\n\n"
+        f"{payload.get('message', '')}\n"
+    )
+
+
+def _no_continuous_paper_markdown(payload: dict[str, object]) -> str:
+    return (
+        "# Paper Daily Review: BLOCK\n\n"
+        "- Code: `NO_CONTINUOUS_PAPER_RUN`\n"
+        "- Observed paper days: 0\n"
+        "- Broker connection: `none`\n\n"
+        "Historical research execution is available in `research_execution_preview.json`, "
+        "but it is not continuous paper evidence.\n"
+    )
+
+
+def _invalid_paper_loop_markdown(payload: dict[str, object]) -> str:
+    gaps = payload.get("gaps", [])
+    lines = [
+        "# Paper Daily Review: BLOCK",
+        "",
+        "- Code: `INVALID_PAPER_LOOP_STATE`",
+        "",
+        "## Gaps",
+    ]
+    lines.extend(f"- {item}" for item in gaps if isinstance(item, str))
+    return "\n".join(lines) + "\n"
 
 
 def _loop_review_status(

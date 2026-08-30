@@ -86,18 +86,23 @@ class BacktestEngine:
                 n_fills += 1
 
             # 3) 策略产生信号
+            last_prices[bar.symbol] = bar.close
             signals = self.strategy.on_bar(bar)
             n_signals += len(signals)
 
             # 4) 风控转订单 → 提交 broker(下一根 bar 撮合)
             for sig in signals:
-                order = self.risk.process(sig, self.portfolio, ref_price=bar.close)
+                order = self.risk.process(
+                    sig,
+                    self.portfolio,
+                    ref_price=bar.close,
+                    prices=last_prices,
+                )
                 if order is not None:
                     self.broker.submit(order)
                     n_orders += 1
 
             # 5) 记录净值(用当前 bar 收盘价估值)
-            last_prices[bar.symbol] = bar.close
             self.portfolio.record_equity(bar.timestamp, last_prices)
 
             # 6) 风控盯净值

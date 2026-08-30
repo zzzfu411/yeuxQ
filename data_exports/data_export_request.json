@@ -2,9 +2,9 @@
   "market": "A-share equities",
   "frequency": "daily",
   "start": "2024-06-03",
-  "end": "2026-06-05",
+  "end": "2026-07-14",
   "min_symbols": 300,
-  "cache_path": "./data_cache/research_recent.db",
+  "cache_path": "tmp\\provider_probe_20260715\\akshare_current_300_v2.db",
   "price_adjustment": "qfq",
   "universe": {
     "mode": "all_a",
@@ -111,7 +111,7 @@
   ],
   "workflow_commands": [
     ".\\.venv\\Scripts\\python.exe examples\\write_data_export_templates.py --output-dir data_exports --overwrite",
-    ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa.py --config config\\research_recent.yaml --output-dir data_exports --min-symbols 300",
+    ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa.py --config results\\prospective\\guard_v1_20260716\\operational_status\\effective_config.yaml --output-dir data_exports --min-symbols 300",
     ".\\.venv\\Scripts\\python.exe examples\\write_data_source_qa_evidence_worksheet.py --checklist data_exports\\data_source_qa.json --output-dir data_exports",
     ".\\.venv\\Scripts\\python.exe examples\\run_data_source_qa_worksheet_preflight.py --checklist data_exports\\data_source_qa.json --worksheet data_exports\\data_source_qa_evidence_worksheet.csv --output-dir data_exports",
     ".\\.venv\\Scripts\\python.exe examples\\write_source_qa_evidence_manifest.py --checklist data_exports\\data_source_qa.json --evidence-dir data_exports\\source_qa_evidence --output-dir data_exports --strict",
@@ -120,10 +120,10 @@
     ".\\.venv\\Scripts\\python.exe examples\\run_data_source_qa_review.py --checklist data_exports\\data_source_qa.json --answers data_exports\\data_source_qa_answers.json --evidence-manifest data_exports\\source_qa_evidence_manifest.json --require-evidence-manifest --output-dir results\\import\\source_qa",
     ".\\.venv\\Scripts\\python.exe examples\\run_source_qa_evidence_readiness.py --checklist data_exports\\data_source_qa.json --worksheet data_exports\\data_source_qa_evidence_worksheet.csv --answers data_exports\\data_source_qa_answers.json --evidence-manifest data_exports\\source_qa_evidence_manifest.json --require-evidence-manifest --output-dir results\\import\\source_qa",
     ".\\.venv\\Scripts\\python.exe examples\\run_csv_intake_preview.py --data-dir data_exports --encoding auto --output-dir results\\import\\csv_preview",
-    ".\\.venv\\Scripts\\python.exe examples\\run_data_import_doctor.py --data-dir data_exports --config config\\research_recent.yaml --encoding auto --output-dir results\\import\\doctor",
-    ".\\.venv\\Scripts\\python.exe examples\\validate_research_csv.py --bars-csv data_exports\\bars.csv --stock-info-csv data_exports\\stock_info.csv --fundamentals-csv data_exports\\fundamentals.csv --calendar-csv data_exports\\calendar.csv --suspensions-csv data_exports\\suspensions.csv --index-constituents-csv data_exports\\index_constituents.csv --start 2024-06-03 --end 2026-06-05 --min-symbols 300 --encoding auto --output-dir results\\import\\recent_csv_validation",
-    ".\\.venv\\Scripts\\python.exe examples\\import_research_csv.py --cache ./data_cache/research_recent.db --bars-csv data_exports\\bars.csv --stock-info-csv data_exports\\stock_info.csv --fundamentals-csv data_exports\\fundamentals.csv --calendar-csv data_exports\\calendar.csv --suspensions-csv data_exports\\suspensions.csv --index-constituents-csv data_exports\\index_constituents.csv --validate --start 2024-06-03 --end 2026-06-05 --min-symbols 300 --encoding auto --output-dir results\\import\\recent_csv",
-    ".\\.venv\\Scripts\\python.exe examples\\run_real_data_bootstrap.py --config config\\research_recent.yaml --output-dir results\\bootstrap_recent --min-symbols 300 --as-of 2026-06-08"
+    ".\\.venv\\Scripts\\python.exe examples\\run_data_import_doctor.py --data-dir data_exports --config results\\prospective\\guard_v1_20260716\\operational_status\\effective_config.yaml --encoding auto --output-dir results\\import\\doctor",
+    ".\\.venv\\Scripts\\python.exe examples\\validate_research_csv.py --bars-csv data_exports\\bars.csv --stock-info-csv data_exports\\stock_info.csv --fundamentals-csv data_exports\\fundamentals.csv --calendar-csv data_exports\\calendar.csv --suspensions-csv data_exports\\suspensions.csv --index-constituents-csv data_exports\\index_constituents.csv --start 2024-06-03 --end 2026-07-14 --min-symbols 300 --encoding auto --output-dir results\\import\\recent_csv_validation",
+    ".\\.venv\\Scripts\\python.exe examples\\import_research_csv.py --cache tmp\\provider_probe_20260715\\akshare_current_300_v2.db --bars-csv data_exports\\bars.csv --stock-info-csv data_exports\\stock_info.csv --fundamentals-csv data_exports\\fundamentals.csv --calendar-csv data_exports\\calendar.csv --suspensions-csv data_exports\\suspensions.csv --index-constituents-csv data_exports\\index_constituents.csv --validate --start 2024-06-03 --end 2026-07-14 --min-symbols 300 --encoding auto --output-dir results\\import\\recent_csv",
+    ".\\.venv\\Scripts\\python.exe examples\\run_real_data_bootstrap.py --config results\\prospective\\guard_v1_20260716\\operational_status\\effective_config.yaml --output-dir results\\bootstrap_recent --min-symbols 300 --as-of 2026-06-08"
   ],
   "safety_boundaries": [
     "This request is for research and paper trading only.",

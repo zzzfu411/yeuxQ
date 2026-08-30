@@ -15,6 +15,29 @@ if TYPE_CHECKING:
     from quantify.audit import DataAuditReport
     from quantify.ops.run_manifest import RunManifest
 
+_TRADE_COLUMNS = [
+    "timestamp",
+    "symbol",
+    "direction",
+    "quantity",
+    "fill_price",
+    "commission",
+    "tax",
+    "gross_value",
+]
+_ORDER_COLUMNS = ["timestamp", "symbol", "direction", "quantity", "price", "status", "reason"]
+_POSITION_COLUMNS = [
+    "date",
+    "symbol",
+    "quantity",
+    "available_qty",
+    "price",
+    "market_value",
+    "weight",
+    "avg_cost",
+]
+_TURNOVER_COLUMNS = ["date", "signal_date", "turnover", "turnover_pct"]
+
 
 def write_research_report(
     result: ResearchResult,
@@ -27,7 +50,11 @@ def write_research_report(
     run_dir = Path(output_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    report = compute_report(result.equity_curve, result.fills)
+    report = compute_report(
+        result.equity_curve,
+        result.fills,
+        initial_equity=result.portfolio.initial_cash,
+    )
     summary = report.to_dict()
     summary["assumptions"] = assumptions or {}
     summary["evidence"] = evidence or {}
@@ -40,11 +67,17 @@ def write_research_report(
 
     _fills_frame(result).to_csv(run_dir / "trades.csv", index=False)
     _orders_frame(result).to_csv(run_dir / "orders.csv", index=False)
-    pd.DataFrame(result.positions).to_csv(run_dir / "positions.csv", index=False)
+    pd.DataFrame(result.positions, columns=_POSITION_COLUMNS).to_csv(
+        run_dir / "positions.csv",
+        index=False,
+    )
     pd.DataFrame(result.equity_curve, columns=["timestamp", "equity"]).to_csv(
         run_dir / "equity.csv", index=False
     )
-    pd.DataFrame(result.turnover).to_csv(run_dir / "turnover.csv", index=False)
+    pd.DataFrame(result.turnover, columns=_TURNOVER_COLUMNS).to_csv(
+        run_dir / "turnover.csv",
+        index=False,
+    )
     result.factor_ic.to_csv(run_dir / "factor_ic.csv", index=False)
 
     plot_equity(result.equity_curve, result.fills, run_dir / "drawdown.png", title=title)
@@ -69,7 +102,8 @@ def _fills_frame(result: ResearchResult) -> pd.DataFrame:
                 "gross_value": fill.gross_value,
             }
             for fill in result.fills
-        ]
+        ],
+        columns=_TRADE_COLUMNS,
     )
 
 
@@ -86,7 +120,8 @@ def _orders_frame(result: ResearchResult) -> pd.DataFrame:
                 "reason": order.reason,
             }
             for order in result.orders
-        ]
+        ],
+        columns=_ORDER_COLUMNS,
     )
 
 
@@ -181,6 +216,22 @@ def research_evidence_digest(
                 "run_manifest_latest_bar_date": manifest.latest_bar_date,
                 "run_manifest_symbol_count": manifest.symbol_count,
                 "run_manifest_trading_day_count": manifest.trading_day_count,
+                "cache_logical_bar_fingerprint": data_version.get(
+                    "cache_logical_bar_fingerprint",
+                    "",
+                ),
+                "cache_logical_bar_fingerprint_algorithm": data_version.get(
+                    "cache_logical_bar_fingerprint_algorithm",
+                    "",
+                ),
+                "cache_latest_import_batch_id": data_version.get(
+                    "cache_latest_import_batch_id",
+                    "",
+                ),
+                "cache_lineage_schema_version": data_version.get(
+                    "cache_lineage_schema_version",
+                    "",
+                ),
                 "csv_dataset_fingerprint": data_version.get("csv_dataset_fingerprint", ""),
                 "raw_vendor_bars_sha256": data_version.get("raw_vendor_bars_sha256", ""),
             }

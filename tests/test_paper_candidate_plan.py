@@ -7,6 +7,16 @@ import subprocess
 import sys
 
 from quantify.paper import build_paper_candidate_plan, write_paper_candidate_plan
+from quantify.research.selection_evidence import (
+    build_selection_evidence_manifest,
+    canonical_payload_sha256,
+    write_selection_evidence_manifest,
+)
+from tests.selection_safe_fixtures import (
+    selection_safe_robustness_payload,
+    selection_safe_walk_forward_payload,
+)
+from tests.statistical_evidence_fixtures import write_statistical_evidence_fixtures
 
 
 def test_paper_candidate_plan_blocks_missing_real_evidence(tmp_path: Path) -> None:
@@ -38,6 +48,10 @@ def test_paper_candidate_plan_passes_and_writes_command(tmp_path: Path) -> None:
     out = write_paper_candidate_plan(plan, tmp_path)
 
     assert plan.decision == "PASS"
+    assert plan.cache_path == str(tmp_path / "research.db")
+    assert f'--cache "{tmp_path / "research.db"}"' in plan.command
+    assert f"--expected-cache-sha256 {plan.cache_sha256}" in plan.command
+    assert f"--expected-dataset-fingerprint {plan.dataset_fingerprint}" in plan.command
     assert "--candidate core_multifactor" in plan.command
     assert (out / "paper_candidate_plan.json").exists()
 
@@ -105,14 +119,14 @@ def test_paper_candidate_plan_blocks_run_manifest_without_provenance(
     tmp_path: Path,
 ) -> None:
     _write_required_pass_artifacts(tmp_path)
+    manifest = json.loads((tmp_path / "run_manifest.json").read_text(encoding="utf-8"))
+    manifest["data_version"] = {
+        "csv_dataset_fingerprint": "unit-test-csv-fingerprint",
+        "data_source_qa_status": "PASS",
+    }
     _write_json(
         tmp_path / "run_manifest.json",
-        {
-            "demo_data_used": False,
-            "in_sample_end": "2024-01-02",
-            "out_sample_start": "2024-01-03",
-            "data_version": {"data_source_qa_status": "PASS"},
-        },
+        manifest,
     )
 
     plan = build_paper_candidate_plan(
@@ -123,6 +137,21 @@ def test_paper_candidate_plan_blocks_run_manifest_without_provenance(
 
     assert plan.decision == "BLOCK"
     assert any("run_manifest provenance blocker" in item for item in plan.blockers)
+
+
+def test_paper_candidate_plan_blocks_changed_research_cache(tmp_path: Path) -> None:
+    _write_required_pass_artifacts(tmp_path)
+    (tmp_path / "research.db").write_bytes(b"changed-after-research")
+
+    plan = build_paper_candidate_plan(
+        tmp_path,
+        config_path="config/research_recent.yaml",
+        paper_state_dir="results/paper/core",
+    )
+
+    assert plan.decision == "BLOCK"
+    assert plan.command == ""
+    assert any("cache_sha256 no longer matches" in item for item in plan.blockers)
 
 
 def test_paper_candidate_plan_ignores_blocked_top_candidate(tmp_path: Path) -> None:
@@ -200,6 +229,8 @@ def test_paper_candidate_plan_cli_returns_nonzero_on_block(tmp_path: Path) -> No
 
 
 def _write_required_pass_artifacts(root: Path, *, include_completion: bool = True) -> None:
+    cache = root / "research.db"
+    cache.write_bytes(b"unit-test-research-cache")
     for name, key in [
         ("real_data_bootstrap.json", "decision"),
         ("real_data_gate.json", "decision"),
@@ -220,6 +251,8 @@ def _write_required_pass_artifacts(root: Path, *, include_completion: bool = Tru
     _write_json(
         root / "run_manifest.json",
         {
+            "cache_path": str(cache),
+            "cache_sha256": _sha256(cache),
             "demo_data_used": False,
             "in_sample_end": "2024-01-02",
             "out_sample_start": "2024-01-03",
@@ -231,8 +264,27 @@ def _write_required_pass_artifacts(root: Path, *, include_completion: bool = Tru
             },
         },
     )
+    candidate_payload = json.loads(
+        (root / "candidate_walk_forward_report.json").read_text(encoding="utf-8")
+    )
+    selection_payload = json.loads(
+        (root / "candidate_selection.json").read_text(encoding="utf-8")
+    )
+    selection_payload.update(
+        {
+            "candidate_lock_selection_safe": True,
+            "evidence_inputs": {
+                "candidate_walk_forward_report.json": {
+                    "sha256": canonical_payload_sha256(candidate_payload),
+                }
+            },
+        }
+    )
+    _write_json(root / "candidate_selection.json", selection_payload)
     if include_completion:
         _write_completion(root)
+    write_selection_evidence_manifest(build_selection_evidence_manifest(root), root)
+    write_statistical_evidence_fixtures(root, candidate="core_multifactor")
 
 
 def _write_completion(
@@ -260,6 +312,15 @@ def _write_completion(
 
 
 def _write_json(path: Path, payload: dict) -> None:
+    if path.name == "robustness_report.json":
+        payload = selection_safe_robustness_payload(status=str(payload.get("status", "PASS")))
+    elif path.name == "walk_forward_report.json":
+        payload = selection_safe_walk_forward_payload(status=str(payload.get("status", "PASS")))
+    elif path.name == "candidate_walk_forward_report.json":
+        payload = selection_safe_walk_forward_payload(
+            status=str(payload.get("status", "PASS")),
+            candidate="core_multifactor",
+        )
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 

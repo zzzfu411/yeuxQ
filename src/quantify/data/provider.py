@@ -77,11 +77,21 @@ class DataProvider:
         latest = bars.sort_values(["symbol", "date"]).groupby("symbol").tail(1)
         return dict(zip(latest["symbol"], latest["close"], strict=False))
 
+    def open_prices(self, symbols: list[str], as_of: str | date) -> dict[str, float]:
+        """Return exact-day opening prices without carrying stale bars forward."""
+        bars = self.storage.load_all_bars(symbols, start=as_of, end=as_of)
+        if bars.empty:
+            return {}
+        return dict(zip(bars["symbol"], bars["open"], strict=False))
+
     def fundamentals(self, symbols: list[str], as_of: str | date) -> pd.DataFrame:
         return self.storage.load_fundamentals(symbols, as_of)
 
     def stock_info(self) -> pd.DataFrame:
         return self.storage.load_stock_info()
+
+    def metadata(self) -> dict[str, str]:
+        return self.storage.load_metadata()
 
     def index_constituents(self, index_code: str, as_of: str | date) -> list[str]:
         return self.storage.load_index_constituents(index_code, as_of)

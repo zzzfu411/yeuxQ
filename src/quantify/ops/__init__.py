@@ -56,6 +56,11 @@ from quantify.ops.first_million_resolution import (
     write_first_million_resolution_plan,
 )
 from quantify.ops.pipeline import WeeklyPipelineResult, run_weekly_pipeline
+from quantify.ops.prospective_daily_cycle import (
+    ProspectiveDailyCycle,
+    run_prospective_daily_cycle,
+    write_prospective_daily_cycle,
+)
 from quantify.ops.promotion import (
     StrategyPromotionReview,
     review_strategy_promotions,
@@ -111,6 +116,7 @@ __all__ = [
     "EvidenceWorkOrder",
     "RealDataBootstrapReport",
     "RealDataGateResult",
+    "ProspectiveDailyCycle",
     "StrategyDiscoveryCandidate",
     "StrategyDiscoveryPlan",
     "StrategyPromotionReview",
@@ -134,6 +140,7 @@ __all__ = [
     "evaluate_real_data_gate",
     "review_strategy_promotions",
     "run_weekly_pipeline",
+    "run_prospective_daily_cycle",
     "update_candidate_registry",
     "write_data_coverage_report",
     "write_first_million_daily_brief",
@@ -149,4 +156,5 @@ __all__ = [
     "write_real_data_gate",
     "write_strategy_promotion_review",
     "write_weekly_review",
+    "write_prospective_daily_cycle",
 ]

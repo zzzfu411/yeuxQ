@@ -13,6 +13,7 @@ from loguru import logger
 
 from quantify.audit import audit_data, write_data_audit
 from quantify.core.portfolio import Portfolio
+from quantify.data.demo import is_demo_contaminated
 from quantify.data.provider import DataProvider
 from quantify.data.storage import BarStorage
 from quantify.engine.paper_broker import PaperBroker, PaperBrokerConfig
@@ -78,7 +79,7 @@ def main() -> None:
     run_dir = Path(cfg.output.results_dir) / datetime.now().strftime("%Y%m%d_%H%M%S")
     trading_days = provider.trading_days(cfg.research.start, cfg.research.end)
     all_symbols = provider.all_symbols()
-    demo_like = demo_used or _looks_like_demo_data(all_symbols)
+    demo_like = demo_used or is_demo_contaminated(all_symbols)
     assumptions = {
         "data_source": cfg.data.source,
         "cache_path": cfg.data.cache_path,
@@ -91,6 +92,8 @@ def main() -> None:
         "out_sample_start": cfg.research.out_sample_start,
         "n_holdings": cfg.strategy.n_holdings,
         "max_weight": cfg.strategy.max_weight,
+        "signal_timing": "rebalance_day_close",
+        "execution_timing": "next_trading_day_open",
         "symbol_count": len(all_symbols),
         "trading_day_count": len(trading_days),
         "notice": "Research simulation only; no broker or live trading connection.",
@@ -133,7 +136,7 @@ def _ensure_data(provider: DataProvider, storage: BarStorage, cfg) -> bool:
     symbols = provider.all_symbols()
     days = provider.trading_days(cfg.research.start, cfg.research.end)
     if symbols and days:
-        if _looks_like_demo_data(symbols) and not cfg.research.allow_demo_data:
+        if is_demo_contaminated(symbols) and not cfg.research.allow_demo_data:
             raise RuntimeError(
                 "Cached data appears to be deterministic demo data. "
                 "Import real research data or set allow_demo_data=true for tutorials."
@@ -147,9 +150,6 @@ def _ensure_data(provider: DataProvider, storage: BarStorage, cfg) -> bool:
     seed_demo_data(storage, cfg.research.start, cfg.research.end)
     return True
 
-
-def _looks_like_demo_data(symbols: list[str]) -> bool:
-    return bool(symbols) and all(symbol.startswith("DEMO") for symbol in symbols)
 
 def _load_config(path: str, *, cache_path: str | None = None) -> Config:
     cfg = load_config(path)

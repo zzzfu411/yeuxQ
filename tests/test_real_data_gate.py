@@ -27,6 +27,26 @@ def test_real_data_gate_blocks_demo_data(tmp_path: Path) -> None:
     assert any(finding.code == "DEMO_DATA" for finding in result.findings)
 
 
+def test_real_data_gate_blocks_mixed_demo_and_real_data(tmp_path: Path) -> None:
+    storage = BarStorage(tmp_path / "mixed.db")
+    _seed_real_like_data(storage, "2024-01-01", periods=130, symbols=60)
+    _add_demo_symbol(storage, "2024-01-01", periods=130)
+
+    result = evaluate_real_data_gate(
+        DataProvider(storage),
+        "2024-01-01",
+        "2024-06-28",
+        as_of="2024-07-01",
+        min_symbols=50,
+        min_trading_days=120,
+        max_staleness_days=10,
+    )
+
+    assert result.demo_data_used is True
+    assert result.decision == "BLOCK"
+    assert any(finding.code == "DEMO_DATA" for finding in result.findings)
+
+
 def test_real_data_gate_blocks_stale_real_data(tmp_path: Path) -> None:
     storage = BarStorage(tmp_path / "real.db")
     _seed_real_like_data(storage, "2024-01-01", periods=130, symbols=60)
@@ -130,6 +150,27 @@ def _seed_real_like_data(storage: BarStorage, start: str, *, periods: int, symbo
                     "amount": close * 1_000_000,
                 }
             )
+    storage.save_bars(pd.DataFrame(rows))
+
+
+def _add_demo_symbol(storage: BarStorage, start: str, *, periods: int) -> None:
+    dates = pd.bdate_range(start, periods=periods)
+    storage.save_stock_info(pd.DataFrame({"symbol": ["DEMO001"], "name": ["Demo"]}))
+    rows = []
+    for day, dt in enumerate(dates):
+        close = 20 * (1 + 0.0005) ** day
+        rows.append(
+            {
+                "symbol": "DEMO001",
+                "date": dt.date().isoformat(),
+                "open": close * 0.999,
+                "high": close * 1.002,
+                "low": close * 0.998,
+                "close": close,
+                "volume": 1_000_000,
+                "amount": close * 1_000_000,
+            }
+        )
     storage.save_bars(pd.DataFrame(rows))
 
 

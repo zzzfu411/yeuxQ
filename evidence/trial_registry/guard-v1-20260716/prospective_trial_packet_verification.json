@@ -1,0 +1,89 @@
+{
+  "artifact_type": "prospective_trial_packet_verification",
+  "schema_version": 1,
+  "status": "PASS",
+  "packet_path": "evidence\\trial_registry\\guard-v1-20260716\\prospective_trial_packet.json",
+  "registry_path": "evidence\\trial_registry\\research_trials.jsonl",
+  "trial_id": "guard-v1-20260716",
+  "packet_sha256": "b33e834ef03feeac10b4427015c48952a293adedff7fcf38abe565d73682f2a9",
+  "registry_tail_hash": "ee8c7566e9d8c1f9994ef04f39ea22be31bb9191b8e1ec64512c874a3797ca18",
+  "checks": [
+    {
+      "name": "packet_contract",
+      "status": "PASS",
+      "message": "Packet artifact type and schema version match."
+    },
+    {
+      "name": "packet_sha256",
+      "status": "PASS",
+      "message": "Packet canonical SHA-256 matches."
+    },
+    {
+      "name": "execution_config",
+      "status": "PASS",
+      "message": "Frozen execution config SHA-256 matches."
+    },
+    {
+      "name": "protocol_plan",
+      "status": "PASS",
+      "message": "Retained protocol plan SHA-256 matches."
+    },
+    {
+      "name": "code:src/quantify/research/candidates.py",
+      "status": "PASS",
+      "message": "Code SHA-256 matches."
+    },
+    {
+      "name": "code:src/quantify/research/factors.py",
+      "status": "PASS",
+      "message": "Code SHA-256 matches."
+    },
+    {
+      "name": "code:src/quantify/research/strategy.py",
+      "status": "PASS",
+      "message": "Code SHA-256 matches."
+    },
+    {
+      "name": "code:src/quantify/research/walk_forward_protocol.py",
+      "status": "PASS",
+      "message": "Code SHA-256 matches."
+    },
+    {
+      "name": "code:src/quantify/research/robustness.py",
+      "status": "PASS",
+      "message": "Code SHA-256 matches."
+    },
+    {
+      "name": "code:src/quantify/engine/backtest.py",
+      "status": "PASS",
+      "message": "Code SHA-256 matches."
+    },
+    {
+      "name": "code:src/quantify/engine/paper_broker.py",
+      "status": "PASS",
+      "message": "Code SHA-256 matches."
+    },
+    {
+      "name": "code:src/quantify/risk/manager.py",
+      "status": "PASS",
+      "message": "Code SHA-256 matches."
+    },
+    {
+      "name": "development_prefix",
+      "status": "PASS",
+      "message": "Development prefix SHA-256 matches."
+    },
+    {
+      "name": "registry_chain",
+      "status": "PASS",
+      "message": "Registry chain and unique trial preregistration verify."
+    },
+    {
+      "name": "registry_packet_binding",
+      "status": "PASS",
+      "message": "Registry event matches the packet preregistration payload."
+    }
+  ],
+  "blockers": [],
+  "execution_allowed": false
+}

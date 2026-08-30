@@ -24,7 +24,16 @@ def main() -> None:
     parser.add_argument("--years", type=float, default=8.0)
     parser.add_argument("--max-drawdown-budget", type=float, default=0.20)
     parser.add_argument("--as-of", default=None, help="Real-data gate as-of date YYYY-MM-DD")
-    parser.add_argument("--wf-train-days", type=int, default=120, help="Walk-forward warmup/train days")
+    parser.add_argument(
+        "--wf-mode",
+        choices=("expanding", "rolling"),
+        default="expanding",
+        help="Walk-forward training-window mode",
+    )
+    parser.add_argument("--wf-train-days", type=int, default=120, help="Walk-forward train days")
+    parser.add_argument("--wf-purge-days", type=int, default=5, help="Gap after train")
+    parser.add_argument("--wf-selection-days", type=int, default=20, help="Pre-test selection days")
+    parser.add_argument("--wf-embargo-days", type=int, default=5, help="Gap before test")
     parser.add_argument("--wf-test-days", type=int, default=60, help="Walk-forward test-window days")
     parser.add_argument("--wf-step-days", type=int, default=60, help="Walk-forward step days")
     parser.add_argument(
@@ -76,7 +85,11 @@ def main() -> None:
         registry_path=None if args.no_registry else Path(args.registry),
         paper_state_dir=Path(args.paper_state_dir) if args.paper_state_dir else None,
         as_of=args.as_of,
+        walk_forward_mode=args.wf_mode,
         walk_forward_train_days=args.wf_train_days,
+        walk_forward_purge_days=args.wf_purge_days,
+        walk_forward_selection_days=args.wf_selection_days,
+        walk_forward_embargo_days=args.wf_embargo_days,
         walk_forward_test_days=args.wf_test_days,
         walk_forward_step_days=args.wf_step_days,
         prepare_micro_live_readiness=args.prepare_micro_live_readiness,

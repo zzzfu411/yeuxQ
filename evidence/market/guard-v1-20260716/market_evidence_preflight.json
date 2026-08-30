@@ -1,0 +1,83 @@
+{
+  "artifact_type": "market_evidence_preflight",
+  "schema_version": 1,
+  "operation": "read_only_external_evidence_validation",
+  "network_access": false,
+  "broker_access": false,
+  "status": "BLOCK",
+  "sufficient": false,
+  "expected_index_code": "000906",
+  "required_coverage": {
+    "start_date": "2024-06-03",
+    "end_date": "2026-10-16"
+  },
+  "minimum_members_per_snapshot": 700,
+  "benchmark": {
+    "csv": {
+      "path": "D:\\Develop\\claude\\quantify\\data_exports\\indices\\csi800_total_return.csv",
+      "exists": false,
+      "readable": false,
+      "sha256": null,
+      "expected_sha256": null,
+      "sha256_matches_metadata": null,
+      "observations": 0,
+      "start_date": null,
+      "end_date": null
+    },
+    "metadata_json": {
+      "path": "D:\\Develop\\claude\\quantify\\data_exports\\indices\\csi800_total_return.metadata.json",
+      "exists": false,
+      "readable": false,
+      "sha256": null
+    },
+    "metadata": {}
+  },
+  "membership": {
+    "csv": {
+      "path": "D:\\Develop\\claude\\quantify\\data_exports\\indices\\csi800_pit_membership.csv",
+      "exists": false,
+      "readable": false,
+      "sha256": null,
+      "expected_sha256": null,
+      "sha256_matches_metadata": null,
+      "observations": 0,
+      "start_date": null,
+      "end_date": null,
+      "effective_dates": 0
+    },
+    "metadata_json": {
+      "path": "D:\\Develop\\claude\\quantify\\data_exports\\indices\\csi800_pit_membership.metadata.json",
+      "exists": false,
+      "readable": false,
+      "sha256": null
+    },
+    "metadata": {}
+  },
+  "evidence": [
+    {
+      "code": "REQUIRED_COVERAGE_VALID",
+      "status": "PASS",
+      "message": "Required market-evidence coverage is a valid closed date range."
+    },
+    {
+      "code": "BENCHMARK_CSV_MISSING",
+      "status": "BLOCK",
+      "message": "Required input file is missing: data_exports\\indices\\csi800_total_return.csv."
+    },
+    {
+      "code": "BENCHMARK_METADATA_MISSING",
+      "status": "BLOCK",
+      "message": "Required input file is missing: data_exports\\indices\\csi800_total_return.metadata.json."
+    },
+    {
+      "code": "MEMBERSHIP_CSV_MISSING",
+      "status": "BLOCK",
+      "message": "Required input file is missing: data_exports\\indices\\csi800_pit_membership.csv."
+    },
+    {
+      "code": "MEMBERSHIP_METADATA_MISSING",
+      "status": "BLOCK",
+      "message": "Required input file is missing: data_exports\\indices\\csi800_pit_membership.metadata.json."
+    }
+  ]
+}

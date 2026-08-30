@@ -9,7 +9,56 @@ import pandas as pd
 
 from quantify.data.storage import BarStorage
 from quantify.goal import CapitalGoal, build_capital_goal_status, write_capital_goal_status
+from quantify.goal.status import GoalEvidenceItem, _next_actions
 from quantify.utils.config import Config
+from tests.selection_safe_fixtures import (
+    selection_safe_robustness_payload,
+    selection_safe_walk_forward_payload,
+)
+from tests.statistical_evidence_fixtures import write_statistical_evidence_fixtures
+
+
+def test_metadata_only_cache_block_suppresses_stale_acquisition_and_template_actions() -> None:
+    evidence = [
+        GoalEvidenceItem(
+            "data_cache",
+            "BLOCK",
+            "current.db",
+            "cache exists with 300 symbols. Cache metadata blocker: source QA is NOT_EVALUATED.",
+        ),
+        GoalEvidenceItem(
+            "data_evidence_action_packet",
+            "BLOCK",
+            "data_evidence_action_packet.json",
+            "source_qa_answers is missing.",
+        ),
+        GoalEvidenceItem(
+            "recent_data_acquisition",
+            "BLOCK",
+            "recent_data_acquisition_plan.json",
+            "An older provider attempt created no cache.",
+        ),
+        GoalEvidenceItem(
+            "csv_validation",
+            "BLOCK",
+            "csv_validation.json",
+            "Template CSV has only two symbols.",
+        ),
+        GoalEvidenceItem(
+            "offline_source_qa_preflight",
+            "BLOCK",
+            "source_qa_preflight.json",
+            "Real source QA answers are missing.",
+        ),
+    ]
+
+    actions = _next_actions(evidence)
+
+    assert actions[0].startswith("Follow data evidence action packet first")
+    assert any("source QA preflight" in action for action in actions)
+    assert any("guarded offline intake" in action for action in actions)
+    assert not any("recent data acquisition" in action for action in actions)
+    assert not any("CSV validation" in action for action in actions)
 
 
 def test_capital_goal_status_blocks_missing_real_and_paper_evidence(tmp_path: Path) -> None:
@@ -47,12 +96,28 @@ def test_capital_goal_status_watches_goal_return_gap(tmp_path: Path) -> None:
             ],
         },
     )
-
+    write_statistical_evidence_fixtures(tmp_path)
     status = build_capital_goal_status(tmp_path, goal=_goal())
 
     assert status.decision == "WATCH"
     candidate = next(item for item in status.evidence if item.name == "candidate_selection")
     assert candidate.status == "WATCH"
+
+
+def test_capital_goal_status_blocks_tampered_trial_candidate(tmp_path: Path) -> None:
+    _write_core_pass_artifacts(tmp_path)
+    _write_candidate_selection_pass(tmp_path)
+    payload = json.loads((tmp_path / "trial_registry_review.json").read_text(encoding="utf-8"))
+    payload["selected_candidate"] = "defensive_low_vol"
+    _write_json(tmp_path / "trial_registry_review.json", payload)
+
+    status = build_capital_goal_status(tmp_path, goal=_goal())
+
+    trial_review = next(item for item in status.evidence if item.name == "trial_registry_review")
+    assert status.decision == "BLOCK"
+    assert trial_review.status == "BLOCK"
+    assert "does not match deterministic candidate selection" in trial_review.message
+    assert any("trial registry review" in action for action in status.next_actions)
 
 
 def test_capital_goal_status_blocks_when_only_top_candidate_exists(tmp_path: Path) -> None:
@@ -90,11 +155,16 @@ def test_capital_goal_status_blocks_missing_candidate_completion(tmp_path: Path)
 
     status = build_capital_goal_status(tmp_path, goal=_goal())
 
-    completion = next(item for item in status.evidence if item.name == "candidate_experiment_completion")
+    completion = next(
+        item for item in status.evidence if item.name == "candidate_experiment_completion"
+    )
     assert status.decision == "BLOCK"
     assert completion.status == "BLOCK"
     assert "Missing candidate experiment completion" in completion.message
-    assert any("Complete every required candidate experiment output" in action for action in status.next_actions)
+    assert any(
+        "Complete every required candidate experiment output" in action
+        for action in status.next_actions
+    )
 
 
 def test_capital_goal_status_watches_candidate_completion_watch(tmp_path: Path) -> None:
@@ -115,10 +185,13 @@ def test_capital_goal_status_watches_candidate_completion_watch(tmp_path: Path) 
             "results": [{"name": "core_multifactor", "metrics": {"annualized_return": 0.40}}],
         },
     )
+    write_statistical_evidence_fixtures(tmp_path)
 
     status = build_capital_goal_status(tmp_path, goal=_goal())
 
-    completion = next(item for item in status.evidence if item.name == "candidate_experiment_completion")
+    completion = next(
+        item for item in status.evidence if item.name == "candidate_experiment_completion"
+    )
     assert status.decision == "WATCH"
     assert completion.status == "WATCH"
     assert "llm_review.json" in completion.message
@@ -767,7 +840,6 @@ def test_capital_goal_status_passes_complete_raw_vendor_traceability(tmp_path: P
     intake_dir = tmp_path / "offline_intake"
     intake_dir.mkdir()
     _write_core_pass_artifacts(tmp_path)
-    _write_candidate_selection_pass(tmp_path)
     _write_json(
         tmp_path / "run_manifest.json",
         {
@@ -780,6 +852,7 @@ def test_capital_goal_status_passes_complete_raw_vendor_traceability(tmp_path: P
         },
     )
     _write_raw_vendor_trace(intake_dir, raw_hash="raw-hash-1")
+    _write_candidate_selection_pass(tmp_path)
 
     status = build_capital_goal_status(
         tmp_path,
@@ -850,9 +923,9 @@ def test_capital_goal_status_passes_complete_tdx_day_traceability(tmp_path: Path
     intake_dir = tmp_path / "offline_intake"
     intake_dir.mkdir()
     _write_core_pass_artifacts(tmp_path)
-    _write_candidate_selection_pass(tmp_path)
     metadata = _write_tdx_day_trace(tmp_path, intake_dir)
     storage.save_metadata({"csv_dataset_fingerprint": "csv-fingerprint-1", **metadata})
+    _write_candidate_selection_pass(tmp_path)
 
     status = build_capital_goal_status(
         tmp_path,
@@ -977,6 +1050,7 @@ def test_capital_goal_status_passes_when_config_cache_is_broad_and_recent(tmp_pa
             "results": [{"name": "core_multifactor", "metrics": {"annualized_return": 0.40}}],
         },
     )
+    write_statistical_evidence_fixtures(tmp_path)
 
     status = build_capital_goal_status(
         tmp_path,
@@ -1008,6 +1082,7 @@ def test_goal_status_cli_writes_outputs(tmp_path: Path) -> None:
             ],
         },
     )
+    write_statistical_evidence_fixtures(tmp_path)
 
     completed = subprocess.run(
         [
@@ -1048,7 +1123,9 @@ def test_goal_status_cli_accepts_import_doctor_dir(tmp_path: Path) -> None:
         doctor_dir / "data_import_doctor.json",
         {
             "status": "BLOCK",
-            "findings": [{"severity": "BLOCK", "code": "DATA_EXPORT_DIR_MISSING", "message": "missing"}],
+            "findings": [
+                {"severity": "BLOCK", "code": "DATA_EXPORT_DIR_MISSING", "message": "missing"}
+            ],
         },
     )
 
@@ -1275,16 +1352,25 @@ def _seed_real_like_cache(
                     "amount": close * 1_000_000,
                 }
             )
-    storage.save_bars(pd.DataFrame(rows))
     if with_metadata:
-        storage.save_metadata(
-            {
-                "csv_dataset_fingerprint": "csv-fingerprint-1",
-                "data_source_qa_status": "PASS",
-                "data_source_csv_qa_status": "PASS",
-                **_cache_source_qa_metadata(storage.db_path.parent),
-            }
+        metadata = {
+            "data_source": "local_csv",
+            "csv_dataset_fingerprint": "csv-fingerprint-1",
+            "data_source_qa_status": "PASS",
+            "data_source_csv_qa_status": "PASS",
+            **_cache_source_qa_metadata(storage.db_path.parent),
+        }
+        storage.save_bars_with_lineage(
+            pd.DataFrame(rows),
+            source_type="guarded_local_csv",
+            source_reference="unit-test-bars.csv",
+            source_fingerprint_kind="csv_dataset_fingerprint",
+            source_fingerprint="csv-fingerprint-1",
+            cache_metadata=metadata,
         )
+    else:
+        storage.save_bars(pd.DataFrame(rows))
+        storage.save_metadata({"data_source": "local_csv"})
 
 
 def _cache_source_qa_metadata(root: Path) -> dict[str, str]:
@@ -1313,6 +1399,7 @@ def _write_candidate_selection_pass(root: Path) -> None:
             "results": [{"name": "core_multifactor", "metrics": {"annualized_return": 0.40}}],
         },
     )
+    write_statistical_evidence_fixtures(root)
 
 
 def _write_raw_vendor_trace(
@@ -1535,6 +1622,16 @@ def _write_core_pass_artifacts(root: Path) -> None:
 
 
 def _write_json(path: Path, payload: dict) -> None:
+    if path.name == "robustness_report.json":
+        payload = selection_safe_robustness_payload(status=str(payload.get("status", "PASS")))
+    elif path.name == "walk_forward_report.json":
+        payload = selection_safe_walk_forward_payload(status=str(payload.get("status", "PASS")))
+    elif path.name == "candidate_walk_forward_report.json":
+        candidate = str(payload.get("best_candidate") or "core_multifactor")
+        payload = selection_safe_walk_forward_payload(
+            status=str(payload.get("status", "PASS")),
+            candidate=candidate,
+        )
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 

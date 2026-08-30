@@ -35,11 +35,52 @@ def import_research_csvs(
 
     try:
         bars = _normalize_bars(_read_csv(bars_path, encoding))
-        storage.save_bars(bars)
     except Exception as exc:  # noqa: BLE001 - report all import problems.
         return _blocked(storage, failures=[ImportFailure("bars_csv", f"{type(exc).__name__}: {exc}")])
 
     symbols = sorted(bars["symbol"].astype(str).unique().tolist())
+    import_metadata = {
+        "actual_bar_start": str(bars["date"].min()),
+        "actual_bar_end": str(bars["date"].max()),
+        "actual_bar_symbol_count": len(symbols),
+        **(metadata or {}),
+    }
+    csv_fingerprint = str(import_metadata.get("csv_dataset_fingerprint", "") or "")
+    initial_cache_metadata = {
+        "data_source": "local_csv",
+        "last_import_source": "local_csv",
+        "last_import_status": "BAR_COMMITTED",
+        "last_import_start": str(bars["date"].min()),
+        "last_import_end": str(bars["date"].max()),
+        "last_import_symbol_count": len(symbols),
+        "last_import_bar_rows": len(bars),
+        **import_metadata,
+    }
+    try:
+        attestation = storage.save_bars_with_lineage(
+            bars,
+            source_type="guarded_local_csv" if csv_fingerprint else "local_csv",
+            source_reference=str(bars_path.resolve()),
+            source_fingerprint_kind="csv_dataset_fingerprint" if csv_fingerprint else "",
+            source_fingerprint=csv_fingerprint,
+            source_metadata={
+                "bars_csv": str(bars_path.resolve()),
+                "encoding": encoding,
+                "index_code": index_code,
+                "declared_metadata": import_metadata,
+            },
+            cache_metadata=initial_cache_metadata,
+        )
+    except Exception as exc:  # noqa: BLE001 - atomic transaction leaves no partial batch.
+        return _blocked(storage, failures=[ImportFailure("bars_csv", f"{type(exc).__name__}: {exc}")])
+    import_metadata.update(
+        {
+            "bar_import_batch_id": attestation.batch_id,
+            "cache_logical_bar_fingerprint": attestation.post_import_logical_fingerprint,
+            "cache_logical_bar_fingerprint_algorithm": attestation.logical_fingerprint_algorithm,
+            "bar_import_lineage_rows": attestation.written_row_count,
+        }
+    )
     if stock_info_csv:
         try:
             stock_info = _normalize_stock_info(_read_csv(stock_info_csv, encoding))
@@ -91,24 +132,12 @@ def import_research_csvs(
     elif symbols:
         storage.save_index_constituents(index_code, index_date or str(bars["date"].min()), symbols)
         notes.append("No index_constituents_csv supplied; all imported symbols were used as one index snapshot.")
-    import_metadata = {
-        "actual_bar_start": str(bars["date"].min()),
-        "actual_bar_end": str(bars["date"].max()),
-        "actual_bar_symbol_count": len(symbols),
-        **(metadata or {}),
-    }
-    if import_metadata:
-        storage.save_metadata(
-            {
-                "last_import_source": "local_csv",
-                "last_import_status": "WATCH" if failures else "PASS",
-                "last_import_start": str(bars["date"].min()),
-                "last_import_end": str(bars["date"].max()),
-                "last_import_symbol_count": len(symbols),
-                "last_import_bar_rows": len(bars),
-                **import_metadata,
-            }
-        )
+    storage.save_metadata(
+        {
+            "last_import_status": "WATCH" if failures else "PASS",
+            **import_metadata,
+        }
+    )
 
     return ResearchImportReport(
         status="WATCH" if failures else "PASS",

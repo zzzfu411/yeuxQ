@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+import yaml
+
 from quantify.data.acquisition_plan import (
     build_recent_data_acquisition_plan_from_config,
     write_recent_data_acquisition_plan,
@@ -350,11 +352,17 @@ def run_first_million_pipeline(
     root.mkdir(parents=True, exist_ok=True)
     data_root = Path(data_dir)
     cfg = load_config(config_path)
+    effective_config_path = Path(config_path)
     if cache_path is not None:
         payload = cfg.to_dict()
         data = dict(payload.get("data", {}))
         data["cache_path"] = str(cache_path)
         cfg = type(cfg)({**payload, "data": data})
+        effective_config_path = root / "effective_config.yaml"
+        effective_config_path.write_text(
+            yaml.safe_dump(cfg.to_dict(), allow_unicode=True, sort_keys=False),
+            encoding="utf-8",
+        )
     resolved_cache_path = Path(str(cfg.data.cache_path))
     storage: BarStorage | None = None
     provider: DataProvider | None = None
@@ -443,7 +451,7 @@ def run_first_million_pipeline(
     )
 
     acquisition_plan = build_recent_data_acquisition_plan_from_config(
-        config_path=config_path,
+        config_path=effective_config_path,
         cache_path=cache_path,
         as_of=as_of,
         min_symbols=min_symbols,
@@ -491,7 +499,7 @@ def run_first_million_pipeline(
         )
 
     export_request = build_data_export_request(
-        config_path=config_path,
+        config_path=effective_config_path,
         output_dir=data_root,
         min_symbols=min_symbols,
     )
@@ -535,7 +543,7 @@ def run_first_million_pipeline(
     elif tdx_input_dir is not None:
         tdx_discovery = build_tdx_day_discovery_report(
             search_dirs=[tdx_input_dir],
-            config_path=config_path,
+            config_path=effective_config_path,
             output_dir=root,
             data_output_dir=data_root,
             min_symbols=min_symbols,
@@ -570,7 +578,7 @@ def run_first_million_pipeline(
     raw_bars_search_dirs = [Path(raw_bars_csv)] if raw_bars_csv is not None else [data_root / "raw", data_root]
     raw_bars_discovery = build_raw_bars_discovery_report(
         search_dirs=raw_bars_search_dirs,
-        config_path=config_path,
+        config_path=effective_config_path,
         output_dir=root,
         data_output_dir=data_root,
         min_symbols=min_symbols,
@@ -589,7 +597,7 @@ def run_first_million_pipeline(
     )
 
     checklist = build_data_source_qa(
-        config_path=config_path,
+        config_path=effective_config_path,
         output_dir=data_root,
         min_symbols=min_symbols,
         as_of=as_of,
@@ -829,7 +837,7 @@ def run_first_million_pipeline(
 
     data_gap_plan = build_data_gap_action_plan(
         data_dir=data_root,
-        config_path=config_path,
+        config_path=effective_config_path,
         source_qa_answers=answers_path,
         min_symbols=min_symbols,
         as_of=as_of,
@@ -846,7 +854,7 @@ def run_first_million_pipeline(
     )
     data_evidence_packet = build_data_evidence_action_packet(
         data_dir=data_root,
-        config_path=config_path,
+        config_path=effective_config_path,
         source_qa_answers=answers_path,
         min_symbols=min_symbols,
         as_of=as_of,
@@ -961,7 +969,7 @@ def run_first_million_pipeline(
     if tdx_discovery is None:
         tdx_discovery = build_tdx_day_discovery_report(
             search_dirs=resolved_tdx_search_dirs,
-            config_path=config_path,
+            config_path=effective_config_path,
             output_dir=root,
             data_output_dir=data_root,
             min_symbols=min_symbols,
@@ -972,7 +980,7 @@ def run_first_million_pipeline(
 
     data_intake_router = build_data_intake_router(
         data_dir=data_root,
-        config_path=config_path,
+        config_path=effective_config_path,
         source_qa_answers=answers_path,
         source_qa_evidence_manifest=review_evidence_manifest_path,
         require_source_qa_evidence_manifest=require_source_qa_evidence_manifest,
@@ -1005,7 +1013,7 @@ def run_first_million_pipeline(
 
     offline_package = build_offline_data_package_report(
         data_dir=data_root,
-        config_path=config_path,
+        config_path=effective_config_path,
         source_qa_answers=answers_path,
         source_qa_evidence_manifest=review_evidence_manifest_path,
         require_source_qa_evidence_manifest=require_source_qa_evidence_manifest,
@@ -1025,7 +1033,7 @@ def run_first_million_pipeline(
 
     real_data_handoff = build_real_data_handoff_checklist(
         data_dir=data_root,
-        config_path=config_path,
+        config_path=effective_config_path,
         source_qa_answers=answers_path,
         min_symbols=min_symbols,
         min_trading_days=min_trading_days,
@@ -1109,7 +1117,7 @@ def run_first_million_pipeline(
         raw_bars_csv=intake_raw_bars_csv,
         data_dir=data_root,
         report_dir=root,
-        config_path=config_path,
+        config_path=effective_config_path,
         cache_path=resolved_cache_path,
         source_qa_answers=answers_path,
         source_qa_evidence_manifest=evidence_manifest_path,
@@ -1153,7 +1161,8 @@ def run_first_million_pipeline(
         intake = run_offline_data_intake(
             raw_bars_csv=fallback_raw_bars_csv,
             data_dir=data_root,
-            config_path=config_path,
+            config_path=effective_config_path,
+            cache_path=resolved_cache_path,
             output_dir=intake_dir,
             min_symbols=min_symbols,
             min_trading_days=min_trading_days,
@@ -1193,7 +1202,7 @@ def run_first_million_pipeline(
             provider,
             cfg,
             storage=storage,
-            config_path=config_path,
+            config_path=effective_config_path,
             purpose="first_million_offline_intake",
             demo_data_used=False,
         )
@@ -1235,7 +1244,7 @@ def run_first_million_pipeline(
     if intake.status == "PASS" or allow_research_only_weekly:
         weekly = run_weekly_pipeline(
             cfg,
-            config_path=config_path,
+            config_path=effective_config_path,
             output_dir=root / "weekly",
             starting_capital=starting_capital,
             target_capital=target_capital,
@@ -1374,7 +1383,7 @@ def run_first_million_pipeline(
     ohlcv_package = build_ohlcv_experiment_package_preflight(
         data_dir=data_root,
         report_dir=root,
-        config_path=config_path,
+        config_path=effective_config_path,
         source_qa_answers=answers_path,
         source_qa_evidence_manifest=review_evidence_manifest_path,
         require_source_qa_evidence_manifest=require_source_qa_evidence_manifest,
@@ -1400,7 +1409,7 @@ def run_first_million_pipeline(
     real_data_onboarding = build_real_data_batch_onboarding(
         data_dir=data_root,
         report_dir=root,
-        config_path=config_path,
+        config_path=effective_config_path,
         raw_bars_csv=raw_bars_csv,
         source_qa_answers=answers_path,
         source_qa_evidence_manifest=evidence_manifest_path,
@@ -1473,7 +1482,7 @@ def run_first_million_pipeline(
         experiment_queue,
         experiment_readiness,
         report_dir=root,
-        config_path=config_path,
+        config_path=effective_config_path,
         as_of=as_of,
     )
     write_candidate_experiment_launch(experiment_launch, root)
@@ -1488,7 +1497,7 @@ def run_first_million_pipeline(
     experiment_run_packet = build_candidate_experiment_run_packet(
         experiment_launch,
         report_dir=root,
-        config_path=config_path,
+        config_path=effective_config_path,
         as_of=as_of,
     )
     write_candidate_experiment_run_packet(experiment_run_packet, root)
@@ -1614,7 +1623,7 @@ def run_first_million_pipeline(
         decision=_decision(stages),
         output_dir=str(root),
         data_dir=str(data_root),
-        config_path=str(config_path),
+        config_path=str(effective_config_path),
         goal=goal.to_dict(),
         stages=stages,
         next_actions=_next_actions(
@@ -1649,7 +1658,7 @@ def run_first_million_pipeline(
     strategy_discovery_plan = build_strategy_discovery_plan(
         root,
         as_of=as_of,
-        config_path=config_path,
+        config_path=effective_config_path,
     )
     write_strategy_discovery_plan(strategy_discovery_plan, root)
     stages.append(
@@ -1678,7 +1687,7 @@ def run_first_million_pipeline(
         decision=_decision(stages),
         output_dir=str(root),
         data_dir=str(data_root),
-        config_path=str(config_path),
+        config_path=str(effective_config_path),
         goal=goal.to_dict(),
         stages=stages,
         next_actions=_next_actions(

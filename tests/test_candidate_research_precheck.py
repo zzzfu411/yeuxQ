@@ -48,6 +48,7 @@ def test_candidate_research_precheck_cli_runs_without_launch_gate_for_real_confi
     payload = json.loads((output_dir / "candidate_research_precheck.json").read_text(encoding="utf-8"))
     notice = json.loads((output_dir / "research_precheck_notice.json").read_text(encoding="utf-8"))
     selection = json.loads((output_dir / "candidate_selection.json").read_text(encoding="utf-8"))
+    manifest = json.loads((output_dir / "run_manifest.json").read_text(encoding="utf-8"))
     assert payload == notice
     assert payload["status"] == "RESEARCH_ONLY"
     assert payload["promotion_decision"] == "BLOCK"
@@ -57,14 +58,18 @@ def test_candidate_research_precheck_cli_runs_without_launch_gate_for_real_confi
     assert payload["can_generate_broker_orders"] is False
     assert payload["factor_diagnostics_status"] == "SKIPPED"
     assert payload["regime_validation_status"] == "SKIPPED"
-    assert payload["selection_scope"] == "latest_precheck_window"
+    assert payload["selection_scope"] == "latest_pretest_selection_window"
     assert payload["selection_start"]
     assert payload["selection_end"]
     assert payload["walk_forward_status"] in {"PASS", "WATCH", "BLOCK"}
     assert payload["candidates"] == ["price_volume_defensive"]
     assert "candidate_research_precheck.json" in payload["generated_artifacts"]
+    assert "run_manifest.json" in payload["generated_artifacts"]
+    assert manifest["purpose"] == "candidate_research_precheck"
+    assert manifest["config_path"] == str(cfg_path)
+    assert manifest["cache_path"] == str(cache)
     assert any("--gate-report-dir" in item for item in payload["prohibited_actions"])
-    assert any("Full-sample candidate_selection" in item for item in payload["missing_promotion_evidence"])
+    assert any("selection-safe evidence" in item for item in payload["missing_promotion_evidence"])
     assert any("candidate_factor_diagnostics.json was not generated" in item for item in payload["missing_promotion_evidence"])
     assert len(selection["results"]) == 1
     assert selection["results"][0]["candidate_walk_forward_status"] != "UNKNOWN"
@@ -80,6 +85,12 @@ def test_candidate_research_precheck_cli_runs_without_launch_gate_for_real_confi
     assert next_experiments["promotion_decision"] == "BLOCK"
     assert next_experiments["can_enter_paper"] is False
     assert next_experiments["can_generate_broker_orders"] is False
+    assert "run_manifest.json" in next_experiments["source_files"]
+    assert all(
+        str(cfg_path) in item["command_hint"]
+        for item in next_experiments["experiments"]
+        if "--config" in item["command_hint"]
+    )
     assert (output_dir / "candidate_next_experiments.md").exists()
     assert (output_dir / "candidate_next_experiments.csv").exists()
 
@@ -127,6 +138,51 @@ def test_candidate_research_precheck_cli_can_include_optional_evidence(
     assert (output_dir / "candidate_regime_validation_report.json").exists()
 
 
+def test_candidate_research_precheck_full_sample_writes_market_regime(
+    tmp_path: Path,
+) -> None:
+    cache = tmp_path / "research.db"
+    _seed_small_cache(cache)
+    cfg_path = tmp_path / "research.yaml"
+    cfg_path.write_text(_cfg_yaml(cache), encoding="utf-8")
+    output_dir = tmp_path / "precheck"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "examples/run_candidate_research_precheck.py",
+            "--config",
+            str(cfg_path),
+            "--output-dir",
+            str(output_dir),
+            "--candidate",
+            "low_turnover_price_volume",
+            "--train-days",
+            "40",
+            "--test-days",
+            "30",
+            "--step-days",
+            "30",
+            "--full-sample-selection",
+        ],
+        cwd=Path.cwd(),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    payload = json.loads((output_dir / "candidate_research_precheck.json").read_text(encoding="utf-8"))
+    market = json.loads((output_dir / "market_regime.json").read_text(encoding="utf-8"))
+    selection = json.loads((output_dir / "candidate_selection.json").read_text(encoding="utf-8"))
+
+    assert completed.returncode == 0
+    assert payload["selection_scope"] == "full_sample"
+    assert "market_regime.json" in payload["generated_artifacts"]
+    assert market["label"] != "unknown"
+    assert selection["market_regime"]["label"] == market["label"]
+    assert selection["results"][0]["market_regime_review"]["fit"] != "insufficient_context"
+
+
 def test_candidate_research_precheck_report_fences_promotion() -> None:
     report = build_candidate_research_precheck_report(
         candidates=["low_turnover_price_volume"],
@@ -147,7 +203,7 @@ def test_candidate_research_precheck_report_fences_promotion() -> None:
     assert payload["research_top_candidate"] == "low_turnover_price_volume"
     assert payload["can_satisfy_launch_gate"] is False
     assert payload["can_enter_paper"] is False
-    assert payload["selection_scope"] == "latest_precheck_window"
+    assert payload["selection_scope"] == "latest_pretest_selection_window"
     assert payload["factor_diagnostics_status"] == "SKIPPED"
     assert payload["regime_validation_status"] == "SKIPPED"
     assert "cannot satisfy a candidate launch gate" in markdown

@@ -52,16 +52,40 @@ def test_import_research_data_writes_real_cache_and_report(tmp_path: Path) -> No
     with (
         patch("akshare.stock_zh_a_spot_em", return_value=raw_info),
         patch("quantify.data.akshare_feed.AkshareFeed.fetch", fake_fetch),
+        patch(
+            "quantify.data.research_importer._installed_akshare_version",
+            return_value="1.18.60-test",
+        ),
     ):
-        report = import_research_data(storage, "2024-01-02", "2024-01-03", limit=2)
+        report = import_research_data(
+            storage,
+            "2024-01-02",
+            "2024-01-03",
+            limit=2,
+            adjust="qfq",
+        )
 
     out = write_import_report(report, tmp_path / "import")
     provider = DataProvider(storage)
     assert report.status == "PASS"
+    metadata = storage.load_metadata()
+    assert metadata["data_source"] == "akshare"
+    assert metadata["data_import_adjust_requested"] == "qfq"
+    assert metadata["data_import_akshare_version"] == "1.18.60-test"
+    assert metadata["data_imported_at_utc"] == report.metadata["imported_at_utc"]
+    assert metadata["data_import_universe_snapshot_mode"] == "current_spot_snapshot_research_only"
+    assert metadata["data_import_universe_point_in_time"] == "false"
+    assert metadata["data_import_universe_symbol_count"] == "2"
+    assert metadata["data_source_qa_status"] == "NOT_EVALUATED"
+    assert metadata["data_source_csv_qa_status"] == "NOT_EVALUATED"
     assert report.imported_symbols == 2
     assert report.metadata["actual_bar_start"] == "2024-01-02"
     assert report.metadata["actual_bar_end"] == "2024-01-03"
     assert report.metadata["actual_bar_symbol_count"] == 2
+    assert report.metadata["adjust_requested"] == "qfq"
+    assert report.metadata["akshare_version"] == "1.18.60-test"
+    assert report.metadata["universe_snapshot_mode"] == "current_spot_snapshot_research_only"
+    assert report.metadata["universe_point_in_time"] is False
     assert report.network_blocked is False
     assert report.failure_stage == ""
     assert "real_data_bootstrap" in report.next_actions[0]
@@ -186,6 +210,7 @@ def test_import_research_data_can_skip_spot_list_with_manual_symbols(tmp_path: P
 
     assert report.status == "PASS"
     assert report.metadata["actual_bar_end"] == "2024-01-02"
+    assert report.metadata["universe_snapshot_mode"] == "manual_symbol_list_research_only"
     assert DataProvider(storage).all_symbols() == ["600001"]
 
 

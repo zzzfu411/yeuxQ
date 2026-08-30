@@ -14,19 +14,24 @@ from quantify.data.provider import DataProvider
 from quantify.data.storage import BarStorage
 from quantify.research.demo_data import seed_demo_data
 from quantify.research.walk_forward import run_walk_forward, write_walk_forward_report
-from quantify.utils.config import load_config
+from quantify.utils.config import Config, load_config
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run walk-forward validation.")
     parser.add_argument("--config", default="config/research.yaml", help="YAML config path")
+    parser.add_argument("--cache", default=None, help="Override config data.cache_path")
     parser.add_argument("--output-dir", required=True, help="Output directory")
+    parser.add_argument("--mode", choices=("expanding", "rolling"), default="expanding")
     parser.add_argument("--train-days", type=int, default=120)
+    parser.add_argument("--purge-days", type=int, default=5)
+    parser.add_argument("--selection-days", type=int, default=20)
+    parser.add_argument("--embargo-days", type=int, default=5)
     parser.add_argument("--test-days", type=int, default=60)
     parser.add_argument("--step-days", type=int, default=60)
     args = parser.parse_args()
 
-    cfg = load_config(args.config)
+    cfg = _load_config(args.config, cache_path=args.cache)
     storage = BarStorage(cfg.data.cache_path)
     provider = DataProvider(storage)
     if not provider.all_symbols() or not provider.trading_days(cfg.research.start, cfg.research.end):
@@ -37,12 +42,26 @@ def main() -> None:
         provider,
         cfg,
         train_days=args.train_days,
+        purge_days=args.purge_days,
+        selection_days=args.selection_days,
+        embargo_days=args.embargo_days,
         test_days=args.test_days,
         step_days=args.step_days,
+        mode=args.mode,
     )
     out = write_walk_forward_report(report, Path(args.output_dir))
     logger.info("Walk-forward status: {}", report.status)
     logger.info("Walk-forward report written to {}", out.resolve())
+
+
+def _load_config(path: str, *, cache_path: str | None = None) -> Config:
+    cfg = load_config(path)
+    if cache_path is None:
+        return cfg
+    payload = cfg.to_dict()
+    data = dict(payload.get("data", {}))
+    data["cache_path"] = cache_path
+    return Config({**payload, "data": data})
 
 
 if __name__ == "__main__":

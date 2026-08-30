@@ -1658,6 +1658,8 @@ def _workflow_commands(
             ".\\.venv\\Scripts\\python.exe examples\\run_source_qa_preflight.py "
             f"--checklist {data_dir / 'data_source_qa.json'} "
             f"--answers {data_dir / 'data_source_qa_answers.json'} "
+            f"--evidence-manifest {data_dir / 'source_qa_evidence_manifest.json'} "
+            "--require-evidence-manifest "
             "--output-dir results\\import\\source_qa"
         ),
         (

@@ -846,7 +846,13 @@ def test_write_data_source_qa_cli_writes_outputs(tmp_path: Path) -> None:
     assert payload["start"] == "2024-06-03"
     assert payload["as_of"] == "2026-06-08"
     assert payload["source_metadata_template"]["license_or_usage_scope"] == "research and paper trading only"
-    assert "run_source_qa_preflight.py" in "\n".join(payload["workflow_commands"])
+    preflight_command = next(
+        command
+        for command in payload["workflow_commands"]
+        if "run_source_qa_preflight.py" in command
+    )
+    assert "--evidence-manifest" in preflight_command
+    assert "--require-evidence-manifest" in preflight_command
     assert "write_data_source_qa_evidence_worksheet.py" in "\n".join(payload["workflow_commands"])
     assert "--require-evidence-manifest" in "\n".join(payload["workflow_commands"])
     assert "run_offline_data_intake.py" in "\n".join(payload["workflow_commands"])

@@ -4,8 +4,8 @@ Place only real local evidence files in this directory. The manifest command has
 
 Suggested current attachments are listed in:
 
-- `results\first_million\source_qa_evidence_attachment_plan.csv`
-- `results\first_million\source_qa_evidence_attachment_plan.md`
+- `results\prospective\guard_v1_20260716\operational_status\source_qa_evidence_attachment_plan.csv`
+- `results\prospective\guard_v1_20260716\operational_status\source_qa_evidence_attachment_plan.md`
 
 After adding or replacing files, run:
 

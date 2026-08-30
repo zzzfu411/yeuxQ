@@ -1,0 +1,53 @@
+{
+  "plan_id": "guard_v1",
+  "status": "RESEARCH_ONLY_BLOCKED_BY_EVIDENCE",
+  "created_as_of": "2026-07-15",
+  "candidate": "liquidity_neutral_momentum_guard_price_volume",
+  "candidate_role": "frozen_falsification_hypothesis_not_selected_strategy",
+  "registered_prior_trials": 18,
+  "development_data": {
+    "end": "2026-07-14",
+    "independent_holdout": false,
+    "reason": "This sample was used for candidate comparison and lineage review and cannot be reused as fresh out-of-sample evidence."
+  },
+  "hypothesis": "Liquidity-neutral long momentum with defensive exposure control can deliver positive net benchmark-relative returns without breaching the small-capital drawdown and execution budgets.",
+  "primary_metric": {
+    "name": "net_cost_excess_cagr_vs_csi800_total_return",
+    "success_rule": "positive with a block-bootstrap 95% lower confidence bound above zero after registered-trial correction"
+  },
+  "required_data": [
+    "Human-approved source QA and retained usage terms",
+    "Point-in-time CSI 800 or delisting-aware broad A-share membership history",
+    "CSI 800 total-return benchmark with matching dates",
+    "Canonical dataset and lineage fingerprints",
+    "A fresh holdout opened only after code, config, metrics, and stop rules are frozen"
+  ],
+  "required_tests": [
+    "Expanding or rolling train-select-test with purge and embargo",
+    "Benchmark alpha, beta, information ratio, tracking error, and block-bootstrap confidence interval",
+    "Deflated Sharpe Ratio and Probability of Backtest Overfitting using at least 18 registered trials",
+    "Initial capital stress at 100000, 200000, 500000, and 1000000 CNY",
+    "100-share lot, 5 CNY minimum commission, stamp tax, and 5/10/20 bps slippage execution",
+    "Defensive-regime attribution separating selection alpha from cash exposure"
+  ],
+  "risk_constraints": {
+    "max_drawdown_block": 0.20,
+    "target_max_drawdown": 0.15,
+    "max_reject_rate": 0.10,
+    "max_position_weight": 0.05,
+    "paper_observation_days_required": 40
+  },
+  "stop_conditions": [
+    "Any source-QA, PIT-universe, dataset-identity, or benchmark provenance gate is BLOCK",
+    "Trial-corrected primary metric fails",
+    "Fresh-holdout maximum drawdown exceeds 20%",
+    "The 100000 CNY portfolio cannot execute under lot and minimum-commission constraints",
+    "A rule or parameter is changed after the holdout is opened"
+  ],
+  "promotion_boundary": {
+    "can_enter_paper": false,
+    "can_enter_micro_live_ready": false,
+    "can_generate_broker_orders": false,
+    "unlock_rule": "All required evidence and tests pass on a fresh, preregistered holdout; deterministic gates are rerun; human approval remains separate."
+  }
+}

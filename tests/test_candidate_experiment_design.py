@@ -28,6 +28,9 @@ BASE_SCENARIOS = {
     "stability_control",
     "score_smoothing",
     "high_cost",
+    "small_capital_5bps",
+    "small_capital_10bps",
+    "small_capital_20bps",
 }
 TREND_SCENARIOS = BASE_SCENARIOS | {"trend_filter_off", "trend_filter_stronger"}
 
@@ -45,7 +48,7 @@ def test_candidate_experiment_design_matrix_preregisters_scenario_coverage(
     assert payload["artifact_type"] == "candidate_experiment_design_matrix"
     assert payload["status"] == "WAITING_FOR_REAL_DATA"
     assert payload["candidate_count"] == 18
-    assert payload["scenario_count"] == 162
+    assert payload["scenario_count"] == 216
     assert payload["can_run_research"] is False
     assert payload["can_enter_paper"] is False
     assert payload["can_generate_broker_orders"] is False
@@ -81,6 +84,10 @@ def test_candidate_experiment_design_matrix_maps_stress_scenarios_to_roles(
     assert rows[("price_volume_defensive", "stability_control")]["scenario_family"] == "turnover_stability"
     assert rows[("price_volume_defensive", "score_smoothing")]["scenario_family"] == "turnover_stability"
     assert rows[("price_volume_defensive", "high_cost")]["scenario_family"] == "cost_stress"
+    assert (
+        rows[("price_volume_defensive", "small_capital_20bps")]["scenario_family"]
+        == "cost_stress"
+    )
     assert (
         rows[("trend_filtered_price_volume", "trend_filter_off")]["scenario_family"]
         == "trend_filter_ablation"

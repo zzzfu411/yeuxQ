@@ -25,6 +25,16 @@ def main() -> None:
     parser.add_argument("--end", default=None, help="Run end date YYYY-MM-DD")
     parser.add_argument("--candidate", default=None, help="Candidate strategy name")
     parser.add_argument("--initial-cash", type=float, default=None)
+    parser.add_argument(
+        "--expected-cache-sha256",
+        default=None,
+        help="Optional research-manifest cache hash that the paper cache must match",
+    )
+    parser.add_argument(
+        "--expected-dataset-fingerprint",
+        default=None,
+        help="Optional research-manifest dataset fingerprint that the paper cache must match",
+    )
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -37,6 +47,8 @@ def main() -> None:
         end=args.end,
         candidate=args.candidate,
         initial_cash=args.initial_cash,
+        expected_cache_sha256=args.expected_cache_sha256,
+        expected_dataset_fingerprint=args.expected_dataset_fingerprint,
     )
     logger.info("Paper loop as_of: {}", result.state.as_of)
     logger.info("Paper loop observed days: {}", result.state.observed_days)

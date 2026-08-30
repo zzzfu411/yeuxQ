@@ -7,8 +7,8 @@ It is a source-quality and reproducibility checklist, not a trading signal.
 
 - Market: `A-share equities`
 - Frequency: `daily`
-- Date range: `2024-06-03` to `2026-06-05`
-- As-of: `2026-07-06`
+- Date range: `2024-06-03` to `2026-07-14`
+- As-of: `2026-07-14`
 - Minimum symbols: 300
 - Price adjustment: `qfq`
 - Universe mode: `all_a`
@@ -26,7 +26,7 @@ It is a source-quality and reproducibility checklist, not a trading signal.
 | `exported_at_local_time` | `` |
 | `market` | `A-share equities` |
 | `frequency` | `daily` |
-| `date_range` | `2024-06-03 to 2026-06-05` |
+| `date_range` | `2024-06-03 to 2026-07-14` |
 | `price_adjustment` | `qfq` |
 | `encoding` | `utf-8-sig or gbk` |
 | `license_or_usage_scope` | `research and paper trading only` |
@@ -64,11 +64,11 @@ It is a source-quality and reproducibility checklist, not a trading signal.
 ## Workflow Commands
 
 ```powershell
-.\.venv\Scripts\python.exe examples\write_data_export_request.py --config config\research_recent.yaml --output-dir data_exports --min-symbols 300
+.\.venv\Scripts\python.exe examples\write_data_export_request.py --config results\prospective\guard_v1_20260716\operational_status\effective_config.yaml --output-dir data_exports --min-symbols 300
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\write_data_source_qa.py --config config\research_recent.yaml --output-dir data_exports --min-symbols 300 --as-of 2026-07-06
+.\.venv\Scripts\python.exe examples\write_data_source_qa.py --config results\prospective\guard_v1_20260716\operational_status\effective_config.yaml --output-dir data_exports --min-symbols 300 --as-of 2026-07-14
 ```
 
 ```powershell
@@ -84,7 +84,7 @@ It is a source-quality and reproducibility checklist, not a trading signal.
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\run_source_qa_preflight.py --checklist data_exports\data_source_qa.json --answers data_exports\data_source_qa_answers.json --output-dir results\import\source_qa
+.\.venv\Scripts\python.exe examples\run_source_qa_preflight.py --checklist data_exports\data_source_qa.json --answers data_exports\data_source_qa_answers.json --evidence-manifest data_exports\source_qa_evidence_manifest.json --require-evidence-manifest --output-dir results\import\source_qa
 ```
 
 ```powershell
@@ -96,7 +96,7 @@ It is a source-quality and reproducibility checklist, not a trading signal.
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\run_offline_data_intake.py --data-dir data_exports --config config\research_recent.yaml --output-dir results\import\offline_intake --raw-bars-csv <raw-vendor-bars.csv> --source-vendor <vendor-or-broker> --source-terminal <terminal-name> --source-operator <operator> --source-exported-at <local-time> --source-price-adjustment qfq --source-price-adjustment-evidence <evidence> --source-license-evidence <evidence> --source-point-in-time-evidence <evidence-or-non-pit-note> --source-reviewed-by <name> --source-reviewed-at <date> --min-symbols 300 --min-trading-days 240 --source-qa-answers data_exports\data_source_qa_answers.json --as-of 2026-07-06
+.\.venv\Scripts\python.exe examples\run_offline_data_intake.py --data-dir data_exports --config results\prospective\guard_v1_20260716\operational_status\effective_config.yaml --output-dir results\import\offline_intake --raw-bars-csv <raw-vendor-bars.csv> --source-vendor <vendor-or-broker> --source-terminal <terminal-name> --source-operator <operator> --source-exported-at <local-time> --source-price-adjustment qfq --source-price-adjustment-evidence <evidence> --source-license-evidence <evidence> --source-point-in-time-evidence <evidence-or-non-pit-note> --source-reviewed-by <name> --source-reviewed-at <date> --min-symbols 300 --min-trading-days 240 --source-qa-answers data_exports\data_source_qa_answers.json --as-of 2026-07-14
 ```
 
 ## Safety Boundaries

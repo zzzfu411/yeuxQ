@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from quantify.core.event import Direction, FillEvent, SignalEvent
-from quantify.core.portfolio import Portfolio
+from quantify.core.portfolio import Portfolio, Position
 from quantify.risk.manager import RiskConfig, RiskManager
 from quantify.risk.sizer import FixedCashSizer, FixedPctSizer
 
@@ -105,3 +105,27 @@ def test_risk_position_cap_truncates_quantity() -> None:
     assert order is not None
     # 0.3 * 100000 = 30000 → 30000/100 = 300 shares
     assert order.quantity == 300
+
+
+def test_risk_position_cap_uses_each_holding_market_price() -> None:
+    pf = make_portfolio(10_000.0)
+    pf.positions["A"] = Position(
+        symbol="A",
+        total_qty=100,
+        available_qty=100,
+        avg_cost=100.0,
+    )
+    rm = RiskManager(
+        RiskConfig(max_position_pct=0.3),
+        FixedPctSizer(pct=1.0),
+    )
+
+    order = rm.process(
+        SignalEvent(datetime(2024, 1, 2), "B", Direction.LONG),
+        pf,
+        ref_price=10.0,
+        prices={"A": 100.0, "B": 10.0},
+    )
+
+    assert order is not None
+    assert order.quantity == 600

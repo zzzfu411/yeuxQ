@@ -1,19 +1,24 @@
-﻿# 07 闀挎湡鎵ц Goal: A 鑲℃棩棰戝皬棰濆疄鐩樺噯澶囩郴缁?
-> 椋庨櫓鎻愮ず: 杩欎釜 goal 鐨勭洰鏍囨槸瀹炵洏鍑嗗,涓嶆槸绔嬪嵆瀹炵洏銆傛湰椤圭洰涓嶄細鑷姩鎻愪氦鐪熷疄 broker 璁㈠崟銆?
-## 鐩爣
+# 07 长期执行 Goal: A 股日频小额实盘准备系统
+> 风险提示: 这个 goal 的目标是实盘准备,不是立即实盘。本项目不会自动提交真实 broker 订单。
+## 目标
 
-鎶?Quantify 闀挎湡鎺ㄨ繘涓?A 鑲℃棩棰戦噺鍖栧伐浣滃彴:
+把 Quantify 长期推进为 A 股日频量化工作台:
 
 ```text
-鏁版嵁瀹¤ -> 绋冲仴鎬х爺绌?-> 妯℃嫙鐩樻棩鎶?-> LLM 椋庢帶瀹℃煡 -> 浜哄伐瀹℃壒 -> micro_live_ready
+数据审计 -> 稳健性研究 -> 模拟盘日报 -> LLM 风控审查 -> 人工审批 -> micro_live_ready
 ```
 
-`micro_live_ready` 鍙〃绀烘潗鏂欏噯澶囧畬姣?浠嶇劧鍙兘浜哄伐鍐崇瓥鍜屼汉宸ヤ笅鍗曘€?
-## 姣忓懆鑺傚
+`micro_live_ready` 只表示材料准备完毕,仍然只能人工决策和人工下单。
+## 每周节奏
 
-- 鍛ㄤ竴: 璺戞暟鎹璁°€?- 鍛ㄤ簩: 璺戠爺绌跺拰绋冲仴鎬у疄楠屻€?- 鍛ㄤ笁: 璺?LLM 瀹℃煡鍜屾ā鎷熺洏鏃ユ姤銆?- 鍛ㄥ洓: 淇鏁版嵁銆佺瓥鐣ャ€侀鎺ф垨鎵ц闂銆?- 鍛ㄤ簲: 鐢熸垚 readiness 鏉愭枡鍜屽懆澶嶇洏銆?
-## 鍛戒护閾?
-鎺ㄨ崘姣忓懆鍏堣窇鐪熷疄鏁版嵁鍚姩妫€鏌?鍐嶈窇涓€閿绾挎祦姘寸嚎:
+- 周一: 跑数据审计。
+- 周二: 跑研究和稳健性实验。
+- 周三: 跑 LLM 审查和模拟盘日报。
+- 周四: 修复数据、策略、风控或执行问题。
+- 周五: 生成 readiness 材料和周复盘。
+
+## 命令链
+推荐每周先跑真实数据启动检查,再跑一键离线流水线:
 
 ```powershell
 uv run python examples/run_recent_data_plan.py --config config/research_recent.yaml --output-dir results/bootstrap_recent --as-of 2026-06-08
@@ -21,9 +26,9 @@ uv run python examples/run_real_data_bootstrap.py --config config/research_recen
 uv run python examples/run_weekly_pipeline.py --config config/research_recent.yaml --review-stage paper --paper-state-dir results/paper/core --wf-train-days 120 --wf-test-days 60 --wf-step-days 60
 ```
 
-娴佹按绾夸細鑷姩鐢熸垚鐪熷疄鏁版嵁 bootstrap銆佺爺绌舵姤鍛娿€佽繎鏈熺湡瀹炴暟鎹棬銆佹暟鎹璁°€佸競鍦虹姸鎬併€佺ǔ鍋ユ€ф姤鍛娿€亀alk-forward銆佸€欓€夌瓥鐣?walk-forward銆佸€欓€夌瓥鐣ュ垎琛屾儏楠岃瘉銆佸€欓€夌瓥鐣ョ瓫閫夈€佹ā鎷熺洏鏃ユ姤銆佹ā鎷熺洏绋冲畾鎬у鏌ャ€丩LM-ready 纭畾鎬у鏌ャ€丩LM prompt銆佸懆搴﹀鐩樺拰绛栫暐妗ｆ蹇収銆傚畠榛樿涓嶈皟鐢ㄥ閮?LLM銆佷笉鍐欎汉宸ュ鎵硅褰曘€佷笉鐢熸垚鐪熷疄 broker 鎸囦护銆傛湭鎻愪緵杩炵画 paper 鐘舵€佺洰褰曟椂,`paper_stability.json` 浼氭槑纭?BLOCK銆?
-濡傛灉闇€瑕侀€愭鎺掓煡,鍙互鎸変笅闈㈠懡浠ら摼鍒嗘璺戙€?
-濡傛灉 AKShare 鎴栬鎯呮帴鍙ｈ缃戠粶/鏉冮檺闄愬埗鎸′綇,浣跨敤绂荤嚎 CSV 鍚堝悓琛ラ綈鐪熷疄鏁版嵁鍏ュ彛:
+流水线会自动生成真实数据 bootstrap、研究报告、近期真实数据门、数据审计、市场状态、稳健性报告、walk-forward、候选策略 walk-forward、候选策略分行情验证、候选策略筛选、模拟盘日报、模拟盘稳定性审查、LLM-ready 确定性审查、LLM prompt、周度复盘和策略档案快照。它默认不调用外部 LLM、不写人工审批记录、不生成真实 broker 指令。未提供连续 paper 状态目录时,历史回测只生成 `research_execution_preview.json/md`,`paper_daily_review.json` 固定为 `BLOCK/NO_CONTINUOUS_PAPER_RUN`,`paper_stability.json` 也明确 BLOCK,且历史回测天数不会计入连续模拟盘观察期。
+如果需要逐步排查,可以按下面命令链分步跑。
+如果 AKShare 或行情接口被网络/权限限制挡住,使用离线 CSV 合同补齐真实数据入口:
 
 ```powershell
 uv run python examples/write_data_export_request.py --config config/research_recent.yaml --output-dir data_exports --min-symbols 300
@@ -48,7 +53,7 @@ uv run python examples/validate_research_csv.py --bars-csv data_exports\bars.csv
 uv run python examples/import_research_csv.py --cache .\data_cache\research_recent.db --bars-csv data_exports\bars.csv --stock-info-csv data_exports\stock_info.csv --fundamentals-csv data_exports\fundamentals.csv --calendar-csv data_exports\calendar.csv --suspensions-csv data_exports\suspensions.csv --index-constituents-csv data_exports\index_constituents.csv --validate --start 2024-06-03 --end 2026-06-05 --min-symbols 300 --output-dir results\import\recent_csv
 ```
 
-璇﹁ [09_绂荤嚎鐪熷疄鏁版嵁瀵煎叆鍚堝悓.md](09_绂荤嚎鐪熷疄鏁版嵁瀵煎叆鍚堝悓.md)銆傜绾垮鍏ラ€氳繃鍚?浠嶅繀椤婚噸鏂拌窇 `real_data_bootstrap` 鍜?`data_audit`銆?
+详见 [09_离线真实数据导入合同.md](09_离线真实数据导入合同.md)。离线导入通过后,仍必须重新跑 `real_data_bootstrap` 和 `data_audit`。
 
 Blocked first-million runs should be worked from
 `first_million_resolution_plan.json/md/csv`. The plan groups P0 source QA
@@ -62,13 +67,13 @@ uv run python examples/run_first_million_resolution_plan.py --report-dir results
 This file is an operator queue only. It does not change deterministic gates,
 does not approve paper or micro-live work, and does not authorize broker orders.
 
-鍏堣窇鐮旂┒:
+先跑研究:
 
 ```powershell
 uv run python examples/run_research.py --config config/research.yaml
 ```
 
-瀵规姤鍛婄洰褰曡窇鏁版嵁瀹¤:
+对报告目录跑数据审计:
 
 ```powershell
 uv run python examples/run_recent_data_plan.py --config config/research_recent.yaml --output-dir results/research/<timestamp>
@@ -78,16 +83,27 @@ uv run python examples/run_data_coverage.py --config config/research_recent.yaml
 uv run python examples/run_data_audit.py --config config/research_recent.yaml --output-dir results/research/<timestamp>
 ```
 
-璺戠ǔ鍋ユ€у疄楠?
+跑稳健性实验:
 
 ```powershell
-uv run python examples/run_robustness.py --config config/research.yaml --output-dir results/research/<timestamp>
+uv run python examples/run_robustness.py --config config/research.yaml --output-dir results/research/<timestamp> --mode expanding --train-days 120 --purge-days 5 --selection-days 20 --embargo-days 5 --test-days 60 --step-days 60
 uv run python examples/run_walk_forward.py --config config/research.yaml --output-dir results/research/<timestamp>
 uv run python examples/run_candidate_walk_forward.py --config config/research.yaml --output-dir results/research/<timestamp>
 uv run python examples/run_candidate_regime_validation.py --config config/research.yaml --output-dir results/research/<timestamp>
 ```
 
-鐢熸垚妯℃嫙鐩樻棩鎶?
+新 holdout 实验必须先登记、后运行、再追加结果；旧结果不能回填成预注册：
+
+```powershell
+.\.venv\Scripts\python.exe examples\run_trial_registry.py preregister --registry results\research\trial_registry.jsonl --payload trial-preregistration.json
+.\.venv\Scripts\python.exe examples\run_multiple_testing_review.py --input-csv results\research\frozen_trial_returns.csv --output-dir results\research\<timestamp> --selected-candidate <candidate> --periods-per-year 252 --partition-count 8
+.\.venv\Scripts\python.exe examples\run_benchmark_review.py --strategy-equity-csv results\research\<timestamp>\equity.csv --benchmark-csv evidence\csi800_total_return.csv --benchmark-metadata evidence\csi800_total_return.metadata.json --output-dir results\research\<timestamp>
+.\.venv\Scripts\python.exe examples\run_trial_registry.py record-result --registry results\research\trial_registry.jsonl --payload trial-result.json
+.\.venv\Scripts\python.exe examples\run_trial_registry.py verify --registry results\research\trial_registry.jsonl
+.\.venv\Scripts\python.exe examples\run_trial_registry_review.py --registry results\research\trial_registry.jsonl --report-dir results\research\<timestamp>
+```
+
+生成模拟盘日报:
 
 ```powershell
 uv run python examples/run_paper_candidate_plan.py --report-dir results/research/<timestamp> --config config/research_recent.yaml --paper-state-dir results/paper/core
@@ -97,70 +113,154 @@ uv run python examples/run_paper_daily.py --report-dir results/research/<timesta
 uv run python examples/run_target_plan.py --config config/research.yaml --output-dir results/research/<timestamp> --current-positions results/research/<timestamp>/paper_positions.csv
 ```
 
-璺?LLM-ready 瀹℃煡:
+跑 LLM-ready 审查:
 
 ```powershell
 uv run python examples/run_llm_review.py --report-dir results/research/<timestamp> --stage micro_live_ready
 ```
 
-鐢熸垚甯傚満鐘舵€佸拰鍊欓€夌瓥鐣ョ瓫閫?
+生成市场状态和候选策略筛选:
 
 ```powershell
 uv run python examples/run_market_regime.py --config config/research.yaml --output-dir results/research/<timestamp>
 uv run python examples/run_candidate_selection.py --config config/research.yaml --output-dir results/research/<timestamp> --starting-capital 100000 --target-capital 1000000 --years 8
 ```
 
-鍐欎汉宸ュ鎵硅褰?
+写人工审批记录:
 
 ```powershell
 uv run python examples/run_readiness.py --report-dir results/research/<timestamp> --approved-by "your-name" --approval-notes "manual review only"
 uv run python examples/run_capital_scaling_plan.py --report-dir results/research/<timestamp> --current-capital 100000 --proposed-capital 120000
 ```
 
-鐢熸垚鍛ㄥ害澶嶇洏:
+生成周度复盘:
 
 ```powershell
 uv run python examples/run_weekly_review.py --report-dir results/research/<timestamp>
 ```
 
-## 浜х墿
+## 产物
 
-- `real_data_bootstrap.json/md`: 鐪熷疄鏁版嵁鍚姩妫€鏌?姹囨€荤紦瀛樺瓨鍦ㄦ€с€佹牱鏈媶鍒嗐€乨emo 椋庨櫓銆佽繎鏈熺湡瀹炴暟鎹棬銆佽鐩栫巼鍜屼笅涓€姝ュ懡浠ゃ€?- `recent_data_acquisition_plan.json/md`: 杩戞湡鐪熷疄 A 鑲℃暟鎹噰闆嗚鍒掑拰褰撳墠 BLOCK 鍘熷洜銆?- `data_gap_action_plan.json/md`: 鏁版嵁缂哄彛琛屽姩娓呭崟,鎶?source QA銆丆SV 妯℃澘銆佸繀濉厓鏁版嵁銆乮mport doctor 鍜屼笅涓€姝ュ懡浠ゆ眹鎬诲埌涓€涓彲鎵ц娓呭崟銆?- `candidate_hypotheses.json/md`: 鍊欓€夌瓥鐣ュ亣璁剧洰褰?璁板綍姣忎釜鍊欓€夌殑鐮旂┒鍋囪銆侀€傜敤琛屾儏銆侀獙璇侀棬妲涖€佽嚜鍔ㄩ檷绾ф潯浠躲€乸aper 瑙傚療瑕佹眰鍜岀姝㈠姩浣? 瀹冧笉鏄瓥鐣ユ帓鍚?涔熶笉鏄疄鐩樻寚浠ゃ€?- `candidate_experiment_queue.json/md`: 鍊欓€夌瓥鐣ラ娉ㄥ唽瀹為獙闃熷垪,璁板綍楠岃瘉椤哄簭銆佸懡浠ら摼銆佹垚鍔熸爣鍑嗐€佽瘉浼祴璇曘€佸仠姝㈡潯浠跺拰浜х墿; 瀹冧笉鑳芥彁楂樹换浣曞€欓€夌殑瀹℃煡缁撹銆?- `price_volume_defensive`: 閫氳揪淇℃垨鍒稿晢鏃ョ嚎鍙彁渚?OHLCV 鏃朵紭鍏堥獙璇佺殑鍊欓€?涓嶄娇鐢ㄤ及鍊?璐ㄩ噺瀛楁,浣嗕粛蹇呴』閫氳繃 source QA銆乷ffline intake銆佹暟鎹璁°€佺ǔ鍋ユ€у拰妯℃嫙鐩橀棬妲? 缂哄皯 PIT 璐㈠姟瀛楁鏃?浼板€?璐ㄩ噺渚濊禆鍊欓€変細鍦?`candidate_selection` 涓鏁版嵁渚濊禆闂ㄩ檷绾с€?- `candidate_experiment_readiness.json/md`: 鍊欓€夊疄楠屽彲杩愯鎬у鏌?鍙湁 source QA銆乷ffline intake 鍜屽疄楠岄槦鍒楅兘 PASS 鏃舵墠鍏佽鎸夐娉ㄥ唽闃熷垪鍚姩鍊欓€夊疄楠屻€?- `candidate_experiment_launch.json/md`: 鍊欓€夊疄楠屽惎鍔ㄨ鍒?鍦?readiness PASS 鍚庨攣瀹氶涓€欓€夈€佽繍琛?ID銆佸疄楠岀洰褰曘€佸懡浠ら摼鍜?required outputs; readiness BLOCK 鏃跺彧璁板綍闃诲鍘熷洜銆?- `candidate_experiment_completion.json/md`: 鍊欓€夊疄楠屽畬鎴愬鏌?纭鍚姩璁″垝瑕佹眰鐨勪骇鐗╁瓨鍦ㄤ笖鏃?BLOCK,闃叉鍙寫閫夊ソ鐪嬬殑閮ㄥ垎缁撴灉杩涘叆 paper銆?- `run_manifest.json/md`: 杩愯璇佹嵁娓呭崟,璁板綍閰嶇疆鍝堝笇銆佺紦瀛樺搱甯屻€丆SV 鏁版嵁鎸囩汗銆乺aw vendor 鏂囦欢鎸囩汗銆佹牱鏈獥鍙ｃ€佽偂绁ㄦ暟銆佷氦鏄撴棩鏁板拰瀹夊叏杈圭晫銆?- `real_data_gate.json/md`: 杩戞湡鐪熷疄鏁版嵁闂ㄣ€?- `data_coverage.json/md/csv`: 姣忓彧鑲＄エ瑕嗙洊鑼冨洿銆佺己鍙ｅ拰杩囨湡璇婃柇銆?- `data_audit.json/md`: 鏁版嵁鍙俊搴﹀璁°€?- `market_regime.json/md`: 鏈湴琛屾儏甯傚満鐘舵€佹娴嬨€?- `robustness_report.json/md`: 鍙傛暟鎵板姩鍜屾垚鏈帇鍔涙祴璇曘€?- `walk_forward_report.json/md`: 婊氬姩绐楀彛绋冲畾鎬ч獙璇併€?- `candidate_walk_forward_report.json/md`: 鍊欓€夌瓥鐣ユ粴鍔ㄧ獥鍙ｇǔ瀹氭€ф瘮杈冦€?- `candidate_factor_diagnostics.json/md`: 鍊欓€夌瓥鐣ュ洜瀛愮粍浠惰瘖鏂?妫€鏌ユ槸鍚﹁繃搴︿緷璧栧崟涓€鍥犲瓙銆傚懆娴佹按绾块粯璁よ瘖鏂綋鍓?best candidate銆?- `candidate_regime_validation_report.json/md`: 鍊欓€夌瓥鐣ユ寜甯傚満鐘舵€佸垎妗剁殑绋冲畾鎬ч獙璇併€?- `candidate_selection.json/md/csv`: 鍊欓€夌瓥鐣ユ帓鍚嶅拰璧勯噾鐩爣鍖归厤銆?- `paper_candidate_plan.json/md`: 鍊欓€夎繘鍏ヨ繛缁ā鎷熺洏瑙傚療鐨勯棬绂佽鍒掑拰鏈湴 paper loop 鍛戒护銆?- `capital_goal_status.json/md`: 绗竴妗堕噾鐩爣鎬绘帶闈㈡澘,姹囨€绘暟鎹€佺ǔ鍋ユ€с€佸€欓€夌瓥鐣ャ€佹ā鎷熺洏銆佸鎵瑰拰鏅嬬骇璇佹嵁; raw vendor CSV 璺緞涓嬭繕浼氱敤 `raw_vendor_traceability` 纭 normalization銆乮mport metadata銆丼QLite metadata 鍜?run manifest 鐨勫師濮嬫枃浠舵寚绾逛竴鑷淬€?- `first_million_readiness.json/md`: 绗竴妗堕噾灏辩华鍗＄墖,鎶婃暟鎹己鍙ｃ€乻ource QA銆乷ffline intake銆佸€欓€夊疄楠岄棴鐜拰璧勯噾鐩爣鎬绘帶姹囨垚棣栧睆 PASS/WATCH/BLOCK銆?- `capital_scaling_plan.json/md`: 璧勯噾閫掑瀹℃煡,闄愬埗姣忔璧勯噾鎻愰珮鐨勬渶澶у箙搴︺€?- `paper_state.json`: 妯℃嫙鐩樼姸鎬併€?- `paper_orders.csv`: 妯℃嫙璁㈠崟銆?- `paper_positions.csv`: 鏈€鏂版ā鎷熸寔浠撱€?- `paper_daily.csv`: 杩炵画妯℃嫙鐩樻瘡鏃ョ姸鎬併€?- `paper_stability.json/md`: 杩炵画妯℃嫙鐩樼ǔ瀹氭€у鏌ャ€?- `paper_daily_review.md`: 妯℃嫙鐩樻棩鎶ャ€?- `target_portfolio.json/md/csv`: 涓嬩竴娆＄洰鏍囩粍鍚堝拰鎵嬪伐宸鍙傝€冦€?- `approval_record.json`: 浜哄伐瀹℃壒璁板綍銆?- `micro_live_readiness.json/md`: 灏忛瀹炵洏鍑嗗闂ㄧ粨璁恒€?- `risk_budget.json`: 鎵嬪伐闃舵椋庨櫓棰勭畻銆?- `manual_trade_sheet.csv`: 浜哄伐鍙傝€冭〃,浼樺厛鏉ヨ嚜鐩爣缁勫悎璁″垝,鍖呭惈娴佸姩鎬с€佸弬涓庣巼銆丼T/閫€甯?鍋滅墝/娑ㄨ穼鍋滅瓑椋庨櫓鏍囪; 褰撳墠鎸佷粨鍗充娇琚洰鏍囪偂绁ㄦ睜杩囨护涔熶細淇濈暀涓轰汉宸ュ鐞嗚,涓嶆槸鐪熷疄璁㈠崟銆?- `weekly_review.json/md`: 鍛ㄥ害璇佹嵁鐭╅樀鍜岀户缁?闄嶇骇/鏆傚仠缁撹銆?- `weekly_pipeline.json/md`: 涓€閿祦姘寸嚎闃舵璁板綍鍜屾渶缁堝懆搴︾粨璁恒€?- `strategy_registry_snapshot.json/md`: 褰撳墠鍛ㄧ瓥鐣ユ。妗堝揩鐓с€?- `results/strategy_registry/strategy_registry.json/md`: 闀挎湡鍊欓€夌瓥鐣ュ巻鍙叉。妗?鍖呭惈鍊欓€夌瓥鐣?walk-forward 绋冲畾鎬ц瘉鎹€?- `strategy_promotion_review.json/md`: 瀵圭収璧勯噾鐩爣璺緞鍜屽€欓€夌瓥鐣?walk-forward 鐨勭瓥鐣ユ檵绾у鏌ャ€?
-## 鍗囩骇闂?
-杩涘叆 `micro_live_ready` 鍓嶅繀椤绘弧瓒?
+- `real_data_bootstrap.json/md`: 真实数据启动检查,汇总缓存存在性、样本拆分、demo 风险、近期真实数据门、覆盖率和下一步命令。
+- `recent_data_acquisition_plan.json/md`: 近期真实 A 股数据采集计划和当前 BLOCK 原因。
+- `data_gap_action_plan.json/md`: 数据缺口行动清单,把 source QA、CSV 模板、必填元数据、import doctor 和下一步命令汇总到一个可执行清单。
+- `candidate_hypotheses.json/md`: 候选策略假设目录,记录每个候选的研究假设、适用行情、验证门槛、自动降级条件、paper 观察要求和禁止动作。它不是策略排名,也不是实盘指令。
+- `candidate_experiment_queue.json/md`: 候选策略预注册实验队列,记录验证顺序、命令链、成功标准、证伪测试、停止条件和产物; 它不能提高任何候选的审查结论。
+- `price_volume_defensive`: 通达信或券商日线只提供 OHLCV 时优先验证的候选,不使用估值、质量字段,但仍必须通过 source QA、offline intake、数据审计、稳健性和模拟盘门。缺少 PIT 财务字段时,估值、质量依赖候选会在 `candidate_selection` 中被数据依赖门降级。
+- `candidate_experiment_readiness.json/md`: 候选实验可运行性审查,只有 source QA、offline intake 和实验队列都 PASS 时才允许按预注册队列启动候选实验。
+- `candidate_experiment_launch.json/md`: 候选实验启动计划,在 readiness PASS 后锁定首个候选、运行 ID、实验目录、命令链与 required outputs; readiness BLOCK 时只记录阻塞原因。
+- `candidate_experiment_completion.json/md`: 候选实验完成审查,确认启动计划要求的产物存在且无 BLOCK,防止只挑选好看的部分结果进入 paper。
+- `trial_registry.jsonl`: canonical JSONL 预注册与结果账本，使用 SHA-256 链检测改写、截断和乱序；不提供历史回填命令。
+- `multiple_testing_report.json/md`: 冻结 trial 日收益矩阵上的 DSR 与 CSCV/PBO 诊断；证据不足时 BLOCK，且永远不能升级确定性门。
+- `benchmark_report.json/md`: 经人工复核、文件哈希绑定且身份匹配 `000906` 的全收益基准审查；记录超额 CAGR、跟踪误差、信息比率和 moving-block bootstrap 95% CI。
+- `trial_registry_review.json/md`: 把前瞻 preregistration/result 与当前研究 artifacts 逐文件 SHA-256 绑定；事后注册、候选错配或文件改写均 BLOCK。
+- `run_manifest.json/md`: 运行证据清单,记录配置哈希、缓存哈希、CSV 数据指纹、raw vendor 文件指纹、样本窗口、股票数、交易日数和安全边界。
+- `real_data_gate.json/md`: 近期真实数据门。
+- `data_coverage.json/md/csv`: 每只股票覆盖范围、缺口和过期诊断。
+- `data_audit.json/md`: 数据可信度审计。
+- `market_regime.json/md`: 本地行情市场状态检测。
+- `robustness_report.json/md`: 预冻结标准场景矩阵，并在隔离 test folds 上完整运行的参数扰动与成本压力测试；少于 3 个完整 folds 最多为 WATCH。
+- `walk_forward_report.json/md`: 滚动窗口稳定性验证。
+- `candidate_walk_forward_report.json/md`: 候选策略滚动窗口稳定性比较。
+- `candidate_factor_diagnostics.json/md`: 候选策略因子组件诊断,检查是否过度依赖单一因子。周流水线默认诊断当前 best candidate。
+- `candidate_regime_validation_report.json/md`: 候选策略按市场状态分桶的稳定性验证。
+- `candidate_selection.json/md/csv`: 候选策略排名和资金目标匹配。
+- `paper_candidate_plan.json/md`: 候选进入连续模拟盘观察的门禁计划和本地 paper loop 命令。
+- `research_execution_preview.json/md`: 历史回测的执行预览,固定 `promotion_eligible=false`; 不能替代连续 paper checkpoint,不能累计模拟盘观察天数。
+- `capital_goal_status.json/md`: 第一桶金目标总控面板,汇总数据、稳健性、候选策略、模拟盘、审批和晋级证据; raw vendor CSV 路径下还会用 `raw_vendor_traceability` 确认 normalization、import metadata、SQLite metadata 与 run manifest 的原始文件指纹一致。
+- `first_million_readiness.json/md`: 第一桶金就绪卡片,把数据缺口、source QA、offline intake、候选实验闭环和资金目标总控汇成首屏 PASS/WATCH/BLOCK。
+- `capital_scaling_plan.json/md`: 资金递增审查,限制每次资金提高的最大幅度。
+- `paper_state.json`: 只由连续本地 paper loop 生成的可恢复模拟盘状态; 必须绑定 candidate、run context、local-paper backend 和 checkpoint。
+- `paper_orders.csv`: 模拟订单。
+- `paper_positions.csv`: 最新模拟持仓。
+- `paper_daily.csv`: 连续模拟盘每日状态。
+- `paper_stability.json/md`: 连续模拟盘稳定性审查。
+- `paper_daily_review.md`: 模拟盘日报。
+- `target_portfolio.json/md/csv`: 下一次目标组合和手工差额参考。
+- `approval_record.json`: 人工审批记录。
+- `micro_live_readiness.json/md`: 小额实盘准备门结论。
+- `risk_budget.json`: 手工阶段风险预算。
+- `manual_trade_sheet.csv`: 人工参考表,优先来自目标组合计划,包含流动性、参与率、ST/退市/停牌/涨跌停等风险标记; 当前持仓即使被目标股票池过滤也会保留为人工处理行,不是真实订单。
+- `weekly_review.json/md`: 周度证据矩阵和继续/降级/暂停结论。
+- `weekly_pipeline.json/md`: 一键流水线阶段记录和最终周度结论。
+- `strategy_registry_snapshot.json/md`: 当前周策略档案快照。
+- `results/strategy_registry/strategy_registry.json/md`: v3 长期候选档案；只有 provenance、selection safety、benchmark、multiple-testing 和 prospective trial binding 全部通过的观察才计入晋级统计。
+- `strategy_promotion_review.json/md`: 对照资金目标路径和候选策略 walk-forward 的策略晋级审查。
 
-- 杩戞湡鐪熷疄鏁版嵁闂ㄦ病鏈?BLOCK銆?- 鐪熷疄鏁版嵁 bootstrap 娌℃湁 BLOCK銆?- 鐪熷疄鏁版嵁閫氳繃瀹¤銆?- 绋冲仴鎬ф祴璇曟病鏈?BLOCK銆?- 婊氬姩绐楀彛楠岃瘉娌℃湁 BLOCK銆?- 鍊欓€夌瓥鐣ユ粴鍔ㄧ獥鍙ｉ獙璇佹病鏈?BLOCK銆?- 鍊欓€夌瓥鐣ュ垎琛屾儏楠岃瘉娌℃湁 BLOCK銆?- LLM deterministic review 娌℃湁 BLOCK銆?- 妯℃嫙鐩樼姸鎬佸瓨鍦ㄤ笖涓嶈繛鎺?broker銆?- 杩炵画妯℃嫙鐩樼ǔ瀹氭€ф病鏈?BLOCK銆?- 鐩爣缁勫悎璁″垝鍙緭鍑轰汉宸ュ弬鑰冭〃,涓嶇敓鎴?broker 鎸囦护銆?- 鐩爣缁勫悎璁″垝娌℃湁 ST銆侀€€甯傘€佸仠鐗屻€佹定璺屽仠鎴栫己浠风瓑闃绘柇鎵ц鏍囪; 浣庢祦鍔ㄦ€с€侀珮鍙備笌鐜囨垨楂樻潈閲嶆爣璁拌嚦灏戣Е鍙?WATCH銆?- 鏈変汉宸ュ鎵硅褰曘€?- `manual_trade_sheet.csv` 鍙綔涓轰汉宸ュ弬鑰冦€?
-浠讳綍 BLOCK 閮戒細闄嶇骇鍥?research 鎴?paper銆?
-## 鍛ㄥ害鍐崇瓥
+## 升级条件
+进入 `micro_live_ready` 前必须满足:
 
-`weekly_review` 鍙仛姹囨€诲拰闄嶇骇,涓嶅仛涔愯鍗囩骇:
+- 近期真实数据门没有 BLOCK。
+- 真实数据 bootstrap 没有 BLOCK。
+- 真实数据通过审计。
+- 稳健性测试没有 BLOCK。
+- 滚动窗口验证没有 BLOCK。
+- 候选策略滚动窗口验证没有 BLOCK。
+- 候选策略分行情验证没有 BLOCK。
+- benchmark、multiple-testing 与 trial registry review 均为完整合同 PASS。
+- LLM deterministic review 没有 BLOCK。
+- 模拟盘状态存在且不连接 broker。
+- 连续模拟盘稳定性没有 BLOCK。
+- 目标组合计划只输出人工参考表,不生成 broker 指令。
+- 目标组合计划没有 ST、退市、停牌、涨跌停或缺价等阻断执行标记; 低流动性、高参与率或高权重标记至少触发 WATCH。
+- 有人工审批记录。
+- `manual_trade_sheet.csv` 只作为人工参考。
 
-- `continue_paper`: 鏍稿績璇佹嵁閮?PASS,缁х画妯℃嫙鐩樿瀵熴€?- `research_only`: 娌℃湁 BLOCK,浣嗕粛鏈?WATCH 鎴?readiness 璇佹嵁涓嶈冻,缁х画鐮旂┒鍜岃ˉ瀹為獙銆?- `pause_and_fix`: 鏈?BLOCK銆佹牳蹇冭瘉鎹己澶辨垨 broker 杈圭晫琚牬鍧?鏆傚仠鎺ㄨ繘骞朵慨澶嶃€?
-瀹冧笉浼氱敓鎴愮湡瀹?broker 鎸囦护,涔熶笉鑳借瘉鏄庣瓥鐣ユ湭鏉ョǔ瀹氳禋閽便€?
-## 绛栫暐妗ｆ
+任何 BLOCK 都会降级为 research 或 paper。
+## 周度决策
 
-姣忔鍊欓€夌瓥鐣ョ瓫閫夊悗,绯荤粺浼氭妸缁撴灉杩藉姞鍒伴暱鏈?registry:
+`weekly_review` 只做汇总和降级,不做乐观升级:
+
+- `continue_paper`: 核心证据全 PASS,继续模拟盘观察。
+- `research_only`: 没有 BLOCK,但仍有 WATCH 或 readiness 证据不足,继续研究和补实验。
+- `pause_and_fix`: 出现 BLOCK、核心证据缺失或 broker 边界被破坏,暂停推进并修复。
+
+它不会生成真实 broker 指令,也不能证明策略未来稳定赚钱。
+## 策略档案
+
+每次候选策略筛选后,系统会把结果追加到长期 registry:
 
 ```powershell
 uv run python examples/update_strategy_registry.py --report-dir results/research/<timestamp>
 ```
 
-闀挎湡绛栫暐涓嶈兘鍙嚟鍗曟鍥炴祴鏅嬬骇銆傝嚦灏戣鐪?
+长期策略不能只凭单次回测晋级。至少要看:
 
-- 澶氭瑙傚療涓?PASS/WATCH/BLOCK 鐨勫垎甯冦€?- 骞冲潎鏀剁泭鏄惁鎺ヨ繎璧勯噾鐩爣璺緞銆?- 骞冲潎鍥炴挙鏄惁浣庝簬棰勭畻銆?- 澶忔櫘銆佹嫆鍗曠巼銆佹崲鎵嬫槸鍚︾ǔ瀹氥€?- demo 鏁版嵁瑙傚療鍜岀湡瀹炴暟鎹瀵熷繀椤诲垎寮€鐞嗚В銆?
-Registry 鐨勬檵绾ц祫鏍艰鍒?
+- 多次观察中 PASS/WATCH/BLOCK 的分布。
+- 平均收益是否接近资金目标路径。
+- 平均回撤是否低于预算。
+- 夏普、拒单率、换手是否稳定。
+- demo 数据观察和真实数据观察必须分开理解。
 
-- demo-only 鍘嗗彶姘歌繙涓嶈兘鏅嬬骇銆?- 鑷冲皯闇€瑕?3 娆＄湡瀹炴暟鎹瀵熴€?- 鑷冲皯闇€瑕?2 娆＄湡瀹炴暟鎹?PASS銆?- 鐪熷疄鏁版嵁鍘嗗彶涓笉鑳藉嚭鐜?BLOCK銆?- 鑷冲皯闇€瑕?3 娆＄湡瀹炴暟鎹€欓€夌瓥鐣?walk-forward 瑙傚療銆?- 鑷冲皯闇€瑕?2 娆＄湡瀹炴暟鎹€欓€夌瓥鐣?walk-forward PASS銆?- 鍊欓€夌瓥鐣?walk-forward 涓嶈兘鍑虹幇 BLOCK,骞冲潎绐楀彛 PASS 姣斾緥涓嶈兘浣庝簬 60%銆?- 鑷冲皯闇€瑕?3 娆＄湡瀹炴暟鎹€欓€夌瓥鐣ュ垎琛屾儏楠岃瘉瑙傚療銆?- 鑷冲皯闇€瑕?1 娆＄湡瀹炴暟鎹€欓€夌瓥鐣ュ垎琛屾儏楠岃瘉 PASS銆?- 鏅嬬骇鍓嶅繀椤昏杩?defensive 鎴?risk_off 绐楀彛,閬垮厤鍙湪椤洪琛屾儏閲岃瘎浼扮瓥鐣ャ€?- 鐪熷疄鏁版嵁骞冲潎鍥炴挙鍜屾嫆鍗曠巼蹇呴』浣庝簬棰勭畻銆?
-婊¤冻杩欎簺鏉′欢涔熷彧琛ㄧず鍙互杩涘叆鏇存繁鍏ョ殑 paper-stage review,浠嶇劧涓嶆槸瀹炵洏鎸囦护銆?
-## 鏅嬬骇瀹℃煡
+Registry 的晋级资格规则:
 
-瀵归暱鏈?registry 鍋氳祫閲戠洰鏍囧鏌?
+- demo-only 历史永远不能晋级。
+- 至少需要 3 次真实数据观察。
+- 至少需要 2 次真实数据 PASS。
+- 真实数据历史中不能出现 BLOCK。
+- 至少需要 3 次真实数据候选策略 walk-forward 观察。
+- 至少需要 2 次真实数据候选策略 walk-forward PASS。
+- 候选策略 walk-forward 不能出现 BLOCK,平均窗口 PASS 比例不能低于 60%。
+- 每个计入的真实观察都必须有 PASS benchmark、multiple-testing 和 trial registry review；旧 v2 summary 不得绕过。
+- 至少需要 3 次真实数据候选策略分行情验证观察。
+- 至少需要 1 次真实数据候选策略分行情验证 PASS。
+- 晋级前必须见过 defensive 或 risk_off 窗口,避免只在顺风行情里评估策略。
+- 真实数据平均回撤和拒单率必须低于预算。
+
+满足这些条件也只表示可以进入更深入的 paper-stage review,仍然不是实盘指令。
+## 晋级审查
+
+对长期 registry 做资金目标审查:
 
 ```powershell
 uv run python examples/review_strategy_promotions.py --registry results/strategy_registry/strategy_registry.json --output-dir results/strategy_registry --starting-capital 100000 --target-capital 1000000 --years 8
 ```
 
-鏅嬬骇瀹℃煡浼氭鏌?
+晋级审查会检查:
 
-- 鐪熷疄瑙傚療娆℃暟鍜岀湡瀹?PASS 娆℃暟銆?- 鐪熷疄骞冲潎骞村寲鏀剁泭鏄惁杈惧埌璧勯噾鐩爣璺緞銆?- 鐪熷疄骞冲潎鍥炴挙鏄惁浣庝簬棰勭畻銆?- 鐪熷疄骞冲潎澶忔櫘鏄惁杈惧埌瑙傚療绾裤€?
-`PASS` 鍙〃绀哄€欓€夊彲浠ヨ繘鍏ユ洿娣卞叆鐨?paper-stage review銆傚畠涓嶅厑璁歌繛鎺?broker銆佷笉鍏佽鑷姩涓嬪崟銆佷笉鍏佽鎻愰珮璧勯噾銆?
+- 真实观察次数和真实 PASS 次数。
+- 真实平均年化收益是否达到资金目标路径。
+- 真实平均回撤是否低于预算。
+- 真实平均夏普是否达到观察线。
+
+`PASS` 只表示候选可以进入更深入的 paper-stage review。它不允许连接 broker、不允许自动下单、不允许提高资金。

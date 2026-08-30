@@ -1,12 +1,26 @@
 """Plan whether a candidate is allowed to enter continuous paper observation."""
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
 from quantify.data.cache_metadata import cache_metadata_blockers
+from quantify.research.evidence_validation import (
+    EvidenceContractValidation,
+    validate_benchmark_payload,
+    validate_multiple_testing_payload,
+    validate_trial_registry_review_payload,
+)
+from quantify.research.selection_evidence import build_selection_evidence_manifest
+from quantify.research.walk_forward_protocol import (
+    CANDIDATE_WALK_FORWARD_ARTIFACT,
+    WALK_FORWARD_ARTIFACT,
+    validate_robustness_selection_safe_payload,
+    validate_selection_safe_payload,
+)
 
 PaperPlanDecision = Literal["PASS", "WATCH", "BLOCK"]
 
@@ -17,6 +31,9 @@ class PaperCandidatePlan:
     candidate: str
     report_dir: str
     paper_state_dir: str
+    cache_path: str
+    cache_sha256: str
+    dataset_fingerprint: str
     command: str
     required_evidence: list[dict[str, str]]
     blockers: list[str]
@@ -29,6 +46,9 @@ class PaperCandidatePlan:
             "candidate": self.candidate,
             "report_dir": self.report_dir,
             "paper_state_dir": self.paper_state_dir,
+            "cache_path": self.cache_path,
+            "cache_sha256": self.cache_sha256,
+            "dataset_fingerprint": self.dataset_fingerprint,
             "command": self.command,
             "required_evidence": self.required_evidence,
             "blockers": self.blockers,
@@ -43,6 +63,9 @@ class PaperCandidatePlan:
             f"- Candidate: `{self.candidate or 'none'}`",
             f"- Report directory: `{self.report_dir}`",
             f"- Paper state directory: `{self.paper_state_dir}`",
+            f"- Research cache: `{self.cache_path or 'missing'}`",
+            f"- Cache sha256: `{self.cache_sha256 or 'missing'}`",
+            f"- Dataset fingerprint: `{self.dataset_fingerprint or 'missing'}`",
             f"- Command: `{self.command or 'not available'}`",
             "",
             "## Required Evidence",
@@ -70,12 +93,17 @@ def build_paper_candidate_plan(
 ) -> PaperCandidatePlan:
     root = Path(report_dir)
     selected = candidate or _best_candidate(root)
+    manifest = _read_json(root / "run_manifest.json")
+    cache_path, cache_sha256, dataset_fingerprint = _manifest_data_identity(manifest)
     evidence = _required_evidence(root, selected)
     blockers = _blockers(evidence, selected)
     decision = _decision(evidence, blockers)
     command = (
         ".\\.venv\\Scripts\\python.exe examples\\run_paper_loop.py "
-        f"--config {config_path} --state-dir {paper_state_dir} --candidate {selected}"
+        f"--config {_quote_path(config_path)} --cache {_quote_path(cache_path)} "
+        f"--state-dir {_quote_path(paper_state_dir)} --candidate {selected} "
+        f"--expected-cache-sha256 {cache_sha256} "
+        f"--expected-dataset-fingerprint {dataset_fingerprint}"
         if selected and decision == "PASS"
         else ""
     )
@@ -84,6 +112,9 @@ def build_paper_candidate_plan(
         candidate=selected,
         report_dir=str(root),
         paper_state_dir=str(paper_state_dir),
+        cache_path=cache_path,
+        cache_sha256=cache_sha256,
+        dataset_fingerprint=dataset_fingerprint,
         command=command,
         required_evidence=evidence,
         blockers=blockers,
@@ -120,6 +151,10 @@ def _required_evidence(root: Path, candidate: str) -> list[dict[str, str]]:
         ("candidate_factor_diagnostics", "candidate_factor_diagnostics.json", "PASS"),
         ("candidate_regime_validation", "candidate_regime_validation_report.json", "PASS"),
         ("candidate_selection", "candidate_selection.json", "PASS"),
+        ("selection_evidence_manifest", "selection_evidence_manifest.json", "PASS"),
+        ("benchmark", "benchmark_report.json", "PASS"),
+        ("multiple_testing", "multiple_testing_report.json", "PASS"),
+        ("trial_registry_review", "trial_registry_review.json", "PASS"),
         ("llm_review", "llm_review.json", "PASS"),
         ("candidate_experiment_completion", "candidate_experiment_completion.json", "PASS"),
     ]
@@ -129,8 +164,21 @@ def _required_evidence(root: Path, candidate: str) -> list[dict[str, str]]:
         payload = _read_json(path)
         if name == "run_manifest":
             status, message = _manifest_status(path, payload)
+        elif name == "robustness":
+            status, message = _robustness_status(path, payload)
         elif name == "candidate_experiment_completion":
             status, message = _completion_status(path, payload, candidate=candidate)
+        elif name == "selection_evidence_manifest":
+            status, message = _selection_manifest_status(root, path, payload)
+        elif name in {"benchmark", "multiple_testing", "trial_registry_review"}:
+            status, message = _statistical_evidence_status(
+                root,
+                name=name,
+                payload=payload,
+                candidate=candidate,
+            )
+        elif name in {"walk_forward", "candidate_walk_forward"}:
+            status, message = _walk_forward_status(path, payload)
         else:
             status = _status(payload, default="BLOCK" if not path.exists() else "WATCH")
             message = ""
@@ -144,6 +192,72 @@ def _required_evidence(root: Path, candidate: str) -> list[dict[str, str]]:
             }
         )
     return evidence
+
+
+def _statistical_evidence_status(
+    root: Path,
+    *,
+    name: str,
+    payload: dict[str, Any],
+    candidate: str,
+) -> tuple[PaperPlanDecision, str]:
+    manifest = _read_json(root / "run_manifest.json")
+    parameters = manifest.get("research_parameters", {})
+    expected_symbol = (
+        str(parameters.get("index_code") or "") if isinstance(parameters, dict) else ""
+    )
+    validation: EvidenceContractValidation
+    if name == "benchmark":
+        validation = validate_benchmark_payload(payload, expected_symbol=expected_symbol)
+    elif name == "multiple_testing":
+        validation = validate_multiple_testing_payload(
+            payload,
+            expected_candidate=candidate,
+        )
+    else:
+        validation = validate_trial_registry_review_payload(
+            payload,
+            expected_candidate=candidate,
+            report_dir=root,
+        )
+    if not validation.valid:
+        detail = "; ".join(validation.reasons) or "complete evidence contract is missing"
+        return "BLOCK", f"{name} contract failed: {detail}"
+    return validation.status, ""
+
+
+def _robustness_status(
+    path: Path,
+    payload: dict[str, Any],
+) -> tuple[PaperPlanDecision, str]:
+    if not path.exists():
+        return "BLOCK", "robustness_report.json is missing."
+    validation = validate_robustness_selection_safe_payload(payload)
+    if not validation.safe:
+        return (
+            "BLOCK",
+            "robustness_report.json is diagnostic-only or fails the selection-safe contract: "
+            + "; ".join(validation.reasons),
+        )
+    return _status(payload, default="WATCH"), ""
+
+
+def _selection_manifest_status(
+    root: Path,
+    path: Path,
+    payload: dict[str, Any],
+) -> tuple[PaperPlanDecision, str]:
+    if not path.exists():
+        return "BLOCK", "selection_evidence_manifest.json is missing."
+    current = build_selection_evidence_manifest(root)
+    recorded_digest = str(payload.get("artifact_set_sha256") or "")
+    if current.status == "BLOCK" or recorded_digest != current.artifact_set_sha256:
+        detail = "; ".join(current.blockers) or "recorded artifact digest is stale"
+        return "BLOCK", "Selection evidence manifest verification failed: " + detail
+    recorded_status = _status(payload, default="BLOCK")
+    if recorded_status != current.status:
+        return "BLOCK", "Selection evidence manifest status does not match current artifacts."
+    return recorded_status, ""
 
 
 def _blockers(evidence: list[dict[str, str]], candidate: str) -> list[str]:
@@ -197,6 +311,27 @@ def _status(payload: dict[str, Any], *, default: str) -> PaperPlanDecision:
     if text == "WATCH":
         return "WATCH"
     return "BLOCK"
+
+
+def _walk_forward_status(
+    path: Path,
+    payload: dict[str, Any],
+) -> tuple[PaperPlanDecision, str]:
+    if not path.exists():
+        return _status(payload, default="BLOCK"), ""
+    artifact_type = (
+        CANDIDATE_WALK_FORWARD_ARTIFACT
+        if path.name == "candidate_walk_forward_report.json"
+        else WALK_FORWARD_ARTIFACT
+    )
+    validation = validate_selection_safe_payload(payload, artifact_type=artifact_type)
+    if not validation.safe:
+        return (
+            "BLOCK",
+            f"{path.name} does not satisfy the selection-safe v2 contract: "
+            + "; ".join(validation.reasons),
+        )
+    return _status(payload, default="WATCH"), ""
 
 
 def _completion_status(
@@ -259,6 +394,19 @@ def _manifest_status(path: Path, payload: dict[str, Any]) -> tuple[PaperPlanDeci
         return "BLOCK", "run_manifest.json must record in_sample_end before paper entry."
     if not str(payload.get("out_sample_start", "") or "").strip():
         return "BLOCK", "run_manifest.json must record out_sample_start before paper entry."
+    cache_path, cache_sha256, dataset_fingerprint = _manifest_data_identity(payload)
+    if not cache_path:
+        return "BLOCK", "run_manifest.json must record the research cache_path before paper entry."
+    if not cache_sha256:
+        return "BLOCK", "run_manifest.json must record the research cache_sha256 before paper entry."
+    cache = Path(cache_path)
+    if not cache.exists() or not cache.is_file():
+        return "BLOCK", f"run_manifest research cache does not exist: {cache_path}."
+    current_sha256 = _file_sha256(cache)
+    if current_sha256 != cache_sha256:
+        return "BLOCK", "run_manifest research cache_sha256 no longer matches the cache file."
+    if not dataset_fingerprint:
+        return "BLOCK", "run_manifest.json must record a dataset fingerprint before paper entry."
     data_version = payload.get("data_version", {})
     if not isinstance(data_version, dict):
         return "BLOCK", "run_manifest.json data_version must contain source QA provenance."
@@ -268,6 +416,34 @@ def _manifest_status(path: Path, payload: dict[str, Any]) -> tuple[PaperPlanDeci
     if blockers:
         return "BLOCK", f"run_manifest provenance blocker: {blockers[0]}"
     return "PASS", "run_manifest is PASS with sample split and source QA provenance."
+
+
+def _manifest_data_identity(payload: dict[str, Any]) -> tuple[str, str, str]:
+    data_version = payload.get("data_version", {})
+    if not isinstance(data_version, dict):
+        data_version = {}
+    fingerprint = str(
+        data_version.get("csv_dataset_fingerprint")
+        or data_version.get("raw_vendor_bars_sha256")
+        or ""
+    ).strip()
+    return (
+        str(payload.get("cache_path", "") or "").strip(),
+        str(payload.get("cache_sha256", "") or "").strip(),
+        fingerprint,
+    )
+
+
+def _quote_path(value: str | Path) -> str:
+    return f'"{value}"'
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _read_json(path: Path) -> dict[str, Any]:

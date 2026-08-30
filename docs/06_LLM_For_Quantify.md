@@ -6,6 +6,47 @@ Before LLM advisory review can be useful, the data source must have auditable
 evidence. Use the source-QA worksheet to collect real vendor/export facts before
 writing `data_source_qa_answers.json`:
 
+LLM review also checks the cache attestation summary carried by
+`run_manifest.data_version`: `cache_logical_bar_fingerprint`, its algorithm,
+`cache_latest_import_batch_id`, and `cache_lineage_schema_version`. Missing
+attestation is advisory `WATCH` in research/paper review and deterministic
+`BLOCK` for micro-live readiness and later stages. The logical fingerprint is
+never accepted as a substitute for `csv_dataset_fingerprint` or source QA. See
+[Cache Provenance Attestation v1](14_Cache_Provenance_Attestation.md).
+
+## Statistical Evidence Boundary
+
+LLM review loads three additional research artifacts when they are available:
+
+- `benchmark_report.json`: reviewed total-return benchmark evidence.
+- `multiple_testing_report.json`: DSR and CSCV/PBO multiple-testing diagnostics.
+- `trial_registry_review.json`: append-only preregistration and artifact hash review.
+
+The deterministic reviewer does not trust a bare `status` field. It calls the
+fail-closed validators in `quantify.research.evidence_validation`, verifies
+retained input files and hashes, and records `valid`, validated status, and
+validator reasons in the report digest and LLM prompt. The multiple-testing and
+trial-registry candidate must match
+`candidate_selection.selected_candidate` (with legacy `best_candidate`
+fallback). The benchmark symbol must match
+`run_manifest.research_parameters.index_code`.
+
+Stage behavior is deliberately asymmetric:
+
+- `research`: missing statistical artifacts are listed under missing evidence
+  and next experiments without changing the deterministic decision. A present
+  but invalid contract still blocks because it may indicate tampering or an
+  identity mismatch.
+- `paper`: missing evidence is `WATCH`; a valid non-PASS status is preserved;
+  an invalid contract is `BLOCK`.
+- `micro_live_ready`, `micro_live`, and `live`: missing, invalid, or non-PASS
+  statistical evidence is `BLOCK`.
+
+A validated `PASS` from any of these artifacts can never upgrade the existing
+deterministic gate. The LLM prompt states this rule explicitly. These artifacts
+are evidence for critique and promotion review, not broker instructions, human
+approval, or permission to trade live.
+
 ```powershell
 .\.venv\Scripts\python.exe examples\write_data_source_qa.py --config config\research_recent.yaml --output-dir data_exports --min-symbols 300 --as-of 2026-06-09
 .\.venv\Scripts\python.exe examples\write_data_source_qa_evidence_worksheet.py --checklist data_exports\data_source_qa.json --output-dir data_exports
@@ -69,6 +110,19 @@ llm_prompt.md    可复制给外部 LLM 的严格提示词包
 llm_narrative.md 可选 LLM 叙事审查
 ```
 
+## 研究执行口径
+
+研究回测采用明确的两阶段时序,不能把信号和成交都记在同一个收盘价上:
+
+- 调仓日收盘后,使用当日收盘数据计算因子和目标组合,即
+  `signal_timing=rebalance_day_close`。
+- 订单在下一交易日开盘进入模拟成交,即
+  `execution_timing=next_trading_day_open`;成交仍受滑点、涨跌停、停牌、现金和
+  T+1 等模拟约束影响。
+
+因此研究结果表示“调仓日收盘信号、下一交易日开盘模拟成交”,不是调仓日收盘即刻成交,
+也不代表真实券商成交。
+
 ## 审查门含义
 
 结果只有三个等级:
@@ -80,7 +134,13 @@ llm_narrative.md 可选 LLM 叙事审查
 当前检查包括:
 
 - 是否使用 demo 数据。
-- 是否记录样本内/样本外验证窗口。
+- `run_manifest.data_version` 是否记录缓存导入版本、数据集指纹或来源审计元数据；
+  缺失时 research/paper 至少为 `WATCH`，进入 `micro_live_ready` 及以后为
+  `BLOCK`。
+- 是否记录合法、互不重叠的样本内/样本外验证窗口。
+- paper-stage 是否存在实际的 `walk_forward_report.json` 或
+  `candidate_walk_forward_report.json`,且至少一个有效窗口从
+  `out_sample_start` 当日或之后开始。只在 `summary.json` 填写日期不再足够。
 - 回测长度是否过短。
 - 最大回撤是否超过阈值。
 - 扣费后收益是否为正。
@@ -104,6 +164,16 @@ uv run python examples/run_research.py --config config/research.yaml
 ```powershell
 uv run python examples/run_llm_review.py --report-dir results/research/<timestamp> --stage paper
 ```
+
+paper-stage 要求样本外证据落到实际 walk-forward 报告中。仅填写
+`in_sample_end` 和 `out_sample_start`、但缺少上述报告或报告没有覆盖
+`out_sample_start` 的有效窗口时,确定性审查不能 PASS,会给出
+`MISSING_OUT_OF_SAMPLE_RESULTS` 并保持 `WATCH`。进入 `micro_live_ready`、
+`micro_live` 或 `live` 时,同一缺口会升级为 `BLOCK`。
+
+审查结果中的 paper 允许动作只指本地
+`paper_trading_without_broker_credentials`。它不允许配置真实 broker 凭据、发送真实订单
+或绕过 first-million/weekly 的确定性门。
 
 如果想审查是否进入小额实盘准备门:
 
@@ -156,7 +226,7 @@ Research Report -> Deterministic Gate -> PromptPack -> LLMClient -> LLMNarrative
 建议按这个顺序推进:
 
 1. 完成真实 A 股数据缓存和数据质量审计。
-2. 把研究报告拆成样本内、样本外和滚动窗口。
+2. 持续积累覆盖样本外区间的 walk-forward 与候选 walk-forward 证据。
 3. 给 `llm_review` 增加参数扰动、压力测试和成交质量检查。
 4. 增加人工审批记录。
 5. 建立模拟盘连续运行日志。

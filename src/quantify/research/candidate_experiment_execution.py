@@ -4,6 +4,7 @@ The executor is intentionally narrow: it only runs command lines emitted by a
 PASS candidate_experiment_launch.json, captures logs, and never connects to a
 broker or upgrades deterministic decisions.
 """
+
 from __future__ import annotations
 
 import json
@@ -14,6 +15,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
+
+from quantify.research.walk_forward_protocol import (
+    WALK_FORWARD_ARTIFACT,
+    validate_robustness_selection_safe_payload,
+    validate_selection_safe_payload,
+)
 
 FOUNDATIONAL_EVIDENCE: tuple[tuple[str, str, str | None], ...] = (
     ("summary", "summary.json", None),
@@ -124,7 +131,9 @@ class CandidateExperimentExecutionReport:
                 f"`{step.stderr_log or '-'}` | {step.message} |"
             )
         lines.extend(["", "## Blockers"])
-        lines.extend(f"- {item}" for item in self.blockers) if self.blockers else lines.append("- None.")
+        lines.extend(f"- {item}" for item in self.blockers) if self.blockers else lines.append(
+            "- None."
+        )
         lines.extend(["", "## Next Actions"])
         lines.extend(f"- {item}" for item in self.next_actions)
         lines.extend(["", "## Prohibited Actions"])
@@ -219,7 +228,9 @@ def run_candidate_experiment_execution(
                 )
             )
             break
-        launch_scope_blocker = _launch_scope_blocker(validation, report_dir=root, experiment_dir=experiment_dir)
+        launch_scope_blocker = _launch_scope_blocker(
+            validation, report_dir=root, experiment_dir=experiment_dir
+        )
         if launch_scope_blocker:
             steps.append(
                 CandidateExperimentExecutionStep(
@@ -422,6 +433,17 @@ def _foundational_evidence_blockers(source_dir: Path) -> list[str]:
             blockers.append(f"{name} missing ({filename})")
             continue
         payload = _read_json(path)
+        selection_safety_reasons = (
+            _selection_safety_reasons(name, payload)
+            if name in {"robustness", "walk_forward"}
+            else []
+        )
+        if selection_safety_reasons:
+            blockers.append(
+                f"{name} selection-safe v2 contract failed ({path}): "
+                + "; ".join(selection_safety_reasons)
+            )
+            continue
         if not payload:
             blockers.append(f"{name} unreadable ({path})")
             continue
@@ -436,6 +458,8 @@ def _find_source(filename: str, source_dirs: list[Path]) -> Path | None:
 
 
 def _artifact_status(name: str, payload: dict[str, Any], *, status_key: str | None) -> str:
+    if name in {"robustness", "walk_forward"} and _selection_safety_reasons(name, payload):
+        return "BLOCK"
     if name == "summary":
         assumptions = payload.get("assumptions", {})
         if isinstance(assumptions, dict) and assumptions.get("demo_data_used") is True:
@@ -449,6 +473,15 @@ def _artifact_status(name: str, payload: dict[str, Any], *, status_key: str | No
     if status in {"PASS", "WATCH", "BLOCK"}:
         return status
     return "BLOCK"
+
+
+def _selection_safety_reasons(name: str, payload: dict[str, Any]) -> list[str]:
+    if name == "robustness":
+        return validate_robustness_selection_safe_payload(payload).reasons
+    return validate_selection_safe_payload(
+        payload,
+        artifact_type=WALK_FORWARD_ARTIFACT,
+    ).reasons
 
 
 def _forbidden_token(token: str) -> bool:
@@ -509,11 +542,7 @@ def _decision(
 
 
 def _blockers(steps: list[CandidateExperimentExecutionStep]) -> list[str]:
-    return [
-        f"step {step.index}: {step.message}"
-        for step in steps
-        if step.status == "BLOCK"
-    ]
+    return [f"step {step.index}: {step.message}" for step in steps if step.status == "BLOCK"]
 
 
 def _next_actions(decision: ExecutionDecision) -> list[str]:
@@ -535,6 +564,7 @@ def _next_actions(decision: ExecutionDecision) -> list[str]:
 
 def _read_json(path: Path) -> dict[str, Any]:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
+    return payload if isinstance(payload, dict) else {}

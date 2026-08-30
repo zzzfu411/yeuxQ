@@ -56,6 +56,10 @@ def test_candidate_walk_forward_compares_candidates(tmp_path: Path) -> None:
     assert report.candidate_count == 2
     assert report.window_count >= 3
     assert report.best_candidate in {"momentum_test", "low_vol_test"}
+    assert report.selection_safe is True
+    assert report.test_used_for_selection is False
+    assert len(report.windows) == report.window_count
+    assert all(window.selection_rank == 1 for window in report.windows)
     assert all(0.0 <= summary.positive_return_ratio <= 1.0 for summary in report.summaries)
     assert all(isinstance(summary.worst_total_return, float) for summary in report.summaries)
     assert all(summary.worst_max_drawdown >= 0.0 for summary in report.summaries)
@@ -70,6 +74,9 @@ def test_candidate_walk_forward_compares_candidates(tmp_path: Path) -> None:
     assert "worst_max_drawdown" in payload["summaries"][0]
     assert "trend_filter_active_days" in payload["summaries"][0]
     assert "trend_filter_active_days" in payload["windows"][0]
+    assert payload["selection_protocol"] == "quantify.walk-forward-selection.v2"
+    assert payload["test_used_for_selection"] is False
+    assert payload["selections"]
 
 
 def test_candidate_walk_forward_cli_writes_outputs(tmp_path: Path) -> None:

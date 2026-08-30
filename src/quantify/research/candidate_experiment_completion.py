@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from quantify.research.walk_forward_protocol import (
+    CANDIDATE_WALK_FORWARD_ARTIFACT,
+    validate_selection_safe_payload,
+)
+
 CompletionDecision = Literal["PASS", "WATCH", "BLOCK"]
 ArtifactStatus = Literal["PASS", "WATCH", "BLOCK", "MISSING", "UNKNOWN"]
 
@@ -367,6 +372,10 @@ def _launch_contract_evidence_review(
     regime = _read_json(experiment_dir / "candidate_regime_validation_report.json")
     selection = _read_json(experiment_dir / "candidate_selection.json")
 
+    selection_safety_blocker = _candidate_walk_forward_selection_blocker(walk_forward)
+    if selection_safety_blocker:
+        blockers.append(selection_safety_blocker)
+
     minimum_total_days = _int_value(window.get("minimum_total_trading_days"))
     if minimum_total_days:
         actual_total_days = _trading_day_count(run_manifest, summary, evidence)
@@ -497,6 +506,15 @@ def _artifact_review(
             str(path),
             "Required experiment output is empty or cannot be parsed.",
         )
+    if path.name == "candidate_walk_forward_report.json":
+        selection_safety_blocker = _candidate_walk_forward_selection_blocker(payload)
+        if selection_safety_blocker:
+            return CandidateExperimentArtifactReview(
+                name,
+                "BLOCK",
+                str(path),
+                selection_safety_blocker,
+            )
     status = _payload_status(path.name, payload)
     message = _message(path.name, payload, status)
     identity_blocker = _candidate_identity_blocker(
@@ -508,6 +526,20 @@ def _artifact_review(
         message = f"{identity_blocker} Original artifact status was {status}."
         status = "BLOCK"
     return CandidateExperimentArtifactReview(name, status, str(path), message)
+
+
+def _candidate_walk_forward_selection_blocker(payload: dict[str, Any]) -> str:
+    validation = validate_selection_safe_payload(
+        payload,
+        artifact_type=CANDIDATE_WALK_FORWARD_ARTIFACT,
+    )
+    if payload and not validation.safe:
+        return (
+            "candidate_walk_forward_report.json does not satisfy the selection-safe v2 "
+            "contract; unsafe evidence cannot complete the candidate experiment: "
+            + "; ".join(validation.reasons)
+        )
+    return ""
 
 
 def _payload_status(filename: str, payload: dict[str, Any]) -> ArtifactStatus:

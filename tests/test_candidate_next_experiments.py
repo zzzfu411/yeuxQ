@@ -619,6 +619,32 @@ def test_next_experiments_writer_keeps_research_only_boundaries(tmp_path: Path) 
     assert "can_generate_broker_orders" in csv_text
 
 
+def test_next_experiments_reuse_manifest_config_path(tmp_path: Path) -> None:
+    report_dir = tmp_path / "weekly"
+    report_dir.mkdir()
+    _write_bundle_files(report_dir, _bundle("defensive_cash_guard_price_volume"))
+    effective_config = tmp_path / "first_million" / "effective_config.yaml"
+    (report_dir / "run_manifest.json").write_text(
+        json.dumps({"config_path": str(effective_config)}),
+        encoding="utf-8",
+    )
+
+    bundle = load_candidate_report_bundle(report_dir)
+    report = build_candidate_next_experiments_report([bundle])
+
+    assert bundle.run_manifest["config_path"] == str(effective_config)
+    assert "run_manifest.json" in report.source_files
+    assert report.experiments
+    assert all(
+        "config/research_recent.yaml" not in experiment.command_hint
+        for experiment in report.experiments
+    )
+    assert any(
+        f"--config {effective_config}" in experiment.command_hint
+        for experiment in report.experiments
+    )
+
+
 def _bundle(
     candidate: str,
     *,

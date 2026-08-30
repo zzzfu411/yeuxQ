@@ -1,4 +1,5 @@
 """Goal-level evidence audit for the first-million compounding objective."""
+
 from __future__ import annotations
 
 import hashlib
@@ -6,15 +7,28 @@ import json
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 import pandas as pd
 
 from quantify.data.cache_metadata import cache_metadata_blockers
+from quantify.data.demo import is_demo_contaminated
 from quantify.data.offline_package import format_source_provenance
 from quantify.data.provider import DataProvider
 from quantify.data.storage import BarStorage
 from quantify.goal.planner import CapitalGoal
+from quantify.research.evidence_validation import (
+    EvidenceContractValidation,
+    validate_benchmark_payload,
+    validate_multiple_testing_payload,
+    validate_trial_registry_review_payload,
+)
+from quantify.research.walk_forward_protocol import (
+    CANDIDATE_WALK_FORWARD_ARTIFACT,
+    WALK_FORWARD_ARTIFACT,
+    validate_robustness_selection_safe_payload,
+    validate_selection_safe_payload,
+)
 
 GoalStatusDecision = Literal["PASS", "WATCH", "BLOCK"]
 
@@ -98,7 +112,9 @@ class CapitalGoalStatus:
         for item in self.evidence:
             lines.append(f"| {item.name} | `{item.status}` | `{item.artifact}` | {item.message} |")
         lines.extend(["", "## Blockers"])
-        lines.extend(f"- {item}" for item in self.blockers) if self.blockers else lines.append("- None.")
+        lines.extend(f"- {item}" for item in self.blockers) if self.blockers else lines.append(
+            "- None."
+        )
         lines.extend(["", "## Next Actions"])
         lines.extend(f"- {item}" for item in self.next_actions)
         lines.extend(["", "## Prohibited Actions"])
@@ -119,9 +135,15 @@ def build_capital_goal_status(
     min_trading_days: int = 240,
 ) -> CapitalGoalStatus:
     root = Path(report_dir)
+    selected_candidate = _best_candidate(root)
+    benchmark_symbol = _benchmark_symbol(root)
     evidence = [
         *(
-            [_data_cache_status(cfg, as_of=as_of, min_symbols=min_symbols, min_trading_days=min_trading_days)]
+            [
+                _data_cache_status(
+                    cfg, as_of=as_of, min_symbols=min_symbols, min_trading_days=min_trading_days
+                )
+            ]
             if cfg is not None
             else []
         ),
@@ -132,7 +154,11 @@ def build_capital_goal_status(
         _csv_intake_preview_status(root),
         *([_source_qa_preflight_status(Path(source_qa_dir))] if source_qa_dir is not None else []),
         *([_source_qa_status(Path(source_qa_dir))] if source_qa_dir is not None else []),
-        *([_import_doctor_status(Path(import_doctor_dir))] if import_doctor_dir is not None else []),
+        *(
+            [_import_doctor_status(Path(import_doctor_dir))]
+            if import_doctor_dir is not None
+            else []
+        ),
         _csv_validation_status(root),
         _status_from_payload(
             root,
@@ -142,7 +168,11 @@ def build_capital_goal_status(
             block_when_missing=False,
             message_builder=_offline_data_package_message,
         ),
-        *([_offline_intake_status(Path(offline_intake_dir))] if offline_intake_dir is not None else []),
+        *(
+            [_offline_intake_status(Path(offline_intake_dir))]
+            if offline_intake_dir is not None
+            else []
+        ),
         _raw_vendor_traceability_status(
             root,
             offline_intake_dir=Path(offline_intake_dir) if offline_intake_dir is not None else None,
@@ -154,17 +184,24 @@ def build_capital_goal_status(
             cfg=cfg,
         ),
         _run_manifest_status(root),
-        _status_from_payload(root, "real_data_bootstrap", "real_data_bootstrap.json", status_key="decision"),
+        _status_from_payload(
+            root, "real_data_bootstrap", "real_data_bootstrap.json", status_key="decision"
+        ),
         _status_from_payload(root, "real_data_gate", "real_data_gate.json", status_key="decision"),
         _status_from_payload(root, "data_coverage", "data_coverage.json", status_key="status"),
         _status_from_payload(root, "data_audit", "data_audit.json", status_key="status"),
-        _status_from_payload(root, "robustness", "robustness_report.json", status_key="status"),
-        _status_from_payload(root, "walk_forward", "walk_forward_report.json", status_key="status"),
-        _status_from_payload(
+        _robustness_selection_safe_status(root),
+        _selection_safe_status(
+            root,
+            "walk_forward",
+            "walk_forward_report.json",
+            artifact_type=WALK_FORWARD_ARTIFACT,
+        ),
+        _selection_safe_status(
             root,
             "candidate_walk_forward",
             "candidate_walk_forward_report.json",
-            status_key="status",
+            artifact_type=CANDIDATE_WALK_FORWARD_ARTIFACT,
         ),
         _status_from_payload(
             root,
@@ -182,6 +219,40 @@ def build_capital_goal_status(
         _candidate_execution_status(root),
         _candidate_completion_status(root),
         _candidate_selection_status(root, goal),
+        _validated_statistical_evidence_status(
+            root,
+            "multiple_testing_report",
+            "multiple_testing_report.json",
+            expected_identity=selected_candidate,
+            identity_label="deterministic selected candidate",
+            validator=lambda payload: validate_multiple_testing_payload(
+                payload,
+                expected_candidate=selected_candidate,
+            ),
+        ),
+        _validated_statistical_evidence_status(
+            root,
+            "benchmark_report",
+            "benchmark_report.json",
+            expected_identity=benchmark_symbol,
+            identity_label="run_manifest.research_parameters.index_code",
+            validator=lambda payload: validate_benchmark_payload(
+                payload,
+                expected_symbol=benchmark_symbol,
+            ),
+        ),
+        _validated_statistical_evidence_status(
+            root,
+            "trial_registry_review",
+            "trial_registry_review.json",
+            expected_identity=selected_candidate,
+            identity_label="deterministic selected candidate",
+            validator=lambda payload: validate_trial_registry_review_payload(
+                payload,
+                expected_candidate=selected_candidate,
+                report_dir=root,
+            ),
+        ),
         _status_from_payload(root, "llm_review", "llm_review.json", status_key="decision"),
         _status_from_payload(root, "paper_stability", "paper_stability.json", status_key="status"),
         _approval_status(root),
@@ -245,18 +316,113 @@ def _status_from_payload(
     path = root / artifact
     if not path.exists():
         missing_status: GoalStatusDecision = "BLOCK" if block_when_missing else "WATCH"
-        return GoalEvidenceItem(name, missing_status, artifact, "Missing required evidence artifact.")
+        return GoalEvidenceItem(
+            name, missing_status, artifact, "Missing required evidence artifact."
+        )
     payload = _read_json(path)
     status = "PASS" if status_key is None else _normalize_status(payload.get(status_key, "UNKNOWN"))
     message = message_builder(payload) if message_builder else _default_message(status, payload)
     return GoalEvidenceItem(name, status, artifact, message)
 
 
+def _validated_statistical_evidence_status(
+    root: Path,
+    name: str,
+    artifact: str,
+    *,
+    expected_identity: str,
+    identity_label: str,
+    validator: Callable[[dict[str, Any]], EvidenceContractValidation],
+) -> GoalEvidenceItem:
+    path = root / artifact
+    if not path.exists():
+        return GoalEvidenceItem(
+            name,
+            "BLOCK",
+            artifact,
+            f"Missing required statistical evidence artifact: {artifact}.",
+        )
+    payload = _read_json(path)
+    if not payload:
+        return GoalEvidenceItem(
+            name,
+            "BLOCK",
+            artifact,
+            f"Required statistical evidence {artifact} could not be parsed or is empty.",
+        )
+    if not expected_identity:
+        return GoalEvidenceItem(
+            name,
+            "BLOCK",
+            artifact,
+            f"Cannot validate {artifact}: {identity_label} is missing.",
+        )
+    validation: EvidenceContractValidation = validator(payload)
+    if not validation.valid:
+        return GoalEvidenceItem(
+            name,
+            "BLOCK",
+            artifact,
+            f"{artifact} contract failed: " + "; ".join(validation.reasons),
+        )
+    return GoalEvidenceItem(
+        name,
+        validation.status,
+        artifact,
+        _statistical_evidence_message(name, validation.status, payload),
+    )
+
+
+def _selection_safe_status(
+    root: Path,
+    name: str,
+    artifact: str,
+    *,
+    artifact_type: str,
+) -> GoalEvidenceItem:
+    path = root / artifact
+    if not path.exists():
+        return GoalEvidenceItem(name, "BLOCK", artifact, "Missing required evidence artifact.")
+    payload = _read_json(path)
+    validation = validate_selection_safe_payload(payload, artifact_type=artifact_type)
+    if not validation.safe:
+        return GoalEvidenceItem(
+            name,
+            "BLOCK",
+            artifact,
+            "Selection-safe v2 contract failed: " + "; ".join(validation.reasons),
+        )
+    status = _normalize_status(payload.get("status", "UNKNOWN"))
+    return GoalEvidenceItem(name, status, artifact, _default_message(status, payload))
+
+
+def _robustness_selection_safe_status(root: Path) -> GoalEvidenceItem:
+    artifact = "robustness_report.json"
+    path = root / artifact
+    if not path.exists():
+        return GoalEvidenceItem(
+            "robustness", "BLOCK", artifact, "Missing required evidence artifact."
+        )
+    payload = _read_json(path)
+    validation = validate_robustness_selection_safe_payload(payload)
+    if not validation.safe:
+        return GoalEvidenceItem(
+            "robustness",
+            "BLOCK",
+            artifact,
+            "Selection-safe robustness contract failed: " + "; ".join(validation.reasons),
+        )
+    status = _normalize_status(payload.get("status", "UNKNOWN"))
+    return GoalEvidenceItem("robustness", status, artifact, _default_message(status, payload))
+
+
 def _candidate_selection_status(root: Path, goal: CapitalGoal) -> GoalEvidenceItem:
     artifact = "candidate_selection.json"
     path = root / artifact
     if not path.exists():
-        return GoalEvidenceItem("candidate_selection", "BLOCK", artifact, "Missing candidate selection evidence.")
+        return GoalEvidenceItem(
+            "candidate_selection", "BLOCK", artifact, "Missing candidate selection evidence."
+        )
     payload = _read_json(path)
     status = _normalize_status(payload.get("status", "UNKNOWN"))
     best = str(payload.get("selected_candidate") or payload.get("best_candidate", ""))
@@ -264,7 +430,10 @@ def _candidate_selection_status(root: Path, goal: CapitalGoal) -> GoalEvidenceIt
     if not best:
         status = "BLOCK"
     candidates = payload.get("results", []) or []
-    best_payload = next((item for item in candidates if item.get("name") == best), candidates[0] if candidates else {})
+    best_payload = next(
+        (item for item in candidates if item.get("name") == best),
+        candidates[0] if candidates else {},
+    )
     metrics = best_payload.get("metrics", {}) or {}
     annual_return = _float(metrics.get("annualized_return"))
     required = goal.required_annual_return()
@@ -388,7 +557,9 @@ def _operator_handoff_status(root: Path) -> GoalEvidenceItem:
     artifact = "operator_handoff_status.json"
     path = root / artifact
     if not path.exists():
-        if (root / "operator_handoff.csv").exists() or (root / "data_evidence_action_packet.json").exists():
+        if (root / "operator_handoff.csv").exists() or (
+            root / "data_evidence_action_packet.json"
+        ).exists():
             return GoalEvidenceItem(
                 "operator_handoff_status",
                 "BLOCK",
@@ -413,7 +584,9 @@ def _operator_handoff_status(root: Path) -> GoalEvidenceItem:
             f"(P0={p0_count}, source_qa={source_count}, data_export={export_count})."
         )
     else:
-        message = "Operator handoff queue has no open tasks; deterministic gates still decide readiness."
+        message = (
+            "Operator handoff queue has no open tasks; deterministic gates still decide readiness."
+        )
     return GoalEvidenceItem("operator_handoff_status", status, artifact, message)
 
 
@@ -421,7 +594,9 @@ def _csv_intake_preview_status(root: Path) -> GoalEvidenceItem:
     artifact = "csv_intake_preview.json"
     path = root / artifact
     if not path.exists():
-        if (root / "data_evidence_action_packet.json").exists() or (root / "offline_data_package.json").exists():
+        if (root / "data_evidence_action_packet.json").exists() or (
+            root / "offline_data_package.json"
+        ).exists():
             return GoalEvidenceItem(
                 "csv_intake_preview",
                 "WATCH",
@@ -443,8 +618,12 @@ def _csv_intake_preview_status(root: Path) -> GoalEvidenceItem:
         message = str(bad.get("message", "CSV intake preview requires review."))
         missing = bad.get("missing_columns", []) or []
         suffix = f" Missing columns={','.join(str(item) for item in missing)}." if missing else ""
-        return GoalEvidenceItem("csv_intake_preview", status, artifact, f"{file_name}: {message}{suffix}")
-    bars = next((item for item in items if isinstance(item, dict) and item.get("role") == "bars"), {})
+        return GoalEvidenceItem(
+            "csv_intake_preview", status, artifact, f"{file_name}: {message}{suffix}"
+        )
+    bars = next(
+        (item for item in items if isinstance(item, dict) and item.get("role") == "bars"), {}
+    )
     return GoalEvidenceItem(
         "csv_intake_preview",
         status,
@@ -608,7 +787,9 @@ def _import_doctor_status(path: Path) -> GoalEvidenceItem:
     payload = _read_json(artifact_path)
     status = _normalize_status(payload.get("status", "UNKNOWN"))
     findings = payload.get("findings", []) or []
-    blocking = [finding for finding in findings if str(finding.get("severity", "")).upper() == "BLOCK"]
+    blocking = [
+        finding for finding in findings if str(finding.get("severity", "")).upper() == "BLOCK"
+    ]
     if blocking:
         first = blocking[0]
         code = str(first.get("code", "BLOCK"))
@@ -646,15 +827,23 @@ def _source_qa_status(path: Path) -> GoalEvidenceItem:
     payload = _read_json(artifact_path)
     status = _normalize_status(payload.get("status", "UNKNOWN"))
     findings = payload.get("findings", []) or []
-    blocking = [finding for finding in findings if str(finding.get("severity", "")).upper() == "BLOCK"]
+    blocking = [
+        finding for finding in findings if str(finding.get("severity", "")).upper() == "BLOCK"
+    ]
     if blocking:
         first = blocking[0]
         code = str(first.get("code", "BLOCK"))
         message = str(first.get("message", "Data source QA is BLOCK."))
-        return GoalEvidenceItem("offline_source_qa", "BLOCK", str(artifact_path), f"{code}: {message}")
+        return GoalEvidenceItem(
+            "offline_source_qa", "BLOCK", str(artifact_path), f"{code}: {message}"
+        )
     if status == "WATCH":
         first_watch = next(
-            (finding for finding in findings if str(finding.get("severity", "")).upper() == "WATCH"),
+            (
+                finding
+                for finding in findings
+                if str(finding.get("severity", "")).upper() == "WATCH"
+            ),
             {},
         )
         code = str(first_watch.get("code", "WATCH")) if first_watch else "WATCH"
@@ -755,11 +944,7 @@ def _offline_intake_status(path: Path) -> GoalEvidenceItem:
         )
     if status == "WATCH":
         first_watch = _first_step_with_status(steps, "WATCH")
-        detail = (
-            f" First WATCH step: {first_watch.get('name', 'unknown')}."
-            if first_watch
-            else ""
-        )
+        detail = f" First WATCH step: {first_watch.get('name', 'unknown')}." if first_watch else ""
         return GoalEvidenceItem(
             "offline_data_intake",
             "WATCH",
@@ -783,8 +968,12 @@ def _raw_vendor_traceability_status(
     bases = _offline_intake_bases(root, offline_intake_dir)
     intake_path = _first_existing([base / "offline_data_intake.json" for base in bases])
     import_path = _first_existing([base / "data_import.json" for base in bases])
-    normalization_path = _first_existing([base / "vendor_bars_normalization.json" for base in bases])
-    manifest_path = _first_existing([root / "run_manifest.json", root / "weekly" / "run_manifest.json"])
+    normalization_path = _first_existing(
+        [base / "vendor_bars_normalization.json" for base in bases]
+    )
+    manifest_path = _first_existing(
+        [root / "run_manifest.json", root / "weekly" / "run_manifest.json"]
+    )
 
     intake_payload = _read_json(intake_path) if intake_path else {}
     import_payload = _read_json(import_path) if import_path else {}
@@ -793,7 +982,9 @@ def _raw_vendor_traceability_status(
 
     import_metadata = import_payload.get("metadata", {}) if isinstance(import_payload, dict) else {}
     import_metadata = import_metadata if isinstance(import_metadata, dict) else {}
-    manifest_version = manifest_payload.get("data_version", {}) if isinstance(manifest_payload, dict) else {}
+    manifest_version = (
+        manifest_payload.get("data_version", {}) if isinstance(manifest_payload, dict) else {}
+    )
     manifest_version = manifest_version if isinstance(manifest_version, dict) else {}
 
     raw_route_detected = (
@@ -828,7 +1019,9 @@ def _raw_vendor_traceability_status(
 
     manifest_hash = str(manifest_version.get("raw_vendor_bars_sha256", "") or "")
     if manifest_path is None:
-        checks.append("run_manifest.json is missing; raw vendor hash cannot be tied to research runs.")
+        checks.append(
+            "run_manifest.json is missing; raw vendor hash cannot be tied to research runs."
+        )
     elif not manifest_hash:
         checks.append("run_manifest data_version has no raw_vendor_bars_sha256.")
     elif raw_hash and manifest_hash != raw_hash:
@@ -836,15 +1029,25 @@ def _raw_vendor_traceability_status(
 
     cache_metadata = _cache_metadata(cfg)
     if cache_metadata is None:
-        warnings.append("SQLite research_metadata was not checked because config/cache evidence is unavailable.")
+        warnings.append(
+            "SQLite research_metadata was not checked because config/cache evidence is unavailable."
+        )
     else:
         cache_hash = str(cache_metadata.get("raw_vendor_bars_sha256", "") or "")
         if not cache_hash:
             checks.append("SQLite research_metadata has no raw_vendor_bars_sha256.")
         elif raw_hash and cache_hash != raw_hash:
-            checks.append("SQLite research_metadata raw_vendor_bars_sha256 does not match raw_sha256.")
+            checks.append(
+                "SQLite research_metadata raw_vendor_bars_sha256 does not match raw_sha256."
+            )
 
-    artifact = str(normalization_path or import_path or intake_path or manifest_path or "raw_vendor_traceability")
+    artifact = str(
+        normalization_path
+        or import_path
+        or intake_path
+        or manifest_path
+        or "raw_vendor_traceability"
+    )
     if checks:
         return GoalEvidenceItem("raw_vendor_traceability", "BLOCK", artifact, checks[0])
     if warnings:
@@ -865,13 +1068,17 @@ def _tdx_day_traceability_status(
 ) -> GoalEvidenceItem:
     bases = _offline_intake_bases(root, offline_intake_dir)
     import_path = _first_existing([base / "data_import.json" for base in bases])
-    manifest_path = _first_existing([root / "run_manifest.json", root / "weekly" / "run_manifest.json"])
+    manifest_path = _first_existing(
+        [root / "run_manifest.json", root / "weekly" / "run_manifest.json"]
+    )
 
     import_payload = _read_json(import_path) if import_path else {}
     manifest_payload = _read_json(manifest_path) if manifest_path else {}
     import_metadata = import_payload.get("metadata", {}) if isinstance(import_payload, dict) else {}
     import_metadata = import_metadata if isinstance(import_metadata, dict) else {}
-    manifest_version = manifest_payload.get("data_version", {}) if isinstance(manifest_payload, dict) else {}
+    manifest_version = (
+        manifest_payload.get("data_version", {}) if isinstance(manifest_payload, dict) else {}
+    )
     manifest_version = manifest_version if isinstance(manifest_version, dict) else {}
     cache_metadata = _cache_metadata(cfg)
 
@@ -903,7 +1110,9 @@ def _tdx_day_traceability_status(
 
     expected = _tdx_expected_metadata(report_payload) if report_payload else {}
     if import_path is None:
-        checks.append("data_import.json is missing; TDX export evidence did not reach import metadata.")
+        checks.append(
+            "data_import.json is missing; TDX export evidence did not reach import metadata."
+        )
     else:
         checks.extend(
             _tdx_metadata_checks(
@@ -914,7 +1123,9 @@ def _tdx_day_traceability_status(
             )
         )
     if manifest_path is None:
-        checks.append("run_manifest.json is missing; TDX export evidence cannot be tied to research runs.")
+        checks.append(
+            "run_manifest.json is missing; TDX export evidence cannot be tied to research runs."
+        )
     else:
         checks.extend(
             _tdx_metadata_checks(
@@ -925,7 +1136,9 @@ def _tdx_day_traceability_status(
             )
         )
     if cache_metadata is None:
-        warnings.append("SQLite research_metadata was not checked because config/cache evidence is unavailable.")
+        warnings.append(
+            "SQLite research_metadata was not checked because config/cache evidence is unavailable."
+        )
     else:
         checks.extend(
             _tdx_metadata_checks(
@@ -994,12 +1207,17 @@ def _run_manifest_status(root: Path) -> GoalEvidenceItem:
     artifact = "run_manifest.json"
     path = root / artifact
     if not path.exists():
-        return GoalEvidenceItem("run_manifest", "BLOCK", artifact, "Missing required evidence artifact.")
+        return GoalEvidenceItem(
+            "run_manifest", "BLOCK", artifact, "Missing required evidence artifact."
+        )
     payload = _read_json(path)
     status: GoalStatusDecision = "PASS"
     data_version = payload.get("data_version", {}) if isinstance(payload, dict) else {}
     data_version = data_version if isinstance(data_version, dict) else {}
-    if bool(payload.get("demo_data_used", False)) or not str(data_version.get("csv_dataset_fingerprint", "") or "").strip():
+    if (
+        bool(payload.get("demo_data_used", False))
+        or not str(data_version.get("csv_dataset_fingerprint", "") or "").strip()
+    ):
         status = "BLOCK"
     return GoalEvidenceItem("run_manifest", status, artifact, _manifest_message(payload))
 
@@ -1057,11 +1275,15 @@ def _evaluate_cache_gate(
     latest_bar = _latest_bar_date(bars)
     as_of_date = pd.Timestamp(as_of or date.today().isoformat()).date()
     staleness = (as_of_date - pd.Timestamp(latest_bar).date()).days if latest_bar else None
-    demo = bool(symbols) and all(symbol.startswith("DEMO") for symbol in symbols)
+    demo = is_demo_contaminated(symbols)
     statuses: list[GoalStatusDecision] = []
     if not symbols or bars.empty or demo or staleness is None or staleness > max_staleness_days:
         statuses.append("BLOCK")
-    if len(symbols) < min_symbols or len(days) < min_trading_days or (staleness is not None and staleness < 0):
+    if (
+        len(symbols) < min_symbols
+        or len(days) < min_trading_days
+        or (staleness is not None and staleness < 0)
+    ):
         statuses.append("WATCH")
     return {
         "decision": _combine(statuses),
@@ -1116,6 +1338,36 @@ def _default_message(status: GoalStatusDecision, payload: dict[str, Any]) -> str
     return "Evidence gate is BLOCK or missing required pass conditions."
 
 
+def _statistical_evidence_message(
+    name: str,
+    status: GoalStatusDecision,
+    payload: dict[str, Any],
+) -> str:
+    if name == "multiple_testing_report":
+        input_payload = payload.get("input", {}) or {}
+        parameters = payload.get("parameters", {}) or {}
+        return (
+            f"Multiple-testing evidence is {status}; candidate="
+            f"{parameters.get('selected_candidate', 'none') or 'none'}, "
+            f"trials={len(input_payload.get('candidate_columns', []) or [])}, "
+            f"observations={input_payload.get('observations', 'unknown')}."
+        )
+    if name == "benchmark_report":
+        identity = payload.get("identity", {}) or {}
+        alignment = payload.get("alignment", {}) or {}
+        return (
+            f"Benchmark evidence is {status}; symbol={identity.get('symbol', 'none') or 'none'}, "
+            f"total_return={identity.get('total_return', 'unknown')}, "
+            f"aligned_observations={alignment.get('aligned_observations', 'unknown')}."
+        )
+    return (
+        f"Trial registry review is {status}; candidate="
+        f"{payload.get('selected_candidate', 'none') or 'none'}, "
+        f"trial_id={payload.get('matched_trial_id', 'none') or 'none'}, "
+        f"verified_events={payload.get('verified_event_count', 'unknown')}."
+    )
+
+
 def _offline_data_package_message(payload: dict[str, Any]) -> str:
     items = payload.get("items", []) or []
     bad = [
@@ -1137,6 +1389,14 @@ def _best_candidate(root: Path) -> str:
     return str(payload.get("selected_candidate") or payload.get("best_candidate", ""))
 
 
+def _benchmark_symbol(root: Path) -> str:
+    payload = _read_json(root / "run_manifest.json")
+    parameters = payload.get("research_parameters")
+    if not isinstance(parameters, dict):
+        return ""
+    return str(parameters.get("index_code") or "").strip()
+
+
 def _blockers(evidence: list[GoalEvidenceItem]) -> list[str]:
     return [f"{item.name}: {item.message}" for item in evidence if item.status == "BLOCK"]
 
@@ -1156,12 +1416,13 @@ def _next_actions(evidence: list[GoalEvidenceItem]) -> list[str]:
         acquisition = item_by_name.get("recent_data_acquisition")
         csv_validation = item_by_name.get("csv_validation")
         csv_preview = item_by_name.get("csv_intake_preview")
-        if acquisition is not None and acquisition.status == "BLOCK":
-            actions.append(f"Fix recent data acquisition first: {acquisition.message}")
-        if csv_preview is not None and csv_preview.status == "BLOCK":
-            actions.append(f"Fix CSV intake preview first: {csv_preview.message}")
-        if csv_validation is not None and csv_validation.status == "BLOCK":
-            actions.append(f"Fix CSV validation blocker first: {csv_validation.message}")
+        if not metadata_only_cache_block:
+            if acquisition is not None and acquisition.status == "BLOCK":
+                actions.append(f"Fix recent data acquisition first: {acquisition.message}")
+            if csv_preview is not None and csv_preview.status == "BLOCK":
+                actions.append(f"Fix CSV intake preview first: {csv_preview.message}")
+            if csv_validation is not None and csv_validation.status == "BLOCK":
+                actions.append(f"Fix CSV validation blocker first: {csv_validation.message}")
         source_qa_preflight = item_by_name.get("offline_source_qa_preflight")
         source_qa = item_by_name.get("offline_source_qa")
         intake = item_by_name.get("offline_data_intake")
@@ -1189,25 +1450,37 @@ def _next_actions(evidence: list[GoalEvidenceItem]) -> list[str]:
         elif doctor is not None and doctor.status == "BLOCK":
             actions.append(f"Fix offline import doctor blocker first: {doctor.message}")
         elif csv_preview is not None and csv_preview.status == "WATCH":
-            actions.append(f"Review CSV intake preview WATCH item before importing data: {csv_preview.message}")
+            actions.append(
+                f"Review CSV intake preview WATCH item before importing data: {csv_preview.message}"
+            )
         elif status_by_name.get("offline_data_package") == "BLOCK":
             package = item_by_name.get("offline_data_package")
-            actions.append(f"Fix offline data package blocker first: {package.message if package else 'package is BLOCK.'}")
+            actions.append(
+                f"Fix offline data package blocker first: {package.message if package else 'package is BLOCK.'}"
+            )
         elif intake is not None and intake.status == "WATCH":
-            actions.append("Review guarded offline intake WATCH findings before running strategy research.")
+            actions.append(
+                "Review guarded offline intake WATCH findings before running strategy research."
+            )
         elif status_by_name.get("offline_data_package") == "WATCH":
             actions.append("Review offline data package WATCH findings before importing CSV data.")
         elif doctor is not None and doctor.status == "WATCH":
             actions.append("Review offline import doctor WATCH findings before importing CSV data.")
         elif data_packet is not None and data_packet.status == "WATCH":
-            actions.append(f"Review data evidence action packet WATCH item before importing data: {data_packet.message}")
+            actions.append(
+                f"Review data evidence action packet WATCH item before importing data: {data_packet.message}"
+            )
         if metadata_only_cache_block:
             actions.append(
                 "Rerun guarded offline intake so the cache records CSV fingerprint, PASS source QA metadata, and provenance hashes."
             )
-            actions.append("Rerun run_manifest and real_data_bootstrap after cache metadata is repaired.")
+            actions.append(
+                "Rerun run_manifest and real_data_bootstrap after cache metadata is repaired."
+            )
             return actions
-        actions.append("Import recent real A-share data into the configured cache before running research.")
+        actions.append(
+            "Import recent real A-share data into the configured cache before running research."
+        )
         actions.append("Rerun real_data_bootstrap after the cache has broad, recent daily bars.")
         return actions
     if status_by_name.get("data_evidence_action_packet") == "BLOCK":
@@ -1236,14 +1509,18 @@ def _next_actions(evidence: list[GoalEvidenceItem]) -> list[str]:
             f"Repair raw vendor traceability and CSV fingerprint chain before strategy search: {raw_trace.message if raw_trace else 'raw traceability is BLOCK.'}"
         )
     if status_by_name.get("raw_vendor_traceability") == "WATCH":
-        actions.append("Provide config/cache evidence so raw vendor CSV fingerprint can be checked in SQLite metadata.")
+        actions.append(
+            "Provide config/cache evidence so raw vendor CSV fingerprint can be checked in SQLite metadata."
+        )
     if status_by_name.get("tdx_day_traceability") == "BLOCK":
         tdx_trace = item_by_name.get("tdx_day_traceability")
         actions.append(
             f"Repair TDX day export traceability before strategy search: {tdx_trace.message if tdx_trace else 'TDX traceability is BLOCK.'}"
         )
     if status_by_name.get("tdx_day_traceability") == "WATCH":
-        actions.append("Review TDX day export WATCH evidence and provide config/cache metadata if missing.")
+        actions.append(
+            "Review TDX day export WATCH evidence and provide config/cache metadata if missing."
+        )
     if status_by_name.get("data_evidence_action_packet") == "WATCH":
         packet = item_by_name.get("data_evidence_action_packet")
         actions.append(
@@ -1277,21 +1554,45 @@ def _next_actions(evidence: list[GoalEvidenceItem]) -> list[str]:
     if status_by_name.get("candidate_regime_validation") == "BLOCK":
         actions.append("Run candidate regime validation and include adverse market windows.")
     if status_by_name.get("candidate_experiment_launch") == "BLOCK":
-        actions.append("Run candidate experiment launch only after readiness, source QA, and offline intake are PASS.")
+        actions.append(
+            "Run candidate experiment launch only after readiness, source QA, and offline intake are PASS."
+        )
     if status_by_name.get("candidate_experiment_execution") == "BLOCK":
         actions.append("Fix candidate experiment execution before reviewing completion.")
     if status_by_name.get("candidate_experiment_execution") == "WATCH":
-        actions.append("Run the guarded candidate experiment executor without --dry-run before completion review.")
+        actions.append(
+            "Run the guarded candidate experiment executor without --dry-run before completion review."
+        )
     if status_by_name.get("candidate_experiment_completion") == "BLOCK":
         actions.append("Complete every required candidate experiment output before paper planning.")
     if status_by_name.get("candidate_experiment_completion") == "WATCH":
         actions.append("Review candidate experiment completion WATCH items before paper planning.")
+    for name, label in (
+        ("multiple_testing_report", "multiple-testing report"),
+        ("benchmark_report", "benchmark report"),
+        ("trial_registry_review", "trial registry review"),
+    ):
+        item = item_by_name.get(name)
+        if item is None or item.status == "PASS":
+            continue
+        if item.status == "BLOCK":
+            actions.append(
+                f"Repair the required {label} and rerun contract validation: {item.message}"
+            )
+        else:
+            actions.append(
+                f"Resolve WATCH findings in the {label} before promotion: {item.message}"
+            )
     if status_by_name.get("paper_stability") == "BLOCK":
         actions.append("Run paper loop for 4-8 weeks and generate paper_stability.json/md.")
     if status_by_name.get("human_approval") == "BLOCK":
-        actions.append("Do not proceed to micro-live readiness until a complete approval_record.json exists.")
+        actions.append(
+            "Do not proceed to micro-live readiness until a complete approval_record.json exists."
+        )
     if not actions:
-        actions.append("Continue weekly evidence accumulation; do not increase capital without a fresh review.")
+        actions.append(
+            "Continue weekly evidence accumulation; do not increase capital without a fresh review."
+        )
     return actions
 
 
@@ -1334,7 +1635,10 @@ def _source_qa_preflight_item_message(item: dict[str, Any], default: str) -> str
 
 def _first_bad_finding(payload: dict[str, Any]) -> dict[str, Any]:
     for finding in payload.get("findings", []) or []:
-        if isinstance(finding, dict) and str(finding.get("severity", "")).upper() in {"BLOCK", "WATCH"}:
+        if isinstance(finding, dict) and str(finding.get("severity", "")).upper() in {
+            "BLOCK",
+            "WATCH",
+        }:
             return finding
     return {}
 
@@ -1349,7 +1653,11 @@ def _first_named_payload(items: list[Any], statuses: set[str]) -> dict[str, Any]
 def _offline_intake_bases(root: Path, offline_intake_dir: Path | None) -> list[Path]:
     bases: list[Path] = []
     if offline_intake_dir is not None:
-        bases.append(offline_intake_dir.parent if offline_intake_dir.suffix.lower() == ".json" else offline_intake_dir)
+        bases.append(
+            offline_intake_dir.parent
+            if offline_intake_dir.suffix.lower() == ".json"
+            else offline_intake_dir
+        )
     bases.extend([root / "offline_intake", root])
     result: list[Path] = []
     for base in bases:

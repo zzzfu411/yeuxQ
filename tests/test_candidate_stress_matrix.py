@@ -93,6 +93,51 @@ def test_candidate_stress_scenarios_include_turnover_control(tmp_path: Path) -> 
     assert selected[2].score_smoothing_step_days == 20
 
 
+def test_candidate_stress_scenarios_force_small_capital_cost_assumptions(
+    tmp_path: Path,
+) -> None:
+    cfg = _cfg(tmp_path / "research.db")
+    spec = next(
+        item for item in default_candidate_specs(cfg) if item.name == "price_volume_defensive"
+    )
+    scenarios = {
+        scenario.name: scenario for scenario in default_candidate_stress_scenarios(spec)
+    }
+
+    for slippage_bps in (5, 10, 20):
+        scenario = scenarios[f"small_capital_{slippage_bps}bps"]
+        assert scenario.initial_cash == 100_000
+        assert scenario.lot_size == 100
+        assert scenario.min_commission == 5
+        assert scenario.stamp_tax == 0.0005
+        assert scenario.slippage_bps == slippage_bps
+
+
+def test_small_capital_stress_uses_effective_execution_assumptions(tmp_path: Path) -> None:
+    cache = tmp_path / "small-capital.db"
+    seed_demo_data(BarStorage(cache), "2020-01-01", "2020-12-31")
+    cfg = _cfg(cache)
+    spec = next(
+        item for item in default_candidate_specs(cfg) if item.name == "price_volume_defensive"
+    )
+    scenario = select_candidate_stress_scenarios(spec, ["small_capital_20bps"])[0]
+
+    result = run_candidate_stress_matrix(
+        DataProvider(BarStorage(cache)),
+        cfg,
+        specs=[spec],
+        scenarios_by_candidate={spec.name: [scenario]},
+    ).results[0]
+
+    assert result.execution_initial_cash == 100_000
+    assert result.parameters["effective_lot_size"] == 100
+    assert result.parameters["effective_min_commission"] == 5
+    assert result.parameters["effective_stamp_tax"] == 0.0005
+    assert result.parameters["effective_slippage_bps"] == 20
+    assert result.min_commission_hit_count > 0
+    assert result.below_lot_reject_count > 0
+
+
 def test_candidate_stress_matrix_cli_filters_candidate_and_scenario(tmp_path: Path) -> None:
     cache = tmp_path / "research.db"
     seed_demo_data(BarStorage(cache), "2020-01-01", "2020-12-31")

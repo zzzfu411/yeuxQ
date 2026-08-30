@@ -194,6 +194,34 @@ def test_strategy_promotion_blocks_missing_candidate_regime_evidence(tmp_path: P
     )
 
 
+def test_strategy_promotion_blocks_direct_legacy_registry_summary(tmp_path: Path) -> None:
+    registry = tmp_path / "legacy_registry.json"
+    summary = _summary(
+        real_obs=3,
+        demo_obs=0,
+        real_pass=3,
+        real_return=0.50,
+        wf_obs=3,
+        wf_pass=3,
+        regime_obs=3,
+        regime_pass=3,
+        adverse_windows=2,
+    )
+    summary.pop("selection_contract_version")
+    summary.pop("selection_safe_real_observation_count")
+    registry.write_text(
+        json.dumps({"runs": [], "candidates": {"core_multifactor": {"summary": summary}}}),
+        encoding="utf-8",
+    )
+
+    review = review_strategy_promotions(registry, goal=_goal())
+
+    assert review.decision == "BLOCK"
+    codes = {finding.code for finding in review.candidates[0].findings}
+    assert "UNSAFE_REGISTRY_SCHEMA" in codes
+    assert "MISSING_SELECTION_CONTRACT" in codes
+
+
 def _goal() -> CapitalGoal:
     return CapitalGoal(starting_capital=100_000, target_capital=1_000_000, years=8)
 
@@ -215,6 +243,10 @@ def _summary(
 ) -> dict:
     return {
         "name": "core_multifactor",
+        "selection_contract_version": 3,
+        "statistical_evidence_contract_version": 3,
+        "selection_safe_real_observation_count": real_obs,
+        "statistical_safe_real_observation_count": real_obs,
         "real_observation_count": real_obs,
         "demo_observation_count": demo_obs,
         "real_pass_count": real_pass,
@@ -240,6 +272,7 @@ def _summary(
 
 def _write_registry(path: Path, summaries: dict[str, dict]) -> None:
     payload = {
+        "schema_version": 3,
         "runs": [],
         "candidates": {
             name: {"summary": summary}

@@ -27,6 +27,10 @@ def test_walk_forward_writes_multiple_windows(tmp_path: Path) -> None:
 
     assert report.window_count >= 3
     assert report.status in {"PASS", "WATCH", "BLOCK"}
+    assert report.selection_safe is True
+    assert report.test_used_for_selection is False
+    assert report.configuration["mode"] == "expanding"
+    assert all(window.fold.selection.end < window.start for window in report.windows)
     assert (out / "walk_forward_report.json").exists()
     assert "Walk-forward Report" in (out / "walk_forward_report.md").read_text(encoding="utf-8")
 

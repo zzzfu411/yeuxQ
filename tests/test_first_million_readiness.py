@@ -541,6 +541,30 @@ def test_first_million_readiness_surfaces_downstream_readiness_blockers(
     assert "micro_live_readiness is BLOCK" in gates["capital_scaling_plan"].message
 
 
+def test_first_million_readiness_surfaces_statistical_contract_blocker(tmp_path: Path) -> None:
+    _write_pass_artifacts(tmp_path)
+    _write_json(
+        tmp_path / "micro_live_readiness.json",
+        {
+            "decision": "BLOCK",
+            "findings": [
+                {
+                    "severity": "BLOCK",
+                    "code": "BENCHMARK_REPORT_CONTRACT_INVALID",
+                    "message": "benchmark_report.json fails its retained-evidence contract.",
+                }
+            ],
+        },
+    )
+
+    card = build_first_million_readiness_card(tmp_path, as_of="2026-06-08")
+    gate = next(gate for gate in card.gates if gate.name == "micro_live_readiness")
+
+    assert card.decision == "BLOCK"
+    assert gate.status == "BLOCK"
+    assert "BENCHMARK_REPORT_CONTRACT_INVALID" in gate.message
+
+
 def test_first_million_readiness_prefers_offline_path_after_network_blocked_import(
     tmp_path: Path,
 ) -> None:
@@ -983,9 +1007,8 @@ def _write_recent_cache(
                     "amount": price * 1_000_000,
                 }
             )
-    storage.save_bars(pd.DataFrame(rows))
     if with_metadata:
-        storage.save_metadata(
+        resolved_metadata = dict(
             metadata
             or {
                 "csv_dataset_fingerprint": "unit-test-csv-fingerprint",
@@ -994,6 +1017,18 @@ def _write_recent_cache(
                 **_source_qa_metadata(cache.parent),
             }
         )
+        resolved_metadata.setdefault("data_source", "local_csv")
+        storage.save_bars_with_lineage(
+            pd.DataFrame(rows),
+            source_type="guarded_local_csv",
+            source_reference="unit-test-bars.csv",
+            source_fingerprint_kind="csv_dataset_fingerprint",
+            source_fingerprint=str(resolved_metadata.get("csv_dataset_fingerprint", "")),
+            cache_metadata=resolved_metadata,
+        )
+    else:
+        storage.save_bars(pd.DataFrame(rows))
+        storage.save_metadata({"data_source": "local_csv"})
 
 
 def _source_qa_metadata(root: Path) -> dict[str, str]:

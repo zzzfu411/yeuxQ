@@ -7,9 +7,9 @@
 
 - 市场: `A-share equities`
 - 频率: `daily`
-- 日期范围: `2024-06-03` 到 `2026-06-05`
+- 日期范围: `2024-06-03` 到 `2026-07-14`
 - 最少股票数: 300
-- 写入目标缓存: `./data_cache/research_recent.db`
+- 写入目标缓存: `tmp\provider_probe_20260715\akshare_current_300_v2.db`
 - 复权口径: `qfq`
 - 股票池模式: `all_a`
 - 指数/研究上下文: `000906`
@@ -55,7 +55,7 @@
 | `index_code` | 指数或研究股票池代码，例如 000906。 |
 
 ## 验收标准
-- bars.csv 必须覆盖 `2024-06-03` 到 `2026-06-05` 的研究窗口。
+- bars.csv 必须覆盖 `2024-06-03` 到 `2026-07-14` 的研究窗口。
 - bars.csv 至少包含 300 只不同 A 股股票。
 - 价格口径必须与配置一致: `qfq`。
 - 模板样例行和 demo 数据必须全部替换为真实导出数据。
@@ -71,7 +71,7 @@
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\write_data_source_qa.py --config config\research_recent.yaml --output-dir data_exports --min-symbols 300
+.\.venv\Scripts\python.exe examples\write_data_source_qa.py --config results\prospective\guard_v1_20260716\operational_status\effective_config.yaml --output-dir data_exports --min-symbols 300
 ```
 
 ```powershell
@@ -107,19 +107,19 @@
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\run_data_import_doctor.py --data-dir data_exports --config config\research_recent.yaml --encoding auto --output-dir results\import\doctor
+.\.venv\Scripts\python.exe examples\run_data_import_doctor.py --data-dir data_exports --config results\prospective\guard_v1_20260716\operational_status\effective_config.yaml --encoding auto --output-dir results\import\doctor
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\validate_research_csv.py --bars-csv data_exports\bars.csv --stock-info-csv data_exports\stock_info.csv --fundamentals-csv data_exports\fundamentals.csv --calendar-csv data_exports\calendar.csv --suspensions-csv data_exports\suspensions.csv --index-constituents-csv data_exports\index_constituents.csv --start 2024-06-03 --end 2026-06-05 --min-symbols 300 --encoding auto --output-dir results\import\recent_csv_validation
+.\.venv\Scripts\python.exe examples\validate_research_csv.py --bars-csv data_exports\bars.csv --stock-info-csv data_exports\stock_info.csv --fundamentals-csv data_exports\fundamentals.csv --calendar-csv data_exports\calendar.csv --suspensions-csv data_exports\suspensions.csv --index-constituents-csv data_exports\index_constituents.csv --start 2024-06-03 --end 2026-07-14 --min-symbols 300 --encoding auto --output-dir results\import\recent_csv_validation
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\import_research_csv.py --cache ./data_cache/research_recent.db --bars-csv data_exports\bars.csv --stock-info-csv data_exports\stock_info.csv --fundamentals-csv data_exports\fundamentals.csv --calendar-csv data_exports\calendar.csv --suspensions-csv data_exports\suspensions.csv --index-constituents-csv data_exports\index_constituents.csv --validate --start 2024-06-03 --end 2026-06-05 --min-symbols 300 --encoding auto --output-dir results\import\recent_csv
+.\.venv\Scripts\python.exe examples\import_research_csv.py --cache tmp\provider_probe_20260715\akshare_current_300_v2.db --bars-csv data_exports\bars.csv --stock-info-csv data_exports\stock_info.csv --fundamentals-csv data_exports\fundamentals.csv --calendar-csv data_exports\calendar.csv --suspensions-csv data_exports\suspensions.csv --index-constituents-csv data_exports\index_constituents.csv --validate --start 2024-06-03 --end 2026-07-14 --min-symbols 300 --encoding auto --output-dir results\import\recent_csv
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\run_real_data_bootstrap.py --config config\research_recent.yaml --output-dir results\bootstrap_recent --min-symbols 300 --as-of 2026-06-08
+.\.venv\Scripts\python.exe examples\run_real_data_bootstrap.py --config results\prospective\guard_v1_20260716\operational_status\effective_config.yaml --output-dir results\bootstrap_recent --min-symbols 300 --as-of 2026-06-08
 ```
 
 ## 安全边界

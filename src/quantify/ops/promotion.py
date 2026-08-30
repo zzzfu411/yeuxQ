@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from quantify.goal import CapitalGoal
+from quantify.ops.registry import STRATEGY_REGISTRY_SCHEMA_VERSION
 
 PromotionDecision = Literal["PASS", "WATCH", "BLOCK"]
 
@@ -129,9 +130,11 @@ def review_strategy_promotions(
 ) -> StrategyPromotionReview:
     registry_file = Path(registry_path)
     payload = _read_json(registry_file)
+    registry_schema_version = payload.get("schema_version")
     candidates = [
         _candidate_review(
             summary,
+            registry_schema_version=registry_schema_version,
             goal=goal,
             min_real_observations=min_real_observations,
             min_real_passes=min_real_passes,
@@ -209,6 +212,7 @@ def write_strategy_promotion_review(
 def _candidate_review(
     summary: dict[str, Any],
     *,
+    registry_schema_version: object,
     goal: CapitalGoal,
     min_real_observations: int,
     min_real_passes: int,
@@ -239,6 +243,51 @@ def _candidate_review(
     real_drawdown = _float(summary.get("real_avg_max_drawdown"))
     real_sharpe = _float(summary.get("real_avg_sharpe_ratio"))
     required = goal.required_annual_return()
+
+    if registry_schema_version != STRATEGY_REGISTRY_SCHEMA_VERSION:
+        findings.append(
+            StrategyPromotionFinding(
+                "BLOCK",
+                "UNSAFE_REGISTRY_SCHEMA",
+                "Strategy registry must be regenerated with the full evidence v3 schema.",
+            )
+        )
+    if summary.get("selection_contract_version") != STRATEGY_REGISTRY_SCHEMA_VERSION:
+        findings.append(
+            StrategyPromotionFinding(
+                "BLOCK",
+                "MISSING_SELECTION_CONTRACT",
+                "Candidate summary lacks selection-safe v3 observation provenance.",
+            )
+        )
+    safe_real_obs = int(summary.get("selection_safe_real_observation_count", 0) or 0)
+    if safe_real_obs != real_obs:
+        findings.append(
+            StrategyPromotionFinding(
+                "BLOCK",
+                "SELECTION_SAFE_OBSERVATION_MISMATCH",
+                "Every real observation must satisfy walk-forward and robustness selection safety.",
+            )
+        )
+    if summary.get("statistical_evidence_contract_version") != STRATEGY_REGISTRY_SCHEMA_VERSION:
+        findings.append(
+            StrategyPromotionFinding(
+                "BLOCK",
+                "MISSING_STATISTICAL_EVIDENCE_CONTRACT",
+                "Candidate summary lacks benchmark, multiple-testing, and trial evidence provenance.",
+            )
+        )
+    statistical_safe_real_obs = int(
+        summary.get("statistical_safe_real_observation_count", 0) or 0
+    )
+    if statistical_safe_real_obs != real_obs:
+        findings.append(
+            StrategyPromotionFinding(
+                "BLOCK",
+                "STATISTICAL_SAFE_OBSERVATION_MISMATCH",
+                "Every real observation must pass benchmark, multiple-testing, and trial binding evidence.",
+            )
+        )
 
     if real_obs < min_real_observations:
         findings.append(

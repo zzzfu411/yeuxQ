@@ -1,0 +1,41 @@
+research:
+  start: '2024-06-03'
+  end: '2026-10-16'
+  in_sample_end: '2026-07-14'
+  out_sample_start: '2026-07-17'
+  initial_cash: 1000000.0
+  rebalance: monthly
+  benchmark:
+  - '000300'
+  - 000905
+  allow_demo_data: false
+data:
+  source: akshare
+  cache_path: tmp\provider_probe_20260715\akshare_current_300_v2.db
+  adjust: qfq
+universe:
+  mode: index
+  index_code: 000906
+  include_st: false
+  min_history_days: 120
+strategy:
+  name: multi_factor
+  n_holdings: 30
+  max_weight: 0.05
+risk:
+  max_drawdown_stop: 0.2
+broker:
+  commission_rate: 0.00025
+  min_commission: 5.0
+  stamp_tax: 0.0005
+  slippage_bps: 5
+  price_limit_pct: 0.1
+  lot_size: 100
+output:
+  results_dir: results/prospective/guard_v1
+prospective_trial:
+  trial_id: guard-v1-20260716
+  candidate: liquidity_neutral_momentum_guard_price_volume
+  parameter_fingerprint: d57d8ee8b2d76d45782dd0473dfe862b61a750047eeabaa4f71f09ec23892b5d
+  protocol_fingerprint: b8f93274dc8fabe2d7123adc2ef7053b3209779e4cf14c76982c639260dd4eae
+  prohibited_live_use: true

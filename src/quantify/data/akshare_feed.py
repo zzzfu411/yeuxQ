@@ -37,7 +37,13 @@ _COLUMN_MAP = {
 class AkshareFeed(DataFeed):
     """A-share daily bars via AKShare, cached in local SQLite."""
 
-    def __init__(self, storage: BarStorage, adjust: str = "qfq") -> None:
+    def __init__(
+        self,
+        storage: BarStorage | None,
+        adjust: str = "qfq",
+        *,
+        persist: bool = True,
+    ) -> None:
         """
         Args:
             storage: BarStorage instance for cache.
@@ -45,9 +51,13 @@ class AkshareFeed(DataFeed):
                      Default 前复权(qfq):适合多数策略回测,避免分红送股导致价格跳变。
         """
         self.storage = storage
+        if persist and storage is None:
+            raise ValueError("storage is required when persist=True")
         if adjust not in ("", "qfq", "hfq"):
             raise ValueError(f"adjust must be '', 'qfq' or 'hfq', got {adjust!r}")
         self.adjust = adjust
+        self.persist = persist
+        self.fetch_routes: dict[str, str] = {}
 
     def fetch(
         self,
@@ -66,18 +76,12 @@ class AkshareFeed(DataFeed):
         # AKShare 日线接口签名:
         # stock_zh_a_hist(symbol, period, start_date, end_date, adjust)
         # symbol 形如 "600519"(沪市) / "000001"(深市) / "300750"(创业板)
-        raw = ak.stock_zh_a_hist(
-            symbol=symbol,
-            period="daily",
-            start_date=start_str,
-            end_date=end_str,
-            adjust=self.adjust,
-        )
+        raw, route = self._fetch_raw(symbol, start_str, end_str)
         if raw.empty:
             logger.warning("AKShare returned 0 rows for {} {}~{}", symbol, start_str, end_str)
             return raw
 
-        df = raw.rename(columns=_COLUMN_MAP)[list(_COLUMN_MAP.values())].copy()
+        df = _canonical_columns(raw, symbol)
         # 规整 date 列为 ISO 字符串(SQLite 友好,排序也对)
         df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
         df.insert(0, "symbol", symbol)
@@ -85,10 +89,62 @@ class AkshareFeed(DataFeed):
         for col in ("open", "high", "low", "close", "volume", "amount"):
             df[col] = pd.to_numeric(df[col], errors="coerce")
         df = df.dropna(subset=["open", "high", "low", "close"])
+        if route == "eastmoney":
+            # Eastmoney reports A-share volume in lots (手); canonical storage uses shares.
+            df["volume"] = df["volume"] * 100.0
 
-        self.storage.save_bars(df)
-        logger.info("Stored {} rows for {}", len(df), symbol)
+        if self.persist:
+            self._storage().save_bars_with_lineage(
+                df,
+                source_type="akshare_api",
+                source_reference=route,
+                source_metadata={"adjust_requested": self.adjust, "provider_route": route},
+            )
+        self.fetch_routes[symbol] = route
+        action = "Stored" if self.persist else "Fetched"
+        logger.info("{} {} rows for {} via {}", action, len(df), symbol, route)
         return df
+
+    def _fetch_raw(
+        self,
+        symbol: str,
+        start_str: str,
+        end_str: str,
+    ) -> tuple[pd.DataFrame, str]:
+        primary_error = ""
+        try:
+            primary = ak.stock_zh_a_hist(
+                symbol=symbol,
+                period="daily",
+                start_date=start_str,
+                end_date=end_str,
+                adjust=self.adjust,
+            )
+            if not primary.empty:
+                return primary, "eastmoney"
+            primary_error = "empty bars"
+        except Exception as exc:  # noqa: BLE001 - preserve failure before fallback.
+            primary_error = f"{type(exc).__name__}: {exc}"
+
+        logger.warning(
+            "Eastmoney bars unavailable for {} ({}); trying Sina fallback.",
+            symbol,
+            primary_error,
+        )
+        try:
+            fallback = ak.stock_zh_a_daily(
+                symbol=_sina_symbol(symbol),
+                start_date=start_str,
+                end_date=end_str,
+                adjust=self.adjust,
+            )
+        except Exception as exc:  # noqa: BLE001 - raise combined provider evidence.
+            raise RuntimeError(
+                f"Eastmoney failed ({primary_error}); Sina failed ({type(exc).__name__}: {exc})"
+            ) from exc
+        if fallback.empty:
+            raise RuntimeError(f"Eastmoney failed ({primary_error}); Sina returned empty bars")
+        return fallback, "sina"
 
     def ensure_cached(
         self,
@@ -101,7 +157,8 @@ class AkshareFeed(DataFeed):
         Network failures are logged as warnings but never raised — backtests
         should still be runnable from whatever data is already cached.
         """
-        last = self.storage.last_date(symbol)
+        storage = self._storage()
+        last = storage.last_date(symbol)
         end_str = _to_iso(end)
         if last is not None and last >= end_str:
             logger.debug("Cache hit for {} up to {}", symbol, last)
@@ -133,7 +190,7 @@ class AkshareFeed(DataFeed):
         frames: list[pd.DataFrame] = []
         for sym in symbols:
             self.ensure_cached(sym, start, end)
-            frames.append(self.storage.load_bars(sym, start, end))
+            frames.append(self._storage().load_bars(sym, start, end))
         if not frames:
             return
         merged = pd.concat(frames, ignore_index=True).sort_values(["date", "symbol"])
@@ -149,6 +206,11 @@ class AkshareFeed(DataFeed):
                 amount=float(row.amount),
             )
 
+    def _storage(self) -> BarStorage:
+        if self.storage is None:
+            raise RuntimeError("cache operations require a BarStorage instance")
+        return self.storage
+
 
 def _to_akshare_date(d: str | date) -> str:
     """AKShare wants 'YYYYMMDD' format."""
@@ -161,3 +223,21 @@ def _to_iso(d: str | date) -> str:
     if isinstance(d, str):
         return d
     return d.isoformat()
+
+
+def _canonical_columns(raw: pd.DataFrame, symbol: str) -> pd.DataFrame:
+    renamed = raw.rename(columns=_COLUMN_MAP)
+    required = list(_COLUMN_MAP.values())
+    missing = [column for column in required if column not in renamed]
+    if missing:
+        raise ValueError(f"AKShare bars for {symbol} are missing columns: {', '.join(missing)}")
+    return renamed[required].copy()
+
+
+def _sina_symbol(symbol: str) -> str:
+    clean = str(symbol).strip().zfill(6)
+    if clean.startswith(("4", "8")):
+        return f"bj{clean}"
+    if clean.startswith(("5", "6", "9")):
+        return f"sh{clean}"
+    return f"sz{clean}"

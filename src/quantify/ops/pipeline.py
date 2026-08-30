@@ -11,6 +11,11 @@ import pandas as pd
 
 from quantify.audit import audit_data, write_data_audit
 from quantify.core.portfolio import Portfolio
+from quantify.data.demo import is_demo_contaminated
+from quantify.data.cache_metadata import (
+    build_promotion_metadata_check,
+    write_promotion_metadata_check,
+)
 from quantify.data.provider import DataProvider
 from quantify.data.storage import BarStorage
 from quantify.engine.paper_broker import PaperBroker, PaperBrokerConfig
@@ -62,9 +67,14 @@ from quantify.research.regime_validation import (
 )
 from quantify.research.report import research_evidence_digest, write_research_report
 from quantify.research.robustness import run_robustness, write_robustness_report
+from quantify.research.selection_evidence import (
+    build_selection_evidence_manifest,
+    write_selection_evidence_manifest,
+)
 from quantify.research.strategy import MultiFactorStrategyConfig, MultiFactorTargetStrategy
 from quantify.research.universe import UniverseConfig, UniverseFilter
 from quantify.research.walk_forward import run_walk_forward, write_walk_forward_report
+from quantify.research.walk_forward_protocol import WalkForwardMode
 
 PipelineReviewStage = Literal["research", "paper", "micro_live_ready"]
 
@@ -98,7 +108,11 @@ def run_weekly_pipeline(
     registry_path: str | Path | None = "results/strategy_registry/strategy_registry.json",
     paper_state_dir: str | Path | None = None,
     as_of: str | None = None,
+    walk_forward_mode: WalkForwardMode = "expanding",
     walk_forward_train_days: int = 120,
+    walk_forward_purge_days: int = 5,
+    walk_forward_selection_days: int = 20,
+    walk_forward_embargo_days: int = 5,
     walk_forward_test_days: int = 60,
     walk_forward_step_days: int = 60,
     prepare_micro_live_readiness: bool = False,
@@ -125,7 +139,7 @@ def run_weekly_pipeline(
         storage=storage,
         config_path=config_path,
         purpose="weekly_pipeline",
-        demo_data_used=demo_used or _looks_like_demo_data(provider.all_symbols()),
+        demo_data_used=demo_used or is_demo_contaminated(provider.all_symbols()),
     )
     audit = audit_data(
         provider,
@@ -147,6 +161,19 @@ def run_weekly_pipeline(
 
     write_run_manifest(manifest, run_dir)
     stages.append({"name": "run_manifest", "status": "PASS", "artifact": "run_manifest.json"})
+
+    promotion_metadata = build_promotion_metadata_check(
+        storage.db_path,
+        require_evidence_manifest=True,
+    )
+    write_promotion_metadata_check(promotion_metadata, run_dir)
+    stages.append(
+        {
+            "name": "promotion_metadata_check",
+            "status": promotion_metadata.status,
+            "artifact": "promotion_metadata_check.json",
+        }
+    )
 
     bootstrap = build_real_data_bootstrap_report(
         provider,
@@ -173,7 +200,17 @@ def run_weekly_pipeline(
     write_market_regime_report(market, run_dir)
     stages.append({"name": "market_regime", "status": market.status, "artifact": "market_regime.json"})
 
-    robustness = run_robustness(provider, cfg)
+    robustness = run_robustness(
+        provider,
+        cfg,
+        mode=walk_forward_mode,
+        train_days=walk_forward_train_days,
+        purge_days=walk_forward_purge_days,
+        selection_days=walk_forward_selection_days,
+        embargo_days=walk_forward_embargo_days,
+        test_days=walk_forward_test_days,
+        step_days=walk_forward_step_days,
+    )
     write_robustness_report(robustness, run_dir)
     stages.append({"name": "robustness", "status": robustness.status, "artifact": "robustness_report.json"})
 
@@ -181,8 +218,12 @@ def run_weekly_pipeline(
         provider,
         cfg,
         train_days=walk_forward_train_days,
+        purge_days=walk_forward_purge_days,
+        selection_days=walk_forward_selection_days,
+        embargo_days=walk_forward_embargo_days,
         test_days=walk_forward_test_days,
         step_days=walk_forward_step_days,
+        mode=walk_forward_mode,
     )
     write_walk_forward_report(walk_forward, run_dir)
     stages.append({"name": "walk_forward", "status": walk_forward.status, "artifact": "walk_forward_report.json"})
@@ -191,8 +232,12 @@ def run_weekly_pipeline(
         provider,
         cfg,
         train_days=walk_forward_train_days,
+        purge_days=walk_forward_purge_days,
+        selection_days=walk_forward_selection_days,
+        embargo_days=walk_forward_embargo_days,
         test_days=walk_forward_test_days,
         step_days=walk_forward_step_days,
+        mode=walk_forward_mode,
     )
     write_candidate_walk_forward_report(candidate_walk_forward, run_dir)
     stages.append(
@@ -207,8 +252,12 @@ def run_weekly_pipeline(
         provider,
         cfg,
         train_days=walk_forward_train_days,
+        purge_days=walk_forward_purge_days,
+        selection_days=walk_forward_selection_days,
+        embargo_days=walk_forward_embargo_days,
         test_days=walk_forward_test_days,
         step_days=walk_forward_step_days,
+        mode=walk_forward_mode,
         candidate=candidate_walk_forward.best_candidate or None,
     )
     write_candidate_factor_diagnostics_report(candidate_factor_diagnostics, run_dir)
@@ -224,8 +273,12 @@ def run_weekly_pipeline(
         provider,
         cfg,
         train_days=walk_forward_train_days,
+        purge_days=walk_forward_purge_days,
+        selection_days=walk_forward_selection_days,
+        embargo_days=walk_forward_embargo_days,
         test_days=walk_forward_test_days,
         step_days=walk_forward_step_days,
+        mode=walk_forward_mode,
         candidate_walk_forward=candidate_walk_forward,
     )
     write_candidate_regime_validation_report(candidate_regime_validation, run_dir)
@@ -255,6 +308,16 @@ def run_weekly_pipeline(
     )
     write_candidate_selection_report(candidates, run_dir)
     stages.append({"name": "candidate_selection", "status": candidates.status, "artifact": "candidate_selection.json"})
+
+    selection_evidence = build_selection_evidence_manifest(run_dir)
+    write_selection_evidence_manifest(selection_evidence, run_dir)
+    stages.append(
+        {
+            "name": "selection_evidence_manifest",
+            "status": selection_evidence.status,
+            "artifact": "selection_evidence_manifest.json",
+        }
+    )
 
     paper_dir = write_paper_daily_review(paper_state_dir or run_dir, run_dir)
     paper_daily_status = str(_read_json(paper_dir / "paper_daily_review.json").get("status", "UNKNOWN"))
@@ -438,7 +501,7 @@ def _run_research(
     result = engine.run(cfg.research.start, cfg.research.end, rebalance=cfg.research.rebalance)
     trading_days = provider.trading_days(cfg.research.start, cfg.research.end)
     all_symbols = provider.all_symbols()
-    demo_like = demo_used or _looks_like_demo_data(all_symbols)
+    demo_like = demo_used or is_demo_contaminated(all_symbols)
     assumptions = {
         "data_source": cfg.data.source,
         "cache_path": cfg.data.cache_path,
@@ -451,6 +514,8 @@ def _run_research(
         "out_sample_start": cfg.research.out_sample_start,
         "n_holdings": cfg.strategy.n_holdings,
         "max_weight": cfg.strategy.max_weight,
+        "signal_timing": "rebalance_day_close",
+        "execution_timing": "next_trading_day_open",
         "symbol_count": len(all_symbols),
         "trading_day_count": len(trading_days),
         "notice": "Research simulation only; no broker or live trading connection.",
@@ -471,7 +536,7 @@ def _ensure_data(provider: DataProvider, storage: BarStorage, cfg) -> bool:
     symbols = provider.all_symbols()
     days = provider.trading_days(cfg.research.start, cfg.research.end)
     if symbols and days:
-        if _looks_like_demo_data(symbols) and not cfg.research.allow_demo_data:
+        if is_demo_contaminated(symbols) and not cfg.research.allow_demo_data:
             raise RuntimeError(
                 "Cached data appears to be deterministic demo data. "
                 "Import real research data or set allow_demo_data=true for tutorials."
@@ -536,10 +601,6 @@ def _pipeline_markdown(result: WeeklyPipelineResult, weekly: WeeklyReview) -> st
 
 def _timestamp() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
-
-
-def _looks_like_demo_data(symbols: list[str]) -> bool:
-    return bool(symbols) and all(symbol.startswith("DEMO") for symbol in symbols)
 
 
 def _payload_issue(payload: dict[str, Any]) -> str:

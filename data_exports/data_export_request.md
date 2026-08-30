@@ -7,9 +7,9 @@ The files are research inputs only; they are not broker orders or trading instru
 
 - Market: `A-share equities`
 - Frequency: `daily`
-- Date range: `2024-06-03` to `2026-06-05`
+- Date range: `2024-06-03` to `2026-07-14`
 - Minimum symbols: 300
-- Cache target: `./data_cache/research_recent.db`
+- Cache target: `tmp\provider_probe_20260715\akshare_current_300_v2.db`
 - Price adjustment: `qfq`
 - Universe mode: `all_a`
 - Index context: `000906`
@@ -45,7 +45,7 @@ The files are research inputs only; they are not broker orders or trading instru
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\write_data_source_qa.py --config config\research_recent.yaml --output-dir data_exports --min-symbols 300
+.\.venv\Scripts\python.exe examples\write_data_source_qa.py --config results\prospective\guard_v1_20260716\operational_status\effective_config.yaml --output-dir data_exports --min-symbols 300
 ```
 
 ```powershell
@@ -81,19 +81,19 @@ The files are research inputs only; they are not broker orders or trading instru
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\run_data_import_doctor.py --data-dir data_exports --config config\research_recent.yaml --encoding auto --output-dir results\import\doctor
+.\.venv\Scripts\python.exe examples\run_data_import_doctor.py --data-dir data_exports --config results\prospective\guard_v1_20260716\operational_status\effective_config.yaml --encoding auto --output-dir results\import\doctor
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\validate_research_csv.py --bars-csv data_exports\bars.csv --stock-info-csv data_exports\stock_info.csv --fundamentals-csv data_exports\fundamentals.csv --calendar-csv data_exports\calendar.csv --suspensions-csv data_exports\suspensions.csv --index-constituents-csv data_exports\index_constituents.csv --start 2024-06-03 --end 2026-06-05 --min-symbols 300 --encoding auto --output-dir results\import\recent_csv_validation
+.\.venv\Scripts\python.exe examples\validate_research_csv.py --bars-csv data_exports\bars.csv --stock-info-csv data_exports\stock_info.csv --fundamentals-csv data_exports\fundamentals.csv --calendar-csv data_exports\calendar.csv --suspensions-csv data_exports\suspensions.csv --index-constituents-csv data_exports\index_constituents.csv --start 2024-06-03 --end 2026-07-14 --min-symbols 300 --encoding auto --output-dir results\import\recent_csv_validation
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\import_research_csv.py --cache ./data_cache/research_recent.db --bars-csv data_exports\bars.csv --stock-info-csv data_exports\stock_info.csv --fundamentals-csv data_exports\fundamentals.csv --calendar-csv data_exports\calendar.csv --suspensions-csv data_exports\suspensions.csv --index-constituents-csv data_exports\index_constituents.csv --validate --start 2024-06-03 --end 2026-06-05 --min-symbols 300 --encoding auto --output-dir results\import\recent_csv
+.\.venv\Scripts\python.exe examples\import_research_csv.py --cache tmp\provider_probe_20260715\akshare_current_300_v2.db --bars-csv data_exports\bars.csv --stock-info-csv data_exports\stock_info.csv --fundamentals-csv data_exports\fundamentals.csv --calendar-csv data_exports\calendar.csv --suspensions-csv data_exports\suspensions.csv --index-constituents-csv data_exports\index_constituents.csv --validate --start 2024-06-03 --end 2026-07-14 --min-symbols 300 --encoding auto --output-dir results\import\recent_csv
 ```
 
 ```powershell
-.\.venv\Scripts\python.exe examples\run_real_data_bootstrap.py --config config\research_recent.yaml --output-dir results\bootstrap_recent --min-symbols 300 --as-of 2026-06-08
+.\.venv\Scripts\python.exe examples\run_real_data_bootstrap.py --config results\prospective\guard_v1_20260716\operational_status\effective_config.yaml --output-dir results\bootstrap_recent --min-symbols 300 --as-of 2026-06-08
 ```
 
 ## Safety Boundaries

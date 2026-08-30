@@ -122,15 +122,15 @@ def build_candidate_research_precheck_report(
     candidate_walk_forward: dict[str, Any] | None = None,
     factor_diagnostics: dict[str, Any] | None = None,
     regime_validation: dict[str, Any] | None = None,
-    selection_scope: str = "latest_precheck_window",
+    selection_scope: str = "latest_pretest_selection_window",
     selection_start: str = "",
     selection_end: str = "",
 ) -> CandidateResearchPrecheckReport:
     missing = list(DEFAULT_MISSING_PROMOTION_EVIDENCE)
-    if selection_scope != "full_sample":
-        missing.append(
-            "Full-sample candidate_selection.json was not generated; precheck selection is limited to a recent research window."
-        )
+    missing.append(
+        "Research precheck selection cannot promote a candidate; promotion requires the guarded "
+        "selection-safe evidence and completion chain."
+    )
     if factor_diagnostics is None:
         missing.append("candidate_factor_diagnostics.json was not generated in this precheck run.")
     if regime_validation is None:

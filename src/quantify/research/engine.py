@@ -1,7 +1,7 @@
 """Daily research engine for target-weight strategies."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 
 import pandas as pd
@@ -57,14 +57,43 @@ class ResearchEngine:
         turnover_rows: list[dict[str, object]] = []
         position_rows: list[dict[str, object]] = []
         last_prices: dict[str, float] = {}
-        prev_prices: dict[str, float] = {}
+        pending_targets = []
+        pending_signal_date = ""
 
         all_symbols = self.data.all_symbols()
         for day in days:
             self.portfolio.on_new_day(datetime.fromisoformat(day).date())
+
+            if pending_targets:
+                execution_prices = self.data.open_prices(all_symbols, day)
+                execution_targets = [
+                    replace(target, timestamp=datetime.fromisoformat(day))
+                    for target in pending_targets
+                ]
+                result = self.broker.rebalance(
+                    execution_targets,
+                    execution_prices,
+                    self.portfolio,
+                    suspended=self.data.suspended_symbols(day),
+                    prev_closes=last_prices,
+                )
+                fills.extend(result.fills)
+                orders.extend(result.orders)
+                execution_marks = {**last_prices, **execution_prices}
+                equity_before_turnover = max(self.portfolio.total_equity(execution_marks), 1.0)
+                turnover_rows.append(
+                    {
+                        "date": day,
+                        "signal_date": pending_signal_date,
+                        "turnover": result.turnover,
+                        "turnover_pct": result.turnover / equity_before_turnover,
+                    }
+                )
+                pending_targets = []
+                pending_signal_date = ""
+
             prices = self.data.latest_prices(all_symbols, day)
             if prices:
-                prev_prices = last_prices
                 last_prices = prices
 
             if day in rebalance_days and not self._halted:
@@ -72,24 +101,8 @@ class ResearchEngine:
                 scores = self.factor_pipeline.composite_scores(day, universe, self.data)
                 if not scores.empty:
                     factor_frames.append(scores.assign(kind="composite"))
-                targets = self.strategy.on_rebalance(day, self.data, self.portfolio)
-                result = self.broker.rebalance(
-                    targets,
-                    prices,
-                    self.portfolio,
-                    suspended=self.data.suspended_symbols(day),
-                    prev_closes=prev_prices,
-                )
-                fills.extend(result.fills)
-                orders.extend(result.orders)
-                equity_before_turnover = max(self.portfolio.total_equity(prices), 1.0)
-                turnover_rows.append(
-                    {
-                        "date": day,
-                        "turnover": result.turnover,
-                        "turnover_pct": result.turnover / equity_before_turnover,
-                    }
-                )
+                pending_targets = self.strategy.on_rebalance(day, self.data, self.portfolio)
+                pending_signal_date = day if pending_targets else ""
 
             equity = self.portfolio.total_equity(last_prices)
             self.portfolio.record_equity(datetime.fromisoformat(day), last_prices)

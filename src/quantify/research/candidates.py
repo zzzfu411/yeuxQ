@@ -1,6 +1,7 @@
 """Run multiple strategy candidates and score them against a capital goal."""
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,6 +11,7 @@ import pandas as pd
 
 from quantify.analytics.metrics import compute_report
 from quantify.core.portfolio import Portfolio
+from quantify.data.demo import is_mixed_demo_contaminated
 from quantify.data.provider import DataProvider
 from quantify.engine.paper_broker import PaperBroker, PaperBrokerConfig
 from quantify.goal import CapitalGoal, StrategyCandidateScore, screen_strategy_candidate
@@ -30,6 +32,11 @@ from quantify.research.factors import (
 from quantify.research.strategy import MultiFactorStrategyConfig, MultiFactorTargetStrategy
 from quantify.research.turnover import summarize_turnover
 from quantify.research.universe import UniverseConfig, UniverseFilter
+from quantify.research.walk_forward_protocol import (
+    CANDIDATE_WALK_FORWARD_ARTIFACT,
+    SELECTION_PROTOCOL,
+    validate_selection_safe_payload,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,6 +197,10 @@ class CandidateRunResult:
     metrics: dict[str, float | int]
     order_count: int
     reject_rate: float
+    execution_initial_cash: float
+    final_cash_ratio: float
+    min_commission_hit_count: int
+    below_lot_reject_count: int
     avg_turnover_pct: float
     initial_turnover_pct: float
     avg_maintenance_turnover_pct: float
@@ -237,6 +248,10 @@ class CandidateRunResult:
             "metrics": self.metrics,
             "order_count": self.order_count,
             "reject_rate": self.reject_rate,
+            "execution_initial_cash": self.execution_initial_cash,
+            "final_cash_ratio": self.final_cash_ratio,
+            "min_commission_hit_count": self.min_commission_hit_count,
+            "below_lot_reject_count": self.below_lot_reject_count,
             "avg_turnover_pct": self.avg_turnover_pct,
             "initial_turnover_pct": self.initial_turnover_pct,
             "avg_maintenance_turnover_pct": self.avg_maintenance_turnover_pct,
@@ -252,6 +267,10 @@ class CandidateSelectionReport:
     best_candidate: str
     top_candidate: str
     selected_candidate: str
+    execution_initial_cash: float
+    candidate_lock_selection_safe: bool
+    selection_protocol: str
+    evidence_inputs: dict[str, Any]
     results: list[CandidateRunResult]
     market_regime: dict[str, Any] | None = None
 
@@ -261,6 +280,10 @@ class CandidateSelectionReport:
             "best_candidate": self.best_candidate,
             "top_candidate": self.top_candidate,
             "selected_candidate": self.selected_candidate,
+            "execution_initial_cash": self.execution_initial_cash,
+            "candidate_lock_selection_safe": self.candidate_lock_selection_safe,
+            "selection_protocol": self.selection_protocol,
+            "evidence_inputs": self.evidence_inputs,
             "market_regime": self.market_regime or {},
             "results": [result.to_dict() for result in self.results],
         }
@@ -273,6 +296,8 @@ class CandidateSelectionReport:
             "",
             f"- Selected candidate: `{self.selected_candidate or 'none'}`",
             f"- Top candidate: `{self.top_candidate or 'none'}`",
+            f"- Execution initial cash: {self.execution_initial_cash:.2f}",
+            f"- Candidate lock selection-safe: `{self.candidate_lock_selection_safe}`",
             f"- Market regime: `{regime_label}` (`{regime_status}`)",
             "",
             "| candidate | decision | dep | regime_fit | cwf | crv | goal_fit | score | annual_return | max_drawdown | sharpe | reject_rate | turnover | maintenance_turnover |",
@@ -697,13 +722,16 @@ def run_candidate_selection(
     candidate_regime_validation: dict[str, Any] | None = None,
     specs: list[CandidateSpec] | None = None,
 ) -> CandidateSelectionReport:
+    effective_data_audit_status = (
+        "BLOCK" if is_mixed_demo_contaminated(data.all_symbols()) else data_audit_status
+    )
     results = [
         _run_candidate(
             data,
             cfg,
             goal,
             spec,
-            data_audit_status,
+            effective_data_audit_status,
             robustness_status,
             market_regime,
             candidate_walk_forward,
@@ -712,14 +740,39 @@ def run_candidate_selection(
         for spec in (specs or default_candidate_specs(cfg))
     ]
     ranked = sorted(results, key=lambda result: result.score.score, reverse=True)
-    selected = _selected_candidate(ranked)
     top = ranked[0] if ranked else None
-    status = _selection_status(results)
+    selection_validation = validate_selection_safe_payload(
+        candidate_walk_forward if isinstance(candidate_walk_forward, dict) else {},
+        artifact_type=CANDIDATE_WALK_FORWARD_ARTIFACT,
+    )
+    if selection_validation.safe:
+        locked_name = _candidate_walk_forward_selected_candidate(candidate_walk_forward)
+        locked = next((result for result in ranked if result.spec.name == locked_name), None)
+        status = locked.score.decision if locked is not None else "BLOCK"
+        selected = locked if locked is not None and status != "BLOCK" else None
+    else:
+        selected = None
+        status = "BLOCK"
     return CandidateSelectionReport(
         status=status,
         best_candidate=selected.spec.name if selected else "",
         top_candidate=top.spec.name if top else "",
         selected_candidate=selected.spec.name if selected else "",
+        execution_initial_cash=float(goal.starting_capital),
+        candidate_lock_selection_safe=selection_validation.safe,
+        selection_protocol=SELECTION_PROTOCOL,
+        evidence_inputs={
+            "candidate_walk_forward_report.json": {
+                "sha256": _payload_sha256(candidate_walk_forward),
+                "selection_safe": selection_validation.safe,
+                "validation_reasons": selection_validation.reasons,
+            },
+            "robustness_report.json": {
+                "status": str(robustness_status or "UNKNOWN").upper(),
+                "selection_safe": False,
+                "evidence_role": "status_only_legacy_input",
+            },
+        },
         results=ranked,
         market_regime=market_regime or {},
     )
@@ -792,18 +845,34 @@ def _run_candidate(
             lot_size=cfg.broker.lot_size,
         )
     )
+    execution_initial_cash = float(goal.starting_capital)
     engine = ResearchEngine(
         data,
         strategy,
         broker,
-        Portfolio(initial_cash=cfg.research.initial_cash),
+        Portfolio(initial_cash=execution_initial_cash),
         pipeline,
         max_drawdown_stop=cfg.risk.max_drawdown_stop,
     )
     result = engine.run(cfg.research.start, cfg.research.end, rebalance=spec.rebalance)
-    metrics = compute_report(result.equity_curve, result.fills).to_dict()
+    metrics = compute_report(
+        result.equity_curve,
+        result.fills,
+        initial_equity=execution_initial_cash,
+    ).to_dict()
     reject_count = sum(1 for order in result.orders if order.status == "rejected")
     reject_rate = reject_count / len(result.orders) if result.orders else 0.0
+    below_lot_reject_count = sum(
+        1 for order in result.orders if order.status == "rejected" and order.reason == "below_lot"
+    )
+    min_commission = float(broker.config.min_commission)
+    min_commission_hit_count = sum(
+        1
+        for fill in result.fills
+        if min_commission > 0 and abs(float(fill.commission) - min_commission) <= 1e-9
+    )
+    final_equity = float(metrics.get("final_equity", 0.0) or 0.0)
+    final_cash_ratio = float(result.portfolio.cash) / final_equity if final_equity > 0 else 0.0
     turnover_summary = summarize_turnover(result.turnover)
     avg_turnover = float(turnover_summary["avg_turnover_pct"])
     avg_maintenance_turnover = float(turnover_summary["avg_maintenance_turnover_pct"])
@@ -841,6 +910,10 @@ def _run_candidate(
         metrics=metrics,
         order_count=len(result.orders),
         reject_rate=reject_rate,
+        execution_initial_cash=execution_initial_cash,
+        final_cash_ratio=final_cash_ratio,
+        min_commission_hit_count=min_commission_hit_count,
+        below_lot_reject_count=below_lot_reject_count,
         avg_turnover_pct=avg_turnover,
         initial_turnover_pct=float(turnover_summary["initial_turnover_pct"]),
         avg_maintenance_turnover_pct=avg_maintenance_turnover,
@@ -941,6 +1014,34 @@ def _selected_candidate(results: list[CandidateRunResult]) -> CandidateRunResult
     return next((result for result in results if result.score.decision != "BLOCK"), None)
 
 
+def _candidate_walk_forward_selection_safe(report: dict[str, Any] | None) -> bool:
+    payload = report if isinstance(report, dict) else {}
+    return validate_selection_safe_payload(
+        payload,
+        artifact_type=CANDIDATE_WALK_FORWARD_ARTIFACT,
+    ).safe
+
+
+def _candidate_walk_forward_selected_candidate(report: dict[str, Any] | None) -> str:
+    if not isinstance(report, dict):
+        return ""
+    for key in ("selected_candidate", "best_candidate"):
+        candidate = str(report.get(key) or "").strip()
+        if candidate:
+            return candidate
+    return ""
+
+
+def _payload_sha256(payload: dict[str, Any] | None) -> str:
+    encoded = json.dumps(
+        payload or {},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _apply_market_regime_score(
     score: StrategyCandidateScore,
     review: CandidateMarketRegimeReview,
@@ -973,9 +1074,14 @@ def _review_candidate_walk_forward(
     report: dict[str, Any] | None,
     spec: CandidateSpec,
 ) -> CandidateWalkForwardReview:
-    if not report:
+    payload = report if isinstance(report, dict) else {}
+    selection_validation = validate_selection_safe_payload(
+        payload,
+        artifact_type=CANDIDATE_WALK_FORWARD_ARTIFACT,
+    )
+    if not selection_validation.safe:
         return CandidateWalkForwardReview(
-            status="UNKNOWN",
+            status="BLOCK",
             window_count=0,
             pass_count=0,
             watch_count=0,
@@ -983,7 +1089,11 @@ def _review_candidate_walk_forward(
             positive_return_ratio=0.0,
             worst_total_return=0.0,
             worst_max_drawdown=0.0,
-            findings=["candidate_walk_forward_report.json was not supplied; selection remains single-run ranked."],
+            findings=[
+                "candidate_walk_forward_report.json does not satisfy the selection-safe v2 "
+                "contract: "
+                + "; ".join(selection_validation.reasons)
+            ],
         )
     summaries = report.get("summaries", [])
     selected = next(
@@ -1662,6 +1772,10 @@ def _flat_result(result: CandidateRunResult) -> dict[str, object]:
         "max_drawdown": result.metrics.get("max_drawdown", 0.0),
         "sharpe_ratio": result.metrics.get("sharpe_ratio", 0.0),
         "reject_rate": result.reject_rate,
+        "execution_initial_cash": result.execution_initial_cash,
+        "final_cash_ratio": result.final_cash_ratio,
+        "min_commission_hit_count": result.min_commission_hit_count,
+        "below_lot_reject_count": result.below_lot_reject_count,
         "avg_turnover_pct": result.avg_turnover_pct,
         "initial_turnover_pct": result.initial_turnover_pct,
         "avg_maintenance_turnover_pct": result.avg_maintenance_turnover_pct,

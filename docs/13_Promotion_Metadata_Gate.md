@@ -1,5 +1,11 @@
 # Promotion Metadata Gate
 
+Promotion now includes the read-only Cache Provenance Attestation v1 check.
+Every route requires a matching logical bar fingerprint, committed import batch,
+and complete current-row lineage. `csv_dataset_fingerprint` remains mandatory
+only for actual CSV routes; API/provider caches must not fabricate it. See
+[Cache Provenance Attestation v1](14_Cache_Provenance_Attestation.md).
+
 This note defines the data-version evidence required before a cache can support
 first-million, paper-promotion, or micro-live-readiness review. It is not a
 profit claim and not live-trading permission.

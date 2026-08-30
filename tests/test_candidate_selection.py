@@ -4,12 +4,15 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from types import SimpleNamespace
 
 import pandas as pd
+import pytest
 
 from quantify.data.provider import DataProvider
 from quantify.data.storage import BarStorage
 from quantify.goal import CapitalGoal
+from quantify.research import candidates as candidates_module
 from quantify.core.portfolio import Portfolio
 from quantify.research.candidates import (
     CandidateSpec,
@@ -51,8 +54,12 @@ def test_candidate_selection_runs_and_writes_ranked_report(tmp_path: Path) -> No
     out = write_candidate_selection_report(report, tmp_path / "out")
 
     assert report.results
-    assert report.best_candidate == "tiny_core"
-    assert report.selected_candidate == "tiny_core"
+    assert report.execution_initial_cash == 100_000
+    assert report.results[0].execution_initial_cash == 100_000
+    assert report.results[0].metrics["initial_equity"] == 100_000
+    assert report.results[0].below_lot_reject_count > 0
+    assert report.best_candidate == ""
+    assert report.selected_candidate == ""
     assert report.top_candidate == "tiny_core"
     assert (out / "candidate_selection.json").exists()
     assert (out / "candidate_selection.csv").exists()
@@ -60,7 +67,8 @@ def test_candidate_selection_runs_and_writes_ranked_report(tmp_path: Path) -> No
     data = pd.read_csv(out / "candidate_selection.csv")
     assert payload["results"][0]["market_regime_status"] == "WATCH"
     assert payload["results"][0]["market_regime_review"]["fit"] == "insufficient_context"
-    assert payload["selected_candidate"] == "tiny_core"
+    assert payload["execution_initial_cash"] == 100_000
+    assert payload["selected_candidate"] == ""
     assert payload["top_candidate"] == "tiny_core"
     assert data.loc[0, "market_regime_status"] == "WATCH"
 
@@ -192,7 +200,7 @@ def test_candidate_selection_cli_filters_candidate(tmp_path: Path) -> None:
     assert payload["status"] == "BLOCK"
     assert payload["selected_candidate"] == ""
     assert payload["top_candidate"] == "price_volume_defensive"
-    assert payload["results"][0]["capital_goal_fit_status"] == "WATCH"
+    assert payload["results"][0]["capital_goal_fit_status"] == "BLOCK"
     assert "below required path" in "\n".join(
         payload["results"][0]["capital_goal_fit_review"]["findings"]
     )
@@ -511,7 +519,7 @@ def test_fundamental_dependent_candidates_block_without_fundamentals(tmp_path: P
     assert by_name["core_multifactor"].data_dependency_review.status == "BLOCK"
     assert by_name["core_multifactor"].score.decision == "BLOCK"
     assert by_name["value_low_vol"].data_dependency_review.field_coverage["pe_ttm"] == 0.0
-    assert report.best_candidate == "price_volume_defensive"
+    assert report.best_candidate == ""
 
 
 def test_candidate_selection_blocks_risk_off_market_context(tmp_path: Path) -> None:
@@ -678,7 +686,7 @@ def test_candidate_selection_watches_weak_market_regime_breadth(tmp_path: Path) 
     assert result.market_regime_review.alignment_status == "WATCH"
     assert result.market_regime_review.fit == "weak_market_context"
     assert result.score.decision != "PASS"
-    assert report.selected_candidate == "low_vol_test"
+    assert report.selected_candidate == ""
 
 
 def test_candidate_selection_blocks_candidate_walk_forward_tail_loss(tmp_path: Path) -> None:
@@ -748,9 +756,81 @@ def test_candidate_selection_watches_low_candidate_walk_forward_positive_ratio(
 
     assert result.candidate_walk_forward_review.status == "WATCH"
     assert result.candidate_walk_forward_review.positive_return_ratio == 0.0
-    assert result.score.decision == "WATCH"
-    assert report.status == "WATCH"
-    assert report.selected_candidate == "low_vol_test"
+    assert result.score.decision == "BLOCK"
+    assert report.status == "BLOCK"
+    assert report.selected_candidate == ""
+
+
+@pytest.mark.parametrize(
+    ("locked_decision", "expected_selected"),
+    [("WATCH", "locked_candidate"), ("BLOCK", "")],
+)
+def test_candidate_selection_keeps_selection_safe_lock_over_full_sample_winner(
+    monkeypatch,
+    locked_decision: str,
+    expected_selected: str,
+) -> None:
+    locked_spec = CandidateSpec(
+        name="locked_candidate",
+        description="selected before test",
+        factors=[],
+        n_holdings=1,
+        max_weight=1.0,
+        rebalance="monthly",
+        data_dependency="ohlcv_only",
+    )
+    winner_spec = CandidateSpec(
+        name="full_sample_winner",
+        description="higher full-sample score",
+        factors=[],
+        n_holdings=1,
+        max_weight=1.0,
+        rebalance="monthly",
+        data_dependency="ohlcv_only",
+    )
+    scores = {
+        "locked_candidate": SimpleNamespace(score=70.0, decision=locked_decision),
+        "full_sample_winner": SimpleNamespace(score=95.0, decision="PASS"),
+    }
+
+    def fake_run_candidate(_data, _cfg, _goal, spec, *_args):
+        return SimpleNamespace(spec=spec, score=scores[spec.name])
+
+    monkeypatch.setattr(candidates_module, "_run_candidate", fake_run_candidate)
+
+    report = run_candidate_selection(
+        SimpleNamespace(all_symbols=lambda: []),
+        SimpleNamespace(),
+        goal=CapitalGoal(starting_capital=100_000, target_capital=1_000_000, years=8),
+        data_audit_status="PASS",
+        robustness_status="PASS",
+        candidate_walk_forward=_candidate_walk_forward("locked_candidate"),
+        specs=[locked_spec, winner_spec],
+    )
+
+    assert report.top_candidate == "full_sample_winner"
+    assert report.selected_candidate == expected_selected
+    assert report.best_candidate == expected_selected
+    assert report.status == locked_decision
+
+
+def test_candidate_walk_forward_review_blocks_legacy_evidence_without_selection_safety() -> None:
+    spec = CandidateSpec(
+        name="locked_candidate",
+        description="selected before test",
+        factors=[],
+        n_holdings=1,
+        max_weight=1.0,
+        rebalance="monthly",
+        data_dependency="ohlcv_only",
+    )
+    legacy_report = _candidate_walk_forward("locked_candidate")
+    legacy_report.pop("selection_safe")
+
+    review = candidates_module._review_candidate_walk_forward(legacy_report, spec)
+
+    assert review.status == "BLOCK"
+    assert any("selection-safe v2 contract" in finding for finding in review.findings)
 
 
 def test_candidate_selection_blocks_candidate_regime_validation_failure(
@@ -831,9 +911,9 @@ def test_candidate_selection_watches_missing_adverse_regime_validation(
     result = report.results[0]
 
     assert result.candidate_regime_validation_review.status == "WATCH"
-    assert result.score.decision == "WATCH"
-    assert report.status == "WATCH"
-    assert report.selected_candidate == "low_vol_test"
+    assert result.score.decision == "BLOCK"
+    assert report.status == "BLOCK"
+    assert report.selected_candidate == ""
     assert any(
         "No defensive or risk_off" in finding
         for finding in result.candidate_regime_validation_review.findings
@@ -1125,10 +1205,32 @@ def _candidate_walk_forward(
     worst_total_return: float = 0.01,
     worst_max_drawdown: float = 0.04,
 ) -> dict[str, object]:
+    windows = [_candidate_wf_window(candidate, index) for index in range(1, 4)]
     return {
+        "artifact_type": "candidate_walk_forward_report",
+        "schema_version": 2,
+        "selection_protocol": "quantify.walk-forward-selection.v2",
+        "selection_safe": True,
+        "test_used_for_selection": False,
+        "configuration": {
+            "mode": "expanding",
+            "train_days": 2,
+            "purge_days": 0,
+            "selection_days": 1,
+            "embargo_days": 0,
+            "test_days": 1,
+            "step_days": 1,
+        },
         "status": status,
+        "selected_candidate": candidate,
         "best_candidate": candidate,
+        "candidate_count": 1,
         "window_count": 3,
+        "selections": [
+            {"candidate": candidate, "window": f"wf_{index:02d}", "rank": 1}
+            for index in range(1, 4)
+        ],
+        "windows": windows,
         "summaries": [
             {
                 "candidate": candidate,
@@ -1145,6 +1247,41 @@ def _candidate_walk_forward(
                 "worst_max_drawdown": worst_max_drawdown,
             }
         ],
+    }
+
+
+def _candidate_wf_window(candidate: str, index: int) -> dict[str, object]:
+    train_end = index + 1
+    selection_day = index + 2
+    test_day = index + 3
+    name = f"wf_{index:02d}"
+    return {
+        "candidate": candidate,
+        "window": name,
+        "selection_rank": 1,
+        "start": f"d{test_day:02d}",
+        "end": f"d{test_day:02d}",
+        "phases": {
+            "name": name,
+            "mode": "expanding",
+            "train": {
+                "start": "d01",
+                "end": f"d{train_end:02d}",
+                "trading_day_count": train_end,
+            },
+            "purge": {"start": "", "end": "", "trading_day_count": 0},
+            "selection": {
+                "start": f"d{selection_day:02d}",
+                "end": f"d{selection_day:02d}",
+                "trading_day_count": 1,
+            },
+            "embargo": {"start": "", "end": "", "trading_day_count": 0},
+            "test": {
+                "start": f"d{test_day:02d}",
+                "end": f"d{test_day:02d}",
+                "trading_day_count": 1,
+            },
+        },
     }
 
 

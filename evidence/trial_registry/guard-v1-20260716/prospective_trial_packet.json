@@ -1,0 +1,238 @@
+{
+  "artifact_type": "prospective_trial_packet",
+  "schema_version": 1,
+  "status": "FROZEN_RESEARCH_ONLY",
+  "packet_id": "guard_v1",
+  "trial_id": "guard-v1-20260716",
+  "created_at_utc": "2026-07-15T19:10:01+00:00",
+  "candidate": "liquidity_neutral_momentum_guard_price_volume",
+  "hypothesis": "Liquidity-neutral long momentum with defensive exposure control can deliver positive net benchmark-relative returns without breaching the small-capital drawdown and execution budgets.",
+  "development_cutoff": "2026-07-14",
+  "boundaries": {
+    "train": {
+      "start": "2024-06-03",
+      "end": "2025-06-30"
+    },
+    "selection": {
+      "start": "2025-07-01",
+      "end": "2026-07-14"
+    },
+    "test": {
+      "start": "2026-07-17",
+      "end": "2026-10-16"
+    }
+  },
+  "candidate_snapshot": {
+    "name": "liquidity_neutral_momentum_guard_price_volume",
+    "description": "OHLCV-only guarded candidate using liquidity-neutral long momentum and very low volatility after the long-momentum/liquidity ablation showed liquidity dependency and defensive losses.",
+    "factors": [
+      {
+        "class": "quantify.research.factors.LiquidityNeutralLongMomentumFactor",
+        "name": "liquidity_neutral_long_momentum_120d_skip20d",
+        "higher_is_better": true
+      },
+      {
+        "class": "quantify.research.factors.VeryLowVolatilityFactor",
+        "name": "low_volatility_120d",
+        "higher_is_better": true
+      }
+    ],
+    "n_holdings": 100,
+    "max_weight": 0.015,
+    "rebalance": "quarterly",
+    "trend_filter": true,
+    "trend_scale": 0.15,
+    "trend_gate": "defensive_or_worse",
+    "data_dependency": "ohlcv_only",
+    "hold_rank_buffer": 0,
+    "min_trade_weight": 0.0,
+    "max_new_positions": 0,
+    "score_smoothing_observations": 0,
+    "score_smoothing_step_days": 20
+  },
+  "execution_config": {
+    "research": {
+      "start": "2024-06-03",
+      "end": "2026-10-16",
+      "in_sample_end": "2026-07-14",
+      "out_sample_start": "2026-07-17",
+      "initial_cash": 1000000.0,
+      "rebalance": "monthly",
+      "benchmark": [
+        "000300",
+        "000905"
+      ],
+      "allow_demo_data": false
+    },
+    "data": {
+      "source": "akshare",
+      "cache_path": "tmp\\provider_probe_20260715\\akshare_current_300_v2.db",
+      "adjust": "qfq"
+    },
+    "universe": {
+      "mode": "index",
+      "index_code": "000906",
+      "include_st": false,
+      "min_history_days": 120
+    },
+    "strategy": {
+      "name": "multi_factor",
+      "n_holdings": 30,
+      "max_weight": 0.05
+    },
+    "risk": {
+      "max_drawdown_stop": 0.2
+    },
+    "broker": {
+      "commission_rate": 0.00025,
+      "min_commission": 5.0,
+      "stamp_tax": 0.0005,
+      "slippage_bps": 5,
+      "price_limit_pct": 0.1,
+      "lot_size": 100
+    },
+    "output": {
+      "results_dir": "results/prospective/guard_v1"
+    },
+    "prospective_trial": {
+      "trial_id": "guard-v1-20260716",
+      "candidate": "liquidity_neutral_momentum_guard_price_volume",
+      "parameter_fingerprint": "d57d8ee8b2d76d45782dd0473dfe862b61a750047eeabaa4f71f09ec23892b5d",
+      "protocol_fingerprint": "b8f93274dc8fabe2d7123adc2ef7053b3209779e4cf14c76982c639260dd4eae",
+      "prohibited_live_use": true
+    }
+  },
+  "execution_config_filename": "guard_v1_execution.yaml",
+  "fingerprints": {
+    "plan_sha256": "444e3d57f660b85c0bb9926d208bfe4925df16079adc3c91dd108abc16b7d71a",
+    "parameter_fingerprint": "d57d8ee8b2d76d45782dd0473dfe862b61a750047eeabaa4f71f09ec23892b5d",
+    "protocol_fingerprint": "b8f93274dc8fabe2d7123adc2ef7053b3209779e4cf14c76982c639260dd4eae",
+    "config_fingerprint": "925a335e2a4a4b96e5c852a20bc9fd5f86e4b05e404cb297c8a1569df60d0fe7",
+    "data_fingerprint": "af9b9346ddcfe6f43046e677c80a509772a39e9149c1df6e734aa8f77f76c48d",
+    "data_fingerprint_kind": "logical_bar_prefix_through_selection_end",
+    "data_fingerprint_algorithm": "sha256:quantify.logical-bars.v1",
+    "code_bindings": [
+      {
+        "path": "src/quantify/research/candidates.py",
+        "sha256": "2963cca96602b0d621756a02e8e599c6d8b2650ca7c39d6b1bb1cefb52699faa"
+      },
+      {
+        "path": "src/quantify/research/factors.py",
+        "sha256": "73933504bbc09c7243ac03ac9979f4e643bb18f6961eb5d6990e08dbef20d959"
+      },
+      {
+        "path": "src/quantify/research/strategy.py",
+        "sha256": "eef40ee25254c24f266d12a39e2606c6e5b212f30a31352de9dfb342f8129075"
+      },
+      {
+        "path": "src/quantify/research/walk_forward_protocol.py",
+        "sha256": "26da992a383903c76b07757fbf41e27c2691b735bd851d362172ff3a6f813573"
+      },
+      {
+        "path": "src/quantify/research/robustness.py",
+        "sha256": "42f4482ff81dbd9b820de45ba4b23aa0c8ae3a5e0413b572779e9f5811bda615"
+      },
+      {
+        "path": "src/quantify/engine/backtest.py",
+        "sha256": "b9283be0203efd2a93ac93ef37363162fafd8e4af5fa2f839aaa64f0377b6185"
+      },
+      {
+        "path": "src/quantify/engine/paper_broker.py",
+        "sha256": "026c20debd0e19e1f860ee54365483e5fd99f52c072dd16bd845d2333f51a779"
+      },
+      {
+        "path": "src/quantify/risk/manager.py",
+        "sha256": "3bc742aaa52044d68c61cca95aeeea440cde63939a55c9a46cb402800cefb000"
+      }
+    ]
+  },
+  "development_data": {
+    "cache_path": "tmp\\provider_probe_20260715\\akshare_current_300_v2.db",
+    "bar_start": "2024-06-03",
+    "bar_end": "2026-07-14",
+    "bar_count": 153307,
+    "symbol_count": 300,
+    "prefix_logical_bar_fingerprint": "af9b9346ddcfe6f43046e677c80a509772a39e9149c1df6e734aa8f77f76c48d",
+    "prefix_end": "2026-07-14",
+    "fingerprint_algorithm": "sha256:quantify.logical-bars.v1",
+    "promotion_status": "BLOCK",
+    "promotion_blockers": [
+      "Cache has no data_import_batches provenance table.",
+      "Cache has no bar_import_lineage provenance table.",
+      "Missing cache_logical_bar_fingerprint in cache metadata.",
+      "Cache logical bar fingerprint algorithm is missing or unsupported: expected=sha256:quantify.logical-bars.v1, actual=missing.",
+      "Cache lineage schema version must be 1; actual=missing.",
+      "Missing cache_latest_import_batch_id in cache metadata.",
+      "Current bars are not fully covered by import lineage: bars=153307, covered=0, missing=153307.",
+      "Cache metadata data_source_qa_status is NOT_EVALUATED; expected PASS.",
+      "Missing data_source_qa_checklist_path in cache metadata.",
+      "Missing data_source_qa_answers_path in cache metadata."
+    ],
+    "promotion_eligible": false,
+    "role": "contaminated_development_prefix_not_independent_holdout"
+  },
+  "external_evidence": {
+    "status": "MISSING",
+    "path": "",
+    "sha256": ""
+  },
+  "required_data": [
+    "Human-approved source QA and retained usage terms",
+    "Point-in-time CSI 800 or delisting-aware broad A-share membership history",
+    "CSI 800 total-return benchmark with matching dates",
+    "Canonical dataset and lineage fingerprints",
+    "A fresh holdout opened only after code, config, metrics, and stop rules are frozen"
+  ],
+  "required_tests": [
+    "Expanding or rolling train-select-test with purge and embargo",
+    "Benchmark alpha, beta, information ratio, tracking error, and block-bootstrap confidence interval",
+    "Deflated Sharpe Ratio and Probability of Backtest Overfitting using at least 18 registered trials",
+    "Initial capital stress at 100000, 200000, 500000, and 1000000 CNY",
+    "100-share lot, 5 CNY minimum commission, stamp tax, and 5/10/20 bps slippage execution",
+    "Defensive-regime attribution separating selection alpha from cash exposure"
+  ],
+  "stop_conditions": [
+    "Any source-QA, PIT-universe, dataset-identity, or benchmark provenance gate is BLOCK",
+    "Trial-corrected primary metric fails",
+    "Fresh-holdout maximum drawdown exceeds 20%",
+    "The 100000 CNY portfolio cannot execute under lot and minimum-commission constraints",
+    "A rule or parameter is changed after the holdout is opened"
+  ],
+  "prohibited_actions": [
+    "Do not use observations dated before test_start as prospective holdout evidence.",
+    "Do not change candidate code, parameters, boundaries, metrics, or stop rules after registration.",
+    "Do not treat this packet or registry append as data provenance, benchmark, strategy, or promotion PASS.",
+    "Do not enter paper or micro-live readiness while any deterministic evidence gate is BLOCK.",
+    "Do not generate or submit real broker orders from this workflow."
+  ],
+  "missing_evidence": [
+    "Promotion-safe source QA and import lineage are not PASS: Cache has no data_import_batches provenance table.",
+    "PASS market_evidence_preflight.json for CSI 800 total return and PIT membership."
+  ],
+  "blockers": [],
+  "registry_append_allowed": true,
+  "execution_allowed": false,
+  "registration_payload": {
+    "trial_id": "guard-v1-20260716",
+    "candidate": "liquidity_neutral_momentum_guard_price_volume",
+    "hypothesis": "Liquidity-neutral long momentum with defensive exposure control can deliver positive net benchmark-relative returns without breaching the small-capital drawdown and execution budgets.",
+    "parameter_fingerprint": "d57d8ee8b2d76d45782dd0473dfe862b61a750047eeabaa4f71f09ec23892b5d",
+    "data_fingerprint": "af9b9346ddcfe6f43046e677c80a509772a39e9149c1df6e734aa8f77f76c48d",
+    "config_fingerprint": "925a335e2a4a4b96e5c852a20bc9fd5f86e4b05e404cb297c8a1569df60d0fe7",
+    "train_boundary": {
+      "start": "2024-06-03",
+      "end": "2025-06-30"
+    },
+    "selection_boundary": {
+      "start": "2025-07-01",
+      "end": "2026-07-14"
+    },
+    "test_boundary": {
+      "start": "2026-07-17",
+      "end": "2026-10-16"
+    },
+    "created_at": "2026-07-15T19:10:01+00:00",
+    "prohibited_live_use": true
+  },
+  "packet_sha256": "b33e834ef03feeac10b4427015c48952a293adedff7fcf38abe565d73682f2a9"
+}

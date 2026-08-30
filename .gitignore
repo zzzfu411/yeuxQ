@@ -31,7 +31,12 @@ tmp/
 # Keep templates; never commit real market data or retained evidence.
 data_exports/raw/*
 data_exports/source_qa_evidence/*
+data_exports/calendars/*
 data_exports/indices/*
+data_exports/prospective/*
+!data_exports/calendars/README.md
+!data_exports/indices/README.md
+!data_exports/prospective/README.md
 !data_exports/raw/README_raw_bars_dropzone.md
 !data_exports/source_qa_evidence/README.md
 !data_exports/source_qa_evidence/README_source_qa_evidence_dropzone.md

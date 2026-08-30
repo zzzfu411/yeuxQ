@@ -27,6 +27,13 @@ def main() -> None:
         default=None,
         help="Run only the named scenario. Can be passed more than once. Defaults to all scenarios.",
     )
+    parser.add_argument("--mode", choices=("expanding", "rolling"), default="expanding")
+    parser.add_argument("--train-days", type=int, default=120)
+    parser.add_argument("--purge-days", type=int, default=5)
+    parser.add_argument("--selection-days", type=int, default=20)
+    parser.add_argument("--embargo-days", type=int, default=5)
+    parser.add_argument("--test-days", type=int, default=60)
+    parser.add_argument("--step-days", type=int, default=60)
     args = parser.parse_args()
     cfg = _load_config(args.config, cache_path=args.cache)
     storage = BarStorage(cfg.data.cache_path)
@@ -37,7 +44,18 @@ def main() -> None:
         seed_demo_data(storage, cfg.research.start, cfg.research.end)
     scenarios = _select_scenarios(cfg, args.scenario)
     logger.info("Running robustness scenarios: {}", ", ".join(scenario.name for scenario in scenarios))
-    report = run_robustness(provider, cfg, scenarios)
+    report = run_robustness(
+        provider,
+        cfg,
+        scenarios,
+        mode=args.mode,
+        train_days=args.train_days,
+        purge_days=args.purge_days,
+        selection_days=args.selection_days,
+        embargo_days=args.embargo_days,
+        test_days=args.test_days,
+        step_days=args.step_days,
+    )
     out = write_robustness_report(report, args.output_dir)
     logger.info("Robustness status: {}", report.status)
     logger.info("Robustness report written to {}", out.resolve())
@@ -55,6 +73,7 @@ def _select_scenarios(cfg: Config, names: list[str] | None):
     if not selected:
         raise ValueError("No robustness scenarios selected.")
     return selected
+
 
 def _load_config(path: str, *, cache_path: str | None = None) -> Config:
     cfg = load_config(path)

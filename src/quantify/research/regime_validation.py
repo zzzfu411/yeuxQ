@@ -14,6 +14,7 @@ from quantify.research.candidate_walk_forward import (
     run_candidate_walk_forward,
 )
 from quantify.research.candidates import CandidateSpec
+from quantify.research.walk_forward_protocol import WalkForwardMode
 
 CandidateRegimeStatus = Literal["PASS", "WATCH", "BLOCK"]
 
@@ -178,8 +179,12 @@ def run_candidate_regime_validation(
     cfg,
     *,
     train_days: int = 120,
+    purge_days: int = 5,
+    selection_days: int = 20,
+    embargo_days: int = 5,
     test_days: int = 60,
     step_days: int = 60,
+    mode: WalkForwardMode = "expanding",
     max_windows: int | None = None,
     specs: list[CandidateSpec] | None = None,
     candidate_walk_forward: CandidateWalkForwardReport | None = None,
@@ -189,8 +194,12 @@ def run_candidate_regime_validation(
         data,
         cfg,
         train_days=train_days,
+        purge_days=purge_days,
+        selection_days=selection_days,
+        embargo_days=embargo_days,
         test_days=test_days,
         step_days=step_days,
+        mode=mode,
         max_windows=max_windows,
         specs=specs,
         market_regime_by_window=market_regime_by_window,
@@ -207,9 +216,13 @@ def run_candidate_regime_validation(
     buckets = _buckets(windows)
     summaries = _summaries(buckets)
     warnings = _warnings(summaries, windows)
+    selected_summary = next(
+        (summary for summary in summaries if summary.candidate == walk_forward.best_candidate),
+        None,
+    )
     return CandidateRegimeValidationReport(
-        status=_overall_status(summaries, warnings),
-        best_candidate=summaries[0].candidate if summaries else "",
+        status=_overall_status(selected_summary, warnings),
+        best_candidate=walk_forward.best_candidate,
         candidate_count=walk_forward.candidate_count,
         window_count=walk_forward.window_count,
         regime_count=len({window.regime_label for window in windows if window.regime_label != "unknown"}),
@@ -394,14 +407,14 @@ def _summary_status(
 
 
 def _overall_status(
-    summaries: list[CandidateRegimeSummary],
+    selected: CandidateRegimeSummary | None,
     warnings: list[str],
 ) -> CandidateRegimeStatus:
-    if any(summary.status == "PASS" for summary in summaries) and not warnings:
-        return "PASS"
-    if any(summary.status in {"PASS", "WATCH"} for summary in summaries):
+    if selected is None or selected.status == "BLOCK":
+        return "BLOCK"
+    if selected.status == "WATCH" or warnings:
         return "WATCH"
-    return "BLOCK"
+    return "PASS"
 
 
 def _warnings(

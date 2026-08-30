@@ -162,18 +162,54 @@ When guarded offline intake imports a converted TDX batch, it preserves
 `research_metadata`, and `run_manifest.json`. The capital-goal status report
 checks this as `tdx_day_traceability`; a missing or mismatched export report
 keeps strategy search gated.
-For every promotion-facing cache, the same metadata chain must also include
-`csv_dataset_fingerprint`, `data_source_qa_status=PASS`,
-`data_source_csv_qa_status=PASS`, and retained source QA checklist/answers
-hashes. `import_research_csv.py --validate` can write the CSV fingerprint, but
-first-million readiness still requires guarded offline intake or an equivalent
+Every promotion-facing cache must include source QA, retained evidence hashes,
+an atomic import batch, complete bar lineage, and a verified logical-bars
+fingerprint. CSV routes additionally require `csv_dataset_fingerprint` and
+`data_source_csv_qa_status=PASS`; API/provider routes must not fabricate a CSV
+fingerprint. `import_research_csv.py --validate` can write the CSV fingerprint,
+but first-million readiness still requires guarded intake or an equivalent
 source-QA-provenance chain before strategy experiments can launch. See
-[Promotion Metadata Gate](docs/13_Promotion_Metadata_Gate.md).
+[Promotion Metadata Gate](docs/13_Promotion_Metadata_Gate.md) and
+[Cache Provenance Attestation v1](docs/14_Cache_Provenance_Attestation.md).
+Candidate goal research also executes with the goal's actual starting capital,
+records below-lot rejections, and runs mandatory CNY 100,000 cost scenarios. See
+[Small-Capital Execution Contract](docs/15_Small_Capital_Execution_Contract.md).
+Walk-forward v2 now locks candidates before each test window and validates the
+complete train/purge/selection/embargo/test envelope. Legacy or bare-boolean
+reports fail closed. Robustness v2 freezes the standard stress matrix before
+evaluation, runs every scenario on every isolated test fold, requires at least
+three complete folds for `PASS`, and rejects incomplete scenario matrices. See
+[Selection-Safe Walk-Forward v2](docs/16_Selection_Safe_Walk_Forward.md).
+New research trials can be preregistered in a hash-chained, append-only ledger;
+there is no edit, delete, or retroactive backfill command. Frozen trial-return
+matrices can then produce DSR and CSCV/PBO diagnostics whose output is advisory
+and can never upgrade a deterministic gate. See
+[Research Trial Registry](docs/17_Research_Trial_Registry.md) and
+[Multiple-Testing Diagnostics](docs/18_Multiple_Testing_Diagnostics.md). A
+formal benchmark review requires a retained, human-reviewed total-return series
+whose file hash and identity match the configured index. See
+[Benchmark Review](docs/19_Benchmark_Review.md).
 To inspect this layer directly without mutating the cache, run:
 
 ```powershell
 .\.venv\Scripts\python.exe examples\check_promotion_metadata.py --config config\research_recent.yaml --output-dir results\import\promotion_metadata
 ```
+
+To preregister a genuinely new holdout experiment and later review a frozen
+trial-return matrix, run:
+
+```powershell
+.\.venv\Scripts\python.exe examples\run_trial_registry.py preregister --registry results\research\trial_registry.jsonl --payload trial-preregistration.json
+.\.venv\Scripts\python.exe examples\run_multiple_testing_review.py --input-csv results\research\frozen_trial_returns.csv --output-dir results\research\<timestamp> --selected-candidate <candidate> --periods-per-year 252 --partition-count 8
+.\.venv\Scripts\python.exe examples\run_benchmark_review.py --strategy-equity-csv results\research\<timestamp>\equity.csv --benchmark-csv evidence\csi800_total_return.csv --benchmark-metadata evidence\csi800_total_return.metadata.json --output-dir results\research\<timestamp>
+.\.venv\Scripts\python.exe examples\run_trial_registry.py record-result --registry results\research\trial_registry.jsonl --payload trial-result.json
+.\.venv\Scripts\python.exe examples\run_trial_registry.py verify --registry results\research\trial_registry.jsonl
+.\.venv\Scripts\python.exe examples\run_trial_registry_review.py --registry results\research\trial_registry.jsonl --report-dir results\research\<timestamp>
+```
+
+Do not use these commands to relabel the repeatedly inspected data through
+2026-07-14 as an independent holdout. A preregistration written after results
+already exist is not prospective evidence.
 
 The first-million pipeline now writes the same `promotion_metadata_check.json/md`
 under `results\first_million` after guarded offline intake.
@@ -682,14 +718,20 @@ review stage:
 uv run python examples/run_weekly_pipeline.py --config config/research.yaml --paper-state-dir results/paper/core --prepare-micro-live-readiness --micro-live-candidate price_volume_defensive --micro-live-capital 100000
 ```
 
-Without `approval_record.json`, the readiness gate stays `BLOCK`. Approval is
+Without `approval_record.json`, the readiness gate stays `BLOCK`. Run readiness
+once to prepare `manual_trade_sheet.csv` and `risk_budget.json`, review those
+materials, then create the human approval; approval regenerates and fingerprints
+both files together with the target plan and research evidence. Re-evaluation
+does not overwrite locked review materials, so any manual-sheet or risk-budget
+change returns readiness to `BLOCK` until a new approval is written. Approval is
 also bound to the current `run_manifest.json`, which must include in-sample and
-out-of-sample dates plus CSV/source-QA provenance metadata. If any locked
-evidence artifact changes, readiness returns to `BLOCK` until a new human
-approval is written. The manual trade sheet is a human reference only and is
+out-of-sample dates plus CSV/source-QA provenance metadata. The gate checks that
+target CSV/JSON rows agree, prices and lot-sized quantities are valid, weights
+and exposure fit the declared capital, and the manual sheet remains a manual-only
+copy of the target's core fields. The manual trade sheet is a human reference only and is
 never a broker basket.
 
-流水线会生成真实数据 bootstrap、研究报告、数据审计、市场状态、稳健性报告、walk-forward、候选策略 walk-forward、候选策略分行情验证、候选策略筛选、模拟盘日报、模拟盘稳定性审查、LLM-ready 确定性审查、LLM prompt 和周度复盘。它默认不调用外部 LLM、不连接真实 broker、不写人工审批记录。未提供连续 paper 状态目录时,`paper_stability.json` 会明确 BLOCK。
+流水线会生成真实数据 bootstrap、研究报告、数据审计、市场状态、稳健性报告、walk-forward、候选策略 walk-forward、候选策略分行情验证、候选策略筛选、模拟盘日报、模拟盘稳定性审查、LLM-ready 确定性审查、LLM prompt 和周度复盘。它默认不调用外部 LLM、不连接真实 broker、不写人工审批记录。未提供连续 paper 状态目录时,历史回测只写入 `research_execution_preview.json/md`,`paper_daily_review.json` 固定为 `BLOCK/NO_CONTINUOUS_PAPER_RUN`,`paper_stability.json` 也保持 BLOCK,且不会生成可被误认成连续模拟盘的 `paper_state.json`。
 
 ## 新手教程
 
@@ -750,7 +792,10 @@ never a broker basket.
 - 资金目标总控: `capital_goal_status.json/md` 汇总数据、稳健性、候选策略、模拟盘、审批和晋级证据,并在 raw vendor CSV 路径下检查 `raw_vendor_traceability`,在 TDX `.day` 路径下检查 `tdx_day_traceability`,明确离一百万元复利目标还缺哪些硬条件。
 - 第一桶金就绪卡片: `first_million_readiness.json/md` 把数据缺口、source QA、offline intake、候选实验 readiness/launch/completion 和资金目标总控压成一张首屏结论。
 - 资金递增门: `capital_scaling_plan.json/md` 约束每次资金提高的最大幅度,任何 BLOCK 都会把允许资金重置为当前资金。
-- Paper 候选计划: `paper_candidate_plan.json/md` 审查候选是否允许进入连续 paper loop,并只生成本地模拟命令。
+- Paper 候选计划: `paper_candidate_plan.json/md` 审查候选是否允许进入连续 paper loop,并只生成本地模拟命令。生成的命令固定传入 research `run_manifest` 记录的 cache path、cache SHA256 和 dataset fingerprint；`paper_state.run_context` 会保存同一身份,旧状态缺少上下文或续跑时身份漂移都会拒绝继续。
+- 研究执行预览隔离: 没有 `run_paper_loop` checkpoint 时,`equity.csv/orders.csv/positions.csv` 只能生成 `research_execution_preview.json/md`; 这些历史天数不计入连续 paper 观察期,也不能生成 promotion-eligible paper 状态。
+- 股票池时间一致性审查: AKShare 当前快照或手工 symbol list 会写入非 PIT universe 元数据；`data_audit` 和 LLM review 会显式提示 `UNIVERSE_NOT_POINT_IN_TIME`,在补齐历史成分与退市样本前只允许 research-only 使用。
+- 晋级证据身份门: `micro_live_readiness.json/md` 要求 candidate selection、experiment completion、walk-forward、regime validation、paper state 和 target portfolio 指向同一候选,并要求 paper cache SHA256/fingerprint 与 research run manifest 一致；不能拼接不同运行的 `PASS` 产物。
 - 候选因子诊断: `candidate_factor_diagnostics.json/md` 检查候选是否过度依赖单一因子组件,防止把偶然暴露误当成稳定复利能力。周流水线默认诊断当前 best candidate,全量候选诊断可手动运行。
 - 市场状态检测: 从本地 A 股日线缓存计算等权市场趋势、宽度、波动和回撤,生成 `market_regime.json/md`,作为候选策略筛选的研究上下文。
 - 最近数据采集计划: `recent_data_acquisition_plan.json/md` 明确近期 A 股配置、缓存、导入方式和当前 BLOCK 原因。
@@ -767,7 +812,7 @@ never a broker basket.
 - 连续模拟盘循环: `run_paper_loop.py` 用同一个 state 目录逐日恢复现金、持仓、订单和净值,并生成 `paper_stability.json/md`,只做本地 paper 记录。
 - 周度审查: 汇总数据审计、市场状态、稳健性、候选策略、LLM 审查、模拟盘和 readiness 证据,生成 `weekly_review.json/md`,给出继续纸面观察、只研究或暂停修复的结论。
 - 一键周度流水线: `run_weekly_pipeline.py` 自动生成离线研究到周复盘的完整证据目录,但不进入真实交易。
-- 策略档案: `strategy_registry.json/md` 长期累积每次候选策略结果,分开统计真实数据和 demo 数据观察,比较 PASS/WATCH/BLOCK 次数、平均收益、回撤、夏普、候选策略 walk-forward 稳定性和晋级资格。
+- 策略档案: `strategy_registry.json/md` 使用 v3 合同长期累积候选结果。只有同时通过数据 provenance、selection-safe walk-forward/robustness、正式 benchmark、multiple-testing 和 prospective trial binding 的观察才计入可晋级真实观察；旧、demo 或合同不完整记录保留但排除。
 - 策略晋级审查: `strategy_promotion_review.json/md` 对照资金目标路径、真实数据观察和候选策略 walk-forward 证据,判断候选是否值得继续 paper-stage 深挖。
 - 真实数据导入: 通过 AKShare 批量导入 A 股股票基础信息、日线行情、交易日历和指数成分占位。
 - 离线 CSV 导入: 从券商/终端导出的 bars、stock_info、fundamentals、calendar、suspensions、index_constituents CSV 先经过 `csv_validation.json/md` 合同校验,再写入同一研究缓存。

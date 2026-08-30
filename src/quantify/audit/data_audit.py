@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 import pandas as pd
 
+from quantify.data.demo import is_demo_contaminated
 from quantify.data.provider import DataProvider
 
 AuditStatus = Literal["PASS", "WATCH", "BLOCK"]
@@ -99,7 +100,8 @@ def audit_data(
     days = data.trading_days(start, end)
     bars = data.bars(symbols, start, end) if symbols else pd.DataFrame()
     info = data.stock_info()
-    demo_like = _looks_like_demo_data(symbols) or bool(demo_data_used)
+    metadata = data.metadata()
+    demo_like = is_demo_contaminated(symbols) or bool(demo_data_used)
 
     findings: list[AuditFinding] = []
     if not symbols:
@@ -124,6 +126,10 @@ def audit_data(
     suspension_count, suspension_examples = _suspension_count(data, days)
     limit_up_count, limit_down_count, limit_examples = _price_limit_counts(bars)
     missing_fundamental_count = _missing_fundamental_count(data, symbols, end)
+    universe_snapshot_finding = _universe_snapshot_finding(
+        metadata,
+        configured_data_source=data_source,
+    )
 
     expected_bars = len(symbols) * len(days)
     missing_ratio = missing_bar_count / expected_bars if expected_bars else 0.0
@@ -192,6 +198,8 @@ def audit_data(
                 {"missing_fundamental_count": missing_fundamental_count},
             )
         )
+    if universe_snapshot_finding is not None:
+        findings.append(universe_snapshot_finding)
     if st_count:
         findings.append(
             AuditFinding(
@@ -248,6 +256,14 @@ def audit_data(
         "limit_up_count": limit_up_count,
         "limit_down_count": limit_down_count,
         "missing_fundamental_count": missing_fundamental_count,
+        "universe_snapshot_mode": metadata.get("data_import_universe_snapshot_mode", ""),
+        "universe_snapshot_asof_utc": metadata.get(
+            "data_import_universe_snapshot_asof_utc",
+            "",
+        ),
+        "universe_point_in_time": _metadata_truthy(
+            metadata.get("data_import_universe_point_in_time", "")
+        ),
     }
     return DataAuditReport(
         status=_combine_status(findings),
@@ -273,10 +289,6 @@ def write_data_audit(report: DataAuditReport, output_dir: str | Path) -> Path:
     )
     (root / "data_audit.md").write_text(report.to_markdown(), encoding="utf-8")
     return root
-
-
-def _looks_like_demo_data(symbols: list[str]) -> bool:
-    return bool(symbols) and all(symbol.startswith("DEMO") for symbol in symbols)
 
 
 def _duplicate_count(bars: pd.DataFrame) -> int:
@@ -371,6 +383,43 @@ def _missing_fundamental_count(data: DataProvider, symbols: list[str], as_of: st
     if fundamentals.empty:
         return len(symbols)
     return len(set(symbols) - set(fundamentals["symbol"].astype(str)))
+
+
+def _universe_snapshot_finding(
+    metadata: dict[str, str],
+    *,
+    configured_data_source: str,
+) -> AuditFinding | None:
+    source = str(metadata.get("data_source") or configured_data_source).strip().lower()
+    mode = str(metadata.get("data_import_universe_snapshot_mode", "") or "").strip()
+    point_in_time = _metadata_truthy(
+        metadata.get("data_import_universe_point_in_time", "")
+    )
+    if point_in_time:
+        return None
+    if source != "akshare" and not mode:
+        return None
+    return AuditFinding(
+        "WATCH",
+        "UNIVERSE_NOT_POINT_IN_TIME",
+        (
+            "The research universe is a current or manual snapshot without point-in-time "
+            "membership evidence; results may contain survivorship bias and remain research-only."
+        ),
+        {
+            "data_source": source or "missing",
+            "universe_snapshot_mode": mode or "missing",
+            "universe_snapshot_asof_utc": metadata.get(
+                "data_import_universe_snapshot_asof_utc",
+                "",
+            ),
+            "point_in_time": False,
+        },
+    )
+
+
+def _metadata_truthy(value: object) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "pass"}
 
 
 def _combine_status(findings: list[AuditFinding]) -> AuditStatus:

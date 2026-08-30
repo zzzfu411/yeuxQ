@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "sequence": 1,
+  "event_type": "preregistration",
+  "trial_id": "guard-v1-20260716",
+  "candidate": "liquidity_neutral_momentum_guard_price_volume",
+  "hypothesis": "Liquidity-neutral long momentum with defensive exposure control can deliver positive net benchmark-relative returns without breaching the small-capital drawdown and execution budgets.",
+  "parameter_fingerprint": "d57d8ee8b2d76d45782dd0473dfe862b61a750047eeabaa4f71f09ec23892b5d",
+  "data_fingerprint": "af9b9346ddcfe6f43046e677c80a509772a39e9149c1df6e734aa8f77f76c48d",
+  "config_fingerprint": "925a335e2a4a4b96e5c852a20bc9fd5f86e4b05e404cb297c8a1569df60d0fe7",
+  "train_boundary": {
+    "end": "2025-06-30",
+    "start": "2024-06-03"
+  },
+  "selection_boundary": {
+    "end": "2026-07-14",
+    "start": "2025-07-01"
+  },
+  "test_boundary": {
+    "end": "2026-10-16",
+    "start": "2026-07-17"
+  },
+  "created_at": "2026-07-15T19:10:01+00:00",
+  "prohibited_live_use": true,
+  "hash_algorithm": "sha256",
+  "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "event_hash": "ee8c7566e9d8c1f9994ef04f39ea22be31bb9191b8e1ec64512c874a3797ca18"
+}

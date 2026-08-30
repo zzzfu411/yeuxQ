@@ -439,7 +439,10 @@ def test_first_million_pipeline_blocks_missing_source_qa_answers(tmp_path: Path)
     assert any(row["priority"] == "P2" for row in resolution_rows)
 
 
-def test_first_million_pipeline_cache_override_feeds_readiness_gate(tmp_path: Path) -> None:
+def test_first_million_pipeline_cache_override_reaches_all_guarded_subflows(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
     data_dir = tmp_path / "data_exports"
     output = tmp_path / "first_million"
     config_cache = tmp_path / "config_default.db"
@@ -448,6 +451,19 @@ def test_first_million_pipeline_cache_override_feeds_readiness_gate(tmp_path: Pa
     write_research_csv_templates(data_dir)
     _write_config(config, config_cache)
     _seed_minimal_cache(override_cache)
+    weekly_call: dict[str, str] = {}
+
+    def fake_run_weekly_pipeline(cfg, *, config_path, output_dir, **_kwargs):
+        weekly_call["cache_path"] = str(cfg.data.cache_path)
+        weekly_call["config_path"] = str(config_path)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        return type(
+            "WeeklyResult",
+            (),
+            {"output_dir": str(output_dir), "weekly_decision": "research_only"},
+        )()
+
+    monkeypatch.setattr(first_million_module, "run_weekly_pipeline", fake_run_weekly_pipeline)
 
     result = run_first_million_pipeline(
         config_path=config,
@@ -462,19 +478,50 @@ def test_first_million_pipeline_cache_override_feeds_readiness_gate(tmp_path: Pa
 
     readiness = json.loads((output / "first_million_readiness.json").read_text(encoding="utf-8"))
     pipeline = json.loads((output / "first_million_pipeline.json").read_text(encoding="utf-8"))
+    export_request = json.loads(
+        (data_dir / "data_export_request.json").read_text(encoding="utf-8")
+    )
+    offline_package = json.loads(
+        (output / "offline_data_package.json").read_text(encoding="utf-8")
+    )
+    offline_intake = json.loads(
+        (output / "offline_intake" / "offline_data_intake.json").read_text(encoding="utf-8")
+    )
     promotion_metadata = json.loads(
         (output / "promotion_metadata_check.json").read_text(encoding="utf-8")
     )
+    experiment_launch = json.loads(
+        (output / "candidate_experiment_launch.json").read_text(encoding="utf-8")
+    )
+    experiment_run_packet = json.loads(
+        (output / "candidate_experiment_run_packet.json").read_text(encoding="utf-8")
+    )
+    effective_config = output / "effective_config.yaml"
     current_cache = next(gate for gate in readiness["gates"] if gate["name"] == "current_data_cache")
     metadata_stage = next(stage for stage in pipeline["stages"] if stage["name"] == "promotion_metadata_check")
+    stages = {stage["name"]: stage["status"] for stage in pipeline["stages"]}
 
     assert result.decision == "BLOCK"
+    assert result.config_path == str(effective_config)
+    assert effective_config.exists()
+    assert first_million_module.load_config(effective_config).data.cache_path == str(override_cache)
+    assert export_request["cache_path"] == str(override_cache)
+    assert offline_package["config_path"] == str(effective_config)
+    assert offline_intake["cache_path"] == str(override_cache)
+    assert weekly_call["cache_path"] == str(override_cache)
+    assert weekly_call["config_path"] == str(effective_config)
+    assert experiment_launch["config_path"] == str(effective_config)
+    assert experiment_run_packet["config_path"] == str(effective_config)
     assert current_cache["artifact"] == str(override_cache)
     assert "symbols=2" in current_cache["message"]
     assert "trading_days=2" in current_cache["message"]
     assert str(config_cache) not in current_cache["artifact"]
     assert promotion_metadata["cache_path"] == str(override_cache)
     assert metadata_stage["status"] == "BLOCK"
+    assert stages["data_source_qa_review"] == "BLOCK"
+    assert stages["candidate_experiment_launch"] == "BLOCK"
+    assert stages["candidate_experiment_execution"] == "BLOCK"
+    assert not (output / "weekly" / "approval_record.json").exists()
 
 
 def test_first_million_pipeline_runs_research_only_weekly_when_real_cache_is_admissible(

@@ -58,6 +58,20 @@ def test_metrics_round_trip_win_rate() -> None:
     assert rep.win_rate == pytest.approx(0.5)
 
 
+def test_metrics_can_include_pre_trade_initial_equity() -> None:
+    report = compute_report(
+        _curve([990.0, 1_100.0]),
+        fills=[],
+        initial_equity=1_000.0,
+    )
+
+    assert report.initial_equity == pytest.approx(1_000.0)
+    assert report.final_equity == pytest.approx(1_100.0)
+    assert report.total_return == pytest.approx(0.10)
+    assert report.max_drawdown == pytest.approx(0.01)
+    assert report.n_bars == 2
+
+
 def test_plot_equity_writes_png(tmp_path: Path) -> None:
     fills = [
         FillEvent(datetime(2024, 1, 3), "X", Direction.LONG, 100, 100.0, 0, 0),

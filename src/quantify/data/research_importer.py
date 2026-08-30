@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
@@ -114,6 +116,7 @@ def import_research_data(
     include_bj: bool = False,
     symbols: list[str] | None = None,
 ) -> ResearchImportReport:
+    manual_symbols_supplied = bool(symbols)
     try:
         stock_info = (
             _stock_info_from_symbols(symbols)
@@ -175,7 +178,10 @@ def import_research_data(
     if symbols:
         storage.save_index_constituents(index_code, start, symbols)
 
-    feed = AkshareFeed(storage=storage, adjust=adjust)
+    # Persist the complete provider result as one attested batch after all
+    # symbols have been fetched. This prevents per-symbol partial commits from
+    # masquerading as a complete research import.
+    feed = AkshareFeed(storage=storage, adjust=adjust, persist=False)
     failures: list[ImportFailure] = []
     frames: list[pd.DataFrame] = []
     for idx, symbol in enumerate(symbols, start=1):
@@ -191,8 +197,6 @@ def import_research_data(
             logger.warning("Import failed for {}: {}", symbol, exc)
 
     merged = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
-    if not merged.empty:
-        storage.save_calendar(sorted(merged["date"].dropna().astype(str).unique().tolist()))
     status = "PASS"
     if not frames:
         status = "BLOCK"
@@ -211,6 +215,98 @@ def import_research_data(
         if status == "BLOCK"
         else _coverage_metadata(merged)
     )
+    route_counts: dict[str, int] = {}
+    for route in feed.fetch_routes.values():
+        route_counts[route] = route_counts.get(route, 0) + 1
+    metadata["bar_provider_routes"] = route_counts
+    metadata["bar_provider_by_symbol"] = dict(sorted(feed.fetch_routes.items()))
+    imported_at_utc = datetime.now(UTC).replace(microsecond=0).isoformat()
+    akshare_version = _installed_akshare_version()
+    metadata["adjust_requested"] = adjust
+    metadata["akshare_version"] = akshare_version
+    metadata["imported_at_utc"] = imported_at_utc
+    universe_snapshot_mode = (
+        "manual_symbol_list_research_only"
+        if manual_symbols_supplied
+        else "current_spot_snapshot_research_only"
+    )
+    metadata["universe_snapshot_mode"] = universe_snapshot_mode
+    metadata["universe_snapshot_asof_utc"] = imported_at_utc
+    metadata["universe_point_in_time"] = False
+    metadata["universe_index_code"] = index_code
+    metadata["universe_symbol_count"] = len(symbols)
+    if frames:
+        cache_metadata = {
+            "data_source": "akshare",
+            "data_import_status": status,
+            "data_import_start": start,
+            "data_import_end": end,
+            "data_import_actual_bar_start": metadata.get("actual_bar_start", ""),
+            "data_import_actual_bar_end": metadata.get("actual_bar_end", ""),
+            "data_import_symbol_count": metadata.get("actual_bar_symbol_count", 0),
+            "data_import_bar_provider_routes": json.dumps(route_counts, sort_keys=True),
+            "data_import_bar_provider_by_symbol": json.dumps(
+                dict(sorted(feed.fetch_routes.items())),
+                sort_keys=True,
+            ),
+            "data_import_adjust_requested": adjust,
+            "data_import_akshare_version": akshare_version,
+            "data_imported_at_utc": imported_at_utc,
+            "data_import_universe_snapshot_mode": universe_snapshot_mode,
+            "data_import_universe_snapshot_asof_utc": imported_at_utc,
+            "data_import_universe_point_in_time": "false",
+            "data_import_universe_index_code": index_code,
+            "data_import_universe_symbol_count": len(symbols),
+            "data_source_qa_status": "NOT_EVALUATED",
+            "data_source_csv_qa_status": "NOT_EVALUATED",
+        }
+        try:
+            attestation = storage.save_bars_with_lineage(
+                merged,
+                source_type="akshare_research_import",
+                source_reference="akshare",
+                source_metadata={
+                    "adjust_requested": adjust,
+                    "akshare_version": akshare_version,
+                    "provider_routes": route_counts,
+                    "provider_by_symbol": dict(sorted(feed.fetch_routes.items())),
+                    "requested_start": start,
+                    "requested_end": end,
+                    "universe_snapshot_mode": universe_snapshot_mode,
+                },
+                cache_metadata=cache_metadata,
+                imported_at_utc=imported_at_utc,
+            )
+        except Exception as exc:  # noqa: BLE001 - preserve an auditable BLOCK report.
+            return ResearchImportReport(
+                status="BLOCK",
+                start=start,
+                end=end,
+                cache_path=str(storage.db_path),
+                requested_symbols=len(symbols),
+                imported_symbols=0,
+                failed_symbols=len(failures) + 1,
+                bar_rows=0,
+                calendar_days=0,
+                failures=[*failures, ImportFailure("cache_write", f"{type(exc).__name__}: {exc}")],
+                notes=["Provider bars were fetched but the atomic cache attestation failed."],
+                metadata=metadata,
+                failure_stage="cache_write",
+                network_blocked=False,
+                recommended_route="repair_cache_then_retry",
+                next_actions=[
+                    "Repair the SQLite cache write failure before rerunning the provider import."
+                ],
+            )
+        storage.save_calendar(sorted(merged["date"].dropna().astype(str).unique().tolist()))
+        metadata.update(
+            {
+                "bar_import_batch_id": attestation.batch_id,
+                "cache_logical_bar_fingerprint": attestation.post_import_logical_fingerprint,
+                "cache_logical_bar_fingerprint_algorithm": attestation.logical_fingerprint_algorithm,
+                "bar_import_lineage_rows": attestation.written_row_count,
+            }
+        )
     return ResearchImportReport(
         status=status,
         start=start,
@@ -231,6 +327,13 @@ def import_research_data(
         if status != "PASS"
         else ["Run real_data_bootstrap on the imported cache before any strategy research."],
     )
+
+
+def _installed_akshare_version() -> str:
+    try:
+        return version("akshare")
+    except PackageNotFoundError:
+        return ""
 
 
 def write_import_report(report: ResearchImportReport, output_dir: str | Path) -> Path:

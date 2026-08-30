@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 import pandas as pd
 
+from quantify.data.demo import is_demo_contaminated
 from quantify.data.provider import DataProvider
 
 RealDataDecision = Literal["PASS", "WATCH", "BLOCK"]
@@ -107,7 +108,7 @@ def evaluate_real_data_gate(
     bars = data.bars(symbols, start, end) if symbols else pd.DataFrame()
     latest_bar_date = _latest_bar_date(bars)
     staleness_days = _staleness_days(latest_bar_date, as_of_date)
-    demo_data_used = _looks_like_demo_data(symbols)
+    demo_data_used = is_demo_contaminated(symbols)
     findings: list[RealDataFinding] = []
 
     if not symbols:
@@ -213,10 +214,6 @@ def _staleness_days(latest_bar_date: str, as_of: date) -> int | None:
     if not latest_bar_date:
         return None
     return (as_of - pd.Timestamp(latest_bar_date).date()).days
-
-
-def _looks_like_demo_data(symbols: list[str]) -> bool:
-    return bool(symbols) and all(symbol.startswith("DEMO") for symbol in symbols)
 
 
 def _combine(decisions: list[RealDataDecision]) -> RealDataDecision:

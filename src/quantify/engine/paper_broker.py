@@ -104,9 +104,21 @@ class PaperBroker:
             pos = portfolio.positions.get(symbol)
             current_qty = pos.total_qty if pos else 0
             target_qty = int((equity * target.target_weight) // price)
-            buy_qty = max(target_qty - current_qty, 0)
-            buy_qty = (buy_qty // self.config.lot_size) * self.config.lot_size
+            requested_buy_qty = max(target_qty - current_qty, 0)
+            buy_qty = (requested_buy_qty // self.config.lot_size) * self.config.lot_size
             if buy_qty <= 0:
+                if requested_buy_qty > 0:
+                    result.orders.append(
+                        PaperOrder(
+                            target.timestamp,
+                            symbol,
+                            Direction.LONG,
+                            requested_buy_qty,
+                            price,
+                            "rejected",
+                            "below_lot",
+                        )
+                    )
                 continue
             buy_qty = self._cap_by_cash(buy_qty, price, portfolio.cash)
             if buy_qty <= 0:

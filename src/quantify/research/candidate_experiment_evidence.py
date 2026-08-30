@@ -4,6 +4,7 @@ The handoff copies foundational research evidence into the candidate
 experiment directory so the later deterministic gates review one complete
 artifact bundle. It does not generate trading orders or relax any gate.
 """
+
 from __future__ import annotations
 
 import json
@@ -11,6 +12,12 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
+
+from quantify.research.walk_forward_protocol import (
+    WALK_FORWARD_ARTIFACT,
+    validate_robustness_selection_safe_payload,
+    validate_selection_safe_payload,
+)
 
 EvidenceStatus = Literal["PASS", "WATCH", "BLOCK", "MISSING"]
 ReportStatus = Literal["PASS", "WATCH", "BLOCK"]
@@ -108,9 +115,13 @@ class CandidateExperimentEvidenceReport:
                 f"`{item.destination or '-'}` | {item.message} |"
             )
         lines.extend(["", "## Blockers"])
-        lines.extend(f"- {item}" for item in self.blockers) if self.blockers else lines.append("- None.")
+        lines.extend(f"- {item}" for item in self.blockers) if self.blockers else lines.append(
+            "- None."
+        )
         lines.extend(["", "## Watch Items"])
-        lines.extend(f"- {item}" for item in self.watch_items) if self.watch_items else lines.append("- None.")
+        lines.extend(
+            f"- {item}" for item in self.watch_items
+        ) if self.watch_items else lines.append("- None.")
         lines.extend(["", "## Next Actions"])
         lines.extend(f"- {item}" for item in self.next_actions)
         lines.extend(["", "## Prohibited Actions"])
@@ -128,9 +139,17 @@ def sync_candidate_experiment_evidence(
     source_dirs = _source_dirs(source_root)
     items: list[CandidateExperimentEvidenceItem] = []
     for name, filename, status_key in REQUIRED_JSON_ARTIFACTS:
-        items.append(_copy_artifact(name, filename, source_dirs, target, required=True, status_key=status_key))
+        items.append(
+            _copy_artifact(
+                name, filename, source_dirs, target, required=True, status_key=status_key
+            )
+        )
     for name, filename, status_key in OPTIONAL_ARTIFACTS:
-        items.append(_copy_artifact(name, filename, source_dirs, target, required=False, status_key=status_key))
+        items.append(
+            _copy_artifact(
+                name, filename, source_dirs, target, required=False, status_key=status_key
+            )
+        )
 
     blockers = [
         f"{item.name}: {item.message}"
@@ -140,7 +159,8 @@ def sync_candidate_experiment_evidence(
     watch_items = [
         f"{item.name}: {item.message}"
         for item in items
-        if item.status == "WATCH" or (item.status in {"BLOCK", "MISSING"} and not _is_required(item.name))
+        if item.status == "WATCH"
+        or (item.status in {"BLOCK", "MISSING"} and not _is_required(item.name))
     ]
     status = _status(blockers, watch_items)
     return CandidateExperimentEvidenceReport(
@@ -188,7 +208,9 @@ def _copy_artifact(
             status,
             "",
             str(destination),
-            "Required source artifact is missing." if required else "Optional source artifact is missing.",
+            "Required source artifact is missing."
+            if required
+            else "Optional source artifact is missing.",
         )
 
     payload = _read_json(source) if source.suffix.lower() == ".json" else {}
@@ -214,6 +236,8 @@ def _artifact_status(
 ) -> EvidenceStatus:
     if source.suffix.lower() == ".json" and not payload:
         return "BLOCK" if required else "WATCH"
+    if name in {"robustness", "walk_forward"} and _selection_safety_reasons(name, payload):
+        return "BLOCK"
     if name == "summary":
         assumptions = payload.get("assumptions", {}) if isinstance(payload, dict) else {}
         if isinstance(assumptions, dict) and assumptions.get("demo_data_used") is True:
@@ -245,9 +269,23 @@ def _message(
     source: Path,
     payload: dict[str, Any],
 ) -> str:
+    selection_safety_reasons = (
+        _selection_safety_reasons(name, payload)
+        if name in {"robustness", "walk_forward"}
+        else []
+    )
+    if selection_safety_reasons:
+        return (
+            f"Copied {source.name} for research-only display; selection-safe v2 contract "
+            "failed, so this artifact blocks handoff: " + "; ".join(selection_safety_reasons)
+        )
     if name == "summary":
         assumptions = payload.get("assumptions", {}) if isinstance(payload, dict) else {}
-        demo = assumptions.get("demo_data_used", "unknown") if isinstance(assumptions, dict) else "unknown"
+        demo = (
+            assumptions.get("demo_data_used", "unknown")
+            if isinstance(assumptions, dict)
+            else "unknown"
+        )
         return f"Copied research summary from {source.name}; demo_data_used={demo}."
     if name == "run_manifest":
         return f"Copied run manifest; demo_data_used={payload.get('demo_data_used', 'unknown')}."
@@ -256,6 +294,15 @@ def _message(
     if status == "WATCH":
         return f"Copied {source.name}; source status requires manual review."
     return f"Copied {source.name}; source status blocks promotion."
+
+
+def _selection_safety_reasons(name: str, payload: dict[str, Any]) -> list[str]:
+    if name == "robustness":
+        return validate_robustness_selection_safe_payload(payload).reasons
+    return validate_selection_safe_payload(
+        payload,
+        artifact_type=WALK_FORWARD_ARTIFACT,
+    ).reasons
 
 
 def _copy_markdown_sibling(source: Path, destination: Path) -> None:
@@ -306,6 +353,7 @@ def _next_actions(status: ReportStatus) -> list[str]:
 
 def _read_json(path: Path) -> dict[str, Any]:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
+    return payload if isinstance(payload, dict) else {}

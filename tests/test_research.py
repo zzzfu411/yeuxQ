@@ -78,8 +78,62 @@ def test_universe_filter_excludes_st_and_suspended(tmp_path: Path) -> None:
     )
     storage.save_suspensions(pd.DataFrame({"symbol": ["CCC"], "date": ["2024-01-02"]}))
     provider = DataProvider(storage)
-    symbols = UniverseFilter(UniverseConfig()).symbols("2024-01-02", provider)
+    symbols = UniverseFilter(UniverseConfig(min_history_days=1)).symbols("2024-01-02", provider)
     assert symbols == ["AAA"]
+
+
+def test_universe_filter_counts_available_bar_days_without_stock_info(tmp_path: Path) -> None:
+    storage = BarStorage(tmp_path / "history.db")
+    dates = pd.bdate_range("2024-01-02", periods=3).date.astype(str).tolist()
+    _save_universe_bars(storage, {"AAA": [*dates, "2024-02-01"], "BBB": dates[:2]})
+    provider = DataProvider(storage)
+
+    assert UniverseFilter(UniverseConfig(min_history_days=3)).symbols(dates[-1], provider) == ["AAA"]
+    assert UniverseFilter(UniverseConfig(min_history_days=4)).symbols(dates[-1], provider) == []
+    assert UniverseFilter(UniverseConfig(min_history_days=10_000)).symbols(
+        dates[-1], provider
+    ) == []
+
+
+def test_universe_filter_excludes_symbols_listed_after_as_of(tmp_path: Path) -> None:
+    storage = BarStorage(tmp_path / "list_date.db")
+    storage.save_stock_info(
+        pd.DataFrame(
+            {
+                "symbol": ["AAA", "BBB"],
+                "name": ["AAA", "BBB"],
+                "list_date": ["2024-01-03", "2024-01-02"],
+            }
+        )
+    )
+    _save_universe_bars(storage, {"AAA": ["2024-01-02"], "BBB": ["2024-01-02"]})
+
+    symbols = UniverseFilter(UniverseConfig(min_history_days=1)).symbols(
+        "2024-01-02", DataProvider(storage)
+    )
+
+    assert symbols == ["BBB"]
+
+
+def test_universe_filter_applies_delist_date_only_when_reached(tmp_path: Path) -> None:
+    storage = BarStorage(tmp_path / "delist_date.db")
+    storage.save_stock_info(
+        pd.DataFrame(
+            {
+                "symbol": ["AAA"],
+                "name": ["AAA"],
+                "delist_date": ["2024-01-05"],
+            }
+        )
+    )
+    dates = pd.bdate_range("2024-01-02", periods=5).date.astype(str).tolist()
+    _save_universe_bars(storage, {"AAA": dates})
+    universe_filter = UniverseFilter(UniverseConfig(min_history_days=1))
+    provider = DataProvider(storage)
+
+    assert universe_filter.symbols("2024-01-04", provider) == ["AAA"]
+    assert universe_filter.symbols("2024-01-05", provider) == []
+    assert universe_filter.symbols("2024-01-08", provider) == []
 
 
 def test_factor_pipeline_scores_and_rank_ic(seeded_provider: DataProvider) -> None:
@@ -290,6 +344,11 @@ def test_paper_broker_rebalance_respects_lots_and_cash(seeded_provider: DataProv
     result = broker.rebalance(targets, prices, portfolio)
     assert result.fills
     assert all(fill.quantity % 100 == 0 for fill in result.fills if fill.direction == Direction.LONG)
+    below_lot = [order for order in result.orders if order.reason == "below_lot"]
+    assert len(below_lot) == 1
+    assert below_lot[0].symbol == "DEMO002"
+    assert below_lot[0].status == "rejected"
+    assert 0 < below_lot[0].quantity < 100
     assert portfolio.cash >= 0
 
 
@@ -343,7 +402,7 @@ def test_research_engine_records_daily_equity_and_report(
     seeded_provider: DataProvider,
 ) -> None:
     pipeline = FactorPipeline()
-    universe_filter = UniverseFilter(UniverseConfig())
+    universe_filter = UniverseFilter(UniverseConfig(min_history_days=1))
     strategy = MultiFactorTargetStrategy(
         universe_filter,
         pipeline,
@@ -445,3 +504,22 @@ class _StaticData:
 
     def trading_days(self, start: str, end: str) -> list[str]:
         return [day for day in self._trading_days if start <= day <= end]
+
+
+def _save_universe_bars(storage: BarStorage, symbol_dates: dict[str, list[str]]) -> None:
+    rows = []
+    for symbol, dates in symbol_dates.items():
+        for day in dates:
+            rows.append(
+                {
+                    "symbol": symbol,
+                    "date": day,
+                    "open": 10.0,
+                    "high": 10.0,
+                    "low": 10.0,
+                    "close": 10.0,
+                    "volume": 1_000.0,
+                    "amount": 10_000.0,
+                }
+            )
+    storage.save_bars(pd.DataFrame(rows))

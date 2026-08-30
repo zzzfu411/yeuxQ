@@ -1,11 +1,25 @@
 """Weekly operating review for research-to-paper quant workflows."""
+
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Callable, Literal
+
+from quantify.research.evidence_validation import (
+    EvidenceContractValidation,
+    validate_benchmark_payload,
+    validate_multiple_testing_payload,
+    validate_trial_registry_review_payload,
+)
+from quantify.research.walk_forward_protocol import (
+    CANDIDATE_WALK_FORWARD_ARTIFACT,
+    WALK_FORWARD_ARTIFACT,
+    validate_robustness_selection_safe_payload,
+    validate_selection_safe_payload,
+)
 
 WeeklyDecision = Literal["continue_paper", "research_only", "pause_and_fix"]
 ComponentStatus = Literal["PASS", "WATCH", "BLOCK", "MISSING", "UNKNOWN"]
@@ -78,9 +92,13 @@ class WeeklyReview:
             )
 
         lines.extend(["", "## Blockers"])
-        lines.extend(f"- {item}" for item in self.blockers) if self.blockers else lines.append("- None.")
+        lines.extend(f"- {item}" for item in self.blockers) if self.blockers else lines.append(
+            "- None."
+        )
         lines.extend(["", "## Watch Items"])
-        lines.extend(f"- {item}" for item in self.watch_items) if self.watch_items else lines.append("- None.")
+        lines.extend(
+            f"- {item}" for item in self.watch_items
+        ) if self.watch_items else lines.append("- None.")
         lines.extend(["", "## Required Actions"])
         lines.extend(f"- {item}" for item in self.required_actions)
         lines.extend(["", "## Prohibited Actions"])
@@ -91,6 +109,8 @@ class WeeklyReview:
 def build_weekly_review(report_dir: str | Path, *, as_of: str | None = None) -> WeeklyReview:
     root = Path(report_dir)
     research_focus = _read_json(root / "recent_candidate_research.json")
+    selected_candidate = _selected_candidate(root)
+    benchmark_symbol = _benchmark_symbol(root)
     components = [
         _component(root, "real_data_bootstrap", "real_data_bootstrap.json", status_key="decision"),
         _component(root, "real_data_gate", "real_data_gate.json", status_key="decision"),
@@ -99,15 +119,30 @@ def build_weekly_review(report_dir: str | Path, *, as_of: str | None = None) -> 
         _component(root, "market_regime", "market_regime.json", status_key="status"),
         _component(root, "robustness", "robustness_report.json", status_key="status"),
         _component(root, "walk_forward", "walk_forward_report.json", status_key="status"),
-        _component(root, "candidate_walk_forward", "candidate_walk_forward_report.json", status_key="status"),
-        _component(root, "candidate_factor_diagnostics", "candidate_factor_diagnostics.json", status_key="status"),
+        _component(
+            root,
+            "candidate_walk_forward",
+            "candidate_walk_forward_report.json",
+            status_key="status",
+        ),
+        _component(
+            root,
+            "candidate_factor_diagnostics",
+            "candidate_factor_diagnostics.json",
+            status_key="status",
+        ),
         _component(
             root,
             "candidate_regime_validation",
             "candidate_regime_validation_report.json",
             status_key="status",
         ),
-        _component(root, "candidate_experiment_launch", "candidate_experiment_launch.json", status_key="decision"),
+        _component(
+            root,
+            "candidate_experiment_launch",
+            "candidate_experiment_launch.json",
+            status_key="decision",
+        ),
         _component(
             root,
             "candidate_experiment_completion",
@@ -115,7 +150,43 @@ def build_weekly_review(report_dir: str | Path, *, as_of: str | None = None) -> 
             status_key="decision",
         ),
         _component(root, "candidate_selection", "candidate_selection.json", status_key="status"),
-        _component(root, "recent_candidate_research", "recent_candidate_research.json", status_key="status"),
+        _validated_evidence_component(
+            root,
+            "multiple_testing_report",
+            "multiple_testing_report.json",
+            expected_identity=selected_candidate,
+            identity_label="deterministic selected candidate",
+            validator=lambda payload: validate_multiple_testing_payload(
+                payload,
+                expected_candidate=selected_candidate,
+            ),
+        ),
+        _validated_evidence_component(
+            root,
+            "benchmark_report",
+            "benchmark_report.json",
+            expected_identity=benchmark_symbol,
+            identity_label="run_manifest.research_parameters.index_code",
+            validator=lambda payload: validate_benchmark_payload(
+                payload,
+                expected_symbol=benchmark_symbol,
+            ),
+        ),
+        _validated_evidence_component(
+            root,
+            "trial_registry_review",
+            "trial_registry_review.json",
+            expected_identity=selected_candidate,
+            identity_label="deterministic selected candidate",
+            validator=lambda payload: validate_trial_registry_review_payload(
+                payload,
+                expected_candidate=selected_candidate,
+                report_dir=root,
+            ),
+        ),
+        _component(
+            root, "recent_candidate_research", "recent_candidate_research.json", status_key="status"
+        ),
         _component(root, "llm_review", "llm_review.json", status_key="decision"),
         _component(root, "paper_state", "paper_state.json", status_key=None),
         _component(root, "paper_daily_review", "paper_daily_review.json", status_key="status"),
@@ -135,6 +206,54 @@ def build_weekly_review(report_dir: str | Path, *, as_of: str | None = None) -> 
         watch_items=watch_items,
         required_actions=_required_actions(decision, components),
         prohibited_actions=_prohibited_actions(),
+    )
+
+
+def _validated_evidence_component(
+    root: Path,
+    name: str,
+    filename: str,
+    *,
+    expected_identity: str,
+    identity_label: str,
+    validator: Callable[[dict[str, Any]], EvidenceContractValidation],
+) -> WeeklyReviewComponent:
+    path = root / filename
+    if not path.exists():
+        return WeeklyReviewComponent(
+            name=name,
+            status="BLOCK",
+            source_file=filename,
+            summary=f"Required evidence {filename} is missing.",
+        )
+    payload = _read_json(path)
+    if not payload:
+        return WeeklyReviewComponent(
+            name=name,
+            status="BLOCK",
+            source_file=filename,
+            summary=f"Required evidence {filename} could not be parsed or is empty.",
+        )
+    if not expected_identity:
+        return WeeklyReviewComponent(
+            name=name,
+            status="BLOCK",
+            source_file=filename,
+            summary=f"Cannot validate {filename}: {identity_label} is missing.",
+        )
+    validation = validator(payload)
+    if not validation.valid:
+        return WeeklyReviewComponent(
+            name=name,
+            status="BLOCK",
+            source_file=filename,
+            summary=f"{filename} contract failed: " + "; ".join(validation.reasons),
+        )
+    return WeeklyReviewComponent(
+        name=name,
+        status=validation.status,
+        source_file=filename,
+        summary=_summary(name, payload, validation.status),
     )
 
 
@@ -177,6 +296,30 @@ def _component(
         return _paper_component(filename, payload)
     if name == "recent_candidate_research":
         return _recent_research_component(filename, payload)
+    if name == "robustness":
+        validation = validate_robustness_selection_safe_payload(payload)
+        if not validation.safe:
+            return WeeklyReviewComponent(
+                name=name,
+                status="BLOCK",
+                source_file=filename,
+                summary="Selection-safe robustness contract failed: "
+                + "; ".join(validation.reasons),
+            )
+    if name in {"walk_forward", "candidate_walk_forward"}:
+        artifact_type = (
+            CANDIDATE_WALK_FORWARD_ARTIFACT
+            if name == "candidate_walk_forward"
+            else WALK_FORWARD_ARTIFACT
+        )
+        validation = validate_selection_safe_payload(payload, artifact_type=artifact_type)
+        if not validation.safe:
+            return WeeklyReviewComponent(
+                name=name,
+                status="BLOCK",
+                source_file=filename,
+                summary="Selection-safe v2 contract failed: " + "; ".join(validation.reasons),
+            )
     status = _normalize_status(payload.get(status_key or "status"))
     return WeeklyReviewComponent(
         name=name,
@@ -218,6 +361,30 @@ def _recent_research_component(filename: str, payload: dict[str, Any]) -> Weekly
 
 
 def _summary(name: str, payload: dict[str, Any], status: ComponentStatus) -> str:
+    if name == "multiple_testing_report":
+        input_payload = payload.get("input", {}) or {}
+        parameters = payload.get("parameters", {}) or {}
+        return (
+            f"Multiple-testing evidence is {status}; candidate="
+            f"{parameters.get('selected_candidate', 'none') or 'none'}, "
+            f"trials={len(input_payload.get('candidate_columns', []) or [])}, "
+            f"observations={input_payload.get('observations', 'unknown')}."
+        )
+    if name == "benchmark_report":
+        identity = payload.get("identity", {}) or {}
+        alignment = payload.get("alignment", {}) or {}
+        return (
+            f"Benchmark evidence is {status}; symbol={identity.get('symbol', 'none') or 'none'}, "
+            f"total_return={identity.get('total_return', 'unknown')}, "
+            f"aligned_observations={alignment.get('aligned_observations', 'unknown')}."
+        )
+    if name == "trial_registry_review":
+        return (
+            f"Trial registry review is {status}; candidate="
+            f"{payload.get('selected_candidate', 'none') or 'none'}, "
+            f"trial_id={payload.get('matched_trial_id', 'none') or 'none'}, "
+            f"verified_events={payload.get('verified_event_count', 'unknown')}."
+        )
     if name == "market_regime":
         label = payload.get("label", "unknown")
         return f"Market regime is {label}; status {status}."
@@ -271,7 +438,9 @@ def _summary(name: str, payload: dict[str, Any], status: ComponentStatus) -> str
     if name == "candidate_walk_forward":
         best = payload.get("best_candidate", "none")
         candidates = payload.get("candidate_count", "unknown")
-        return f"Candidate walk-forward is {status}; best={best or 'none'}, candidates={candidates}."
+        return (
+            f"Candidate walk-forward is {status}; best={best or 'none'}, candidates={candidates}."
+        )
     if name == "candidate_factor_diagnostics":
         candidates = payload.get("candidate_count", "unknown")
         warnings = len(payload.get("warnings", []) or [])
@@ -343,7 +512,11 @@ def _decision(components: list[WeeklyReviewComponent]) -> WeeklyDecision:
 def _blockers(components: list[WeeklyReviewComponent]) -> list[str]:
     blockers = []
     for component in components:
-        if component.status == "BLOCK" or component.status in {"MISSING", "UNKNOWN"} and component.name != "readiness":
+        if (
+            component.status == "BLOCK"
+            or component.status in {"MISSING", "UNKNOWN"}
+            and component.name != "readiness"
+        ):
             blockers.append(f"{component.name}: {component.summary}")
     return blockers
 
@@ -352,7 +525,8 @@ def _watch_items(components: list[WeeklyReviewComponent]) -> list[str]:
     return [
         f"{component.name}: {component.summary}"
         for component in components
-        if component.status in {"WATCH", "MISSING", "UNKNOWN"} and component.name == "readiness"
+        if component.status in {"WATCH", "MISSING", "UNKNOWN"}
+        and component.name == "readiness"
         or component.status == "WATCH"
     ]
 
@@ -379,8 +553,28 @@ def _required_actions(
             "Do not change capital, broker connectivity, or strategy parameters without a new review.",
             "Prepare the next weekly review after the next data update.",
         ]
-    if any(component.name == "readiness" and component.status in {"MISSING", "WATCH"} for component in components):
+    if any(
+        component.name == "readiness" and component.status in {"MISSING", "WATCH"}
+        for component in components
+    ):
         actions.append("Readiness is not fully proven; do not generate live broker instructions.")
+    for component in components:
+        if component.name not in {
+            "benchmark_report",
+            "multiple_testing_report",
+            "trial_registry_review",
+        }:
+            continue
+        if component.status == "BLOCK":
+            actions.append(
+                f"Repair required {component.source_file} and rerun its contract validation: "
+                f"{component.summary}"
+            )
+        elif component.status == "WATCH":
+            actions.append(
+                f"Resolve WATCH evidence in {component.source_file} before promotion: "
+                f"{component.summary}"
+            )
     return actions
 
 
@@ -420,6 +614,19 @@ def _read_json(path: Path) -> dict[str, Any]:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
+
+
+def _selected_candidate(root: Path) -> str:
+    payload = _read_json(root / "candidate_selection.json")
+    return str(payload.get("selected_candidate") or payload.get("best_candidate") or "").strip()
+
+
+def _benchmark_symbol(root: Path) -> str:
+    payload = _read_json(root / "run_manifest.json")
+    parameters = payload.get("research_parameters")
+    if not isinstance(parameters, dict):
+        return ""
+    return str(parameters.get("index_code") or "").strip()
 
 
 def _normalize_status(value: object) -> ComponentStatus:

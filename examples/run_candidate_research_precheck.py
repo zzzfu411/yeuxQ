@@ -11,9 +11,12 @@ from pathlib import Path
 
 from loguru import logger
 
+from quantify.data.demo import is_demo_contaminated
 from quantify.data.provider import DataProvider
 from quantify.data.storage import BarStorage
 from quantify.goal import CapitalGoal
+from quantify.market import detect_market_regime, write_market_regime_report
+from quantify.ops.run_manifest import build_run_manifest, write_run_manifest
 from quantify.research.candidate_factor_diagnostics import (
     run_candidate_factor_diagnostics,
     write_candidate_factor_diagnostics_report,
@@ -51,7 +54,11 @@ def main() -> None:
     parser.add_argument("--cache", default=None, help="Override config data.cache_path")
     parser.add_argument("--output-dir", required=True, help="Output directory")
     parser.add_argument("--candidate", action="append", default=None, help="Restrict precheck to a candidate name")
+    parser.add_argument("--mode", choices=("expanding", "rolling"), default="expanding")
     parser.add_argument("--train-days", type=int, default=120)
+    parser.add_argument("--purge-days", type=int, default=5)
+    parser.add_argument("--selection-days", type=int, default=20)
+    parser.add_argument("--embargo-days", type=int, default=5)
     parser.add_argument("--test-days", type=int, default=60)
     parser.add_argument("--step-days", type=int, default=60)
     parser.add_argument(
@@ -92,32 +99,58 @@ def main() -> None:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    provider = _provider(cfg)
+    storage = BarStorage(cfg.data.cache_path)
+    provider = _provider(cfg, storage=storage)
+    manifest = build_run_manifest(
+        provider,
+        cfg,
+        storage=storage,
+        config_path=args.config,
+        purpose="candidate_research_precheck",
+        demo_data_used=is_demo_contaminated(provider.all_symbols()),
+    )
+    write_run_manifest(manifest, output_dir)
     logger.info("Research-only candidate precheck candidates: {}", ", ".join(spec.name for spec in specs))
     max_windows = args.max_windows or None
     walk_forward = run_candidate_walk_forward(
         provider,
         cfg,
         train_days=args.train_days,
+        purge_days=args.purge_days,
+        selection_days=args.selection_days,
+        embargo_days=args.embargo_days,
         test_days=args.test_days,
         step_days=args.step_days,
+        mode=args.mode,
         max_windows=max_windows,
         specs=specs,
     )
     write_candidate_walk_forward_report(walk_forward, output_dir)
 
     generated = [
+        "run_manifest.json",
+        "run_manifest.md",
         "candidate_walk_forward_report.json",
         "candidate_walk_forward_report.md",
     ]
+    market_regime = None
+    if args.full_sample_selection:
+        market_regime = detect_market_regime(provider, cfg.research.start, cfg.research.end)
+        write_market_regime_report(market_regime, output_dir)
+        generated.extend(["market_regime.json", "market_regime.md"])
+
     factor_diagnostics = None
     if args.include_factor_diagnostics:
         factor_diagnostics = run_candidate_factor_diagnostics(
             provider,
             cfg,
             train_days=args.train_days,
+            purge_days=args.purge_days,
+            selection_days=args.selection_days,
+            embargo_days=args.embargo_days,
             test_days=args.test_days,
             step_days=args.step_days,
+            mode=args.mode,
             max_windows=max_windows,
             max_components=args.factor_max_components,
             specs=specs,
@@ -131,8 +164,12 @@ def main() -> None:
             provider,
             cfg,
             train_days=args.train_days,
+            purge_days=args.purge_days,
+            selection_days=args.selection_days,
+            embargo_days=args.embargo_days,
             test_days=args.test_days,
             step_days=args.step_days,
+            mode=args.mode,
             max_windows=max_windows,
             specs=specs,
             candidate_walk_forward=walk_forward,
@@ -157,11 +194,7 @@ def main() -> None:
         goal=goal,
         data_audit_status=str(_read_json(output_dir / "data_audit.json").get("status", "UNKNOWN")),
         robustness_status=str(_read_json(output_dir / "robustness_report.json").get("status", "UNKNOWN")),
-        market_regime=(
-            _read_json(output_dir / "market_regime.json")
-            if selection_scope == "full_sample"
-            else {}
-        ),
+        market_regime=market_regime.to_dict() if market_regime else {},
         candidate_walk_forward=walk_forward.to_dict(),
         candidate_regime_validation=regime_validation.to_dict() if regime_validation else None,
         specs=specs,
@@ -199,6 +232,7 @@ def main() -> None:
                 candidate_walk_forward=walk_forward.to_dict(),
                 factor_diagnostics=factor_diagnostics.to_dict() if factor_diagnostics else {},
                 regime_validation=regime_validation.to_dict() if regime_validation else {},
+                run_manifest=manifest.to_dict(),
             )
         ]
     )
@@ -211,8 +245,8 @@ def main() -> None:
     logger.info("Research-only precheck written to {}", output_dir.resolve())
 
 
-def _provider(cfg) -> DataProvider:
-    storage = BarStorage(cfg.data.cache_path)
+def _provider(cfg, *, storage: BarStorage | None = None) -> DataProvider:
+    storage = storage or BarStorage(cfg.data.cache_path)
     provider = DataProvider(storage)
     if not provider.all_symbols() or not provider.trading_days(cfg.research.start, cfg.research.end):
         if not cfg.research.allow_demo_data:
@@ -235,8 +269,10 @@ def _selection_config(
         if isinstance(row, dict) and row.get("start") and row.get("end")
     ]
     latest = windows[-1] if windows else {}
-    start = str(latest.get("start") or cfg.research.start)
-    end = str(latest.get("end") or cfg.research.end)
+    phases = latest.get("phases", {}) if isinstance(latest.get("phases"), dict) else {}
+    selection = phases.get("selection", {}) if isinstance(phases.get("selection"), dict) else {}
+    start = str(selection.get("start") or cfg.research.start)
+    end = str(selection.get("end") or cfg.research.end)
     payload = cfg.to_dict()
     research = dict(payload.get("research", {}))
     research["start"] = start
@@ -245,7 +281,7 @@ def _selection_config(
         research["in_sample_end"] = start
     if research.get("out_sample_start") and str(research["out_sample_start"]) > end:
         research["out_sample_start"] = start
-    return type(cfg)({**payload, "research": research}), "latest_precheck_window", start, end
+    return type(cfg)({**payload, "research": research}), "latest_pretest_selection_window", start, end
 
 
 def _candidate_specs_or_exit(cfg, names: list[str] | None) -> list[CandidateSpec]:

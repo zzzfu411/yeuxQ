@@ -322,7 +322,7 @@ def _scenario_family(name: str) -> str:
         return "rebalance"
     if name in {"turnover_control", "stability_control", "score_smoothing"}:
         return "turnover_stability"
-    if name == "high_cost":
+    if name == "high_cost" or name.startswith("small_capital_"):
         return "cost_stress"
     if name.startswith("trend_filter"):
         return "trend_filter_ablation"
@@ -339,6 +339,11 @@ def _pass_conditions(name: str) -> list[str]:
         return [*common, "Baseline is not enough for ranking unless required stress scenarios also pass."]
     if name == "high_cost":
         return [*common, "Higher cost assumptions do not turn the candidate into BLOCK."]
+    if name.startswith("small_capital_"):
+        return [
+            *common,
+            "CNY 100,000 lot-size and minimum-commission execution does not turn the candidate into BLOCK.",
+        ]
     if name in {"wider_basket", "lower_concentration"}:
         return [*common, "Diversification changes do not destroy return margin or increase reject risk."]
     if name == "rebalance_alt":
@@ -363,6 +368,8 @@ def _falsification_role(name: str) -> str:
         "trend_filter_off": "Tests whether the trend filter is actually adding value.",
         "trend_filter_stronger": "Tests whether stronger defensive exposure creates cash-drag failure.",
     }
+    if name.startswith("small_capital_"):
+        return "Tests whether the candidate is executable at CNY 100,000 under fixed A-share costs."
     return roles.get(name, "Candidate-specific stress or ablation role.")
 
 

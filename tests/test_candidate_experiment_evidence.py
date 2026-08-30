@@ -11,6 +11,7 @@ from quantify.research.candidate_experiment_evidence import (
     sync_candidate_experiment_evidence,
     write_candidate_experiment_evidence,
 )
+from tests.selection_safe_fixtures import selection_safe_robustness_payload
 
 
 def test_candidate_experiment_evidence_copies_foundational_artifacts(tmp_path: Path) -> None:
@@ -39,6 +40,54 @@ def test_candidate_experiment_evidence_blocks_demo_summary(tmp_path: Path) -> No
 
     assert report.status == "BLOCK"
     assert any("summary" in blocker for blocker in report.blockers)
+
+
+def test_candidate_experiment_evidence_blocks_unsafe_walk_forward_envelopes(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "weekly"
+    _write_foundational_artifacts(source)
+    malformed_folds = _walk_forward_payload()
+    windows = malformed_folds["windows"]
+    assert isinstance(windows, list)
+    first_window = windows[0]
+    assert isinstance(first_window, dict)
+    phases = first_window["phases"]
+    assert isinstance(phases, dict)
+    test_phase = phases["test"]
+    assert isinstance(test_phase, dict)
+    test_phase["trading_day_count"] = 2
+    unsafe_cases = [
+        ({"status": "PASS"}, "artifact_type must be walk_forward_report."),
+        (
+            {"status": "PASS", "selection_safe": True},
+            "schema_version must be 2.",
+        ),
+        (
+            {**_walk_forward_payload(), "schema_version": 1},
+            "schema_version must be 2.",
+        ),
+        (
+            {**_walk_forward_payload(), "selection_protocol": "legacy"},
+            "selection_protocol must be quantify.walk-forward-selection.v2.",
+        ),
+        (
+            malformed_folds,
+            "windows[0].phases.test count does not match configuration.",
+        ),
+    ]
+
+    for index, (payload, expected_reason) in enumerate(unsafe_cases):
+        _write_json(source / "walk_forward_report.json", payload)
+        experiment = tmp_path / "candidate_experiments" / str(index)
+
+        report = sync_candidate_experiment_evidence(source, experiment)
+
+        walk_forward = next(item for item in report.copied_artifacts if item.name == "walk_forward")
+        assert report.status == "BLOCK"
+        assert walk_forward.status == "BLOCK"
+        assert expected_reason in walk_forward.message
+        assert (experiment / "walk_forward_report.json").exists()
 
 
 def test_candidate_experiment_evidence_cli_returns_nonzero_on_missing_required(
@@ -87,13 +136,52 @@ def _write_foundational_artifacts(source: Path, *, demo_data_used: bool = False)
     _write_json(source / "real_data_bootstrap.json", {"decision": "PASS"})
     _write_json(source / "real_data_gate.json", {"decision": "PASS"})
     _write_json(source / "data_audit.json", {"status": "PASS"})
-    _write_json(source / "robustness_report.json", {"status": "PASS"})
-    _write_json(source / "walk_forward_report.json", {"status": "PASS"})
+    _write_json(source / "robustness_report.json", selection_safe_robustness_payload())
+    _write_json(source / "walk_forward_report.json", _walk_forward_payload())
     _write_json(source / "market_regime.json", {"status": "PASS", "label": "neutral"})
-    pd.DataFrame({"status": ["filled"], "symbol": ["600000"]}).to_csv(source / "orders.csv", index=False)
+    pd.DataFrame({"status": ["filled"], "symbol": ["600000"]}).to_csv(
+        source / "orders.csv", index=False
+    )
     pd.DataFrame({"turnover_pct": [0.1]}).to_csv(source / "turnover.csv", index=False)
     pd.DataFrame({"rank_ic": [0.05, 0.03, 0.04]}).to_csv(source / "factor_ic.csv", index=False)
 
 
 def _write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _walk_forward_payload() -> dict:
+    return {
+        "artifact_type": "walk_forward_report",
+        "schema_version": 2,
+        "selection_protocol": "quantify.walk-forward-selection.v2",
+        "selection_safe": True,
+        "test_used_for_selection": False,
+        "configuration": {
+            "mode": "expanding",
+            "train_days": 2,
+            "purge_days": 0,
+            "selection_days": 1,
+            "embargo_days": 0,
+            "test_days": 1,
+            "step_days": 1,
+        },
+        "status": "PASS",
+        "window_count": 1,
+        "windows": [
+            {
+                "name": "wf_01",
+                "start": "d04",
+                "end": "d04",
+                "phases": {
+                    "name": "wf_01",
+                    "mode": "expanding",
+                    "train": {"start": "d01", "end": "d02", "trading_day_count": 2},
+                    "purge": {"start": "", "end": "", "trading_day_count": 0},
+                    "selection": {"start": "d03", "end": "d03", "trading_day_count": 1},
+                    "embargo": {"start": "", "end": "", "trading_day_count": 0},
+                    "test": {"start": "d04", "end": "d04", "trading_day_count": 1},
+                },
+            }
+        ],
+    }

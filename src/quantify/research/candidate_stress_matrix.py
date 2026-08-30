@@ -60,6 +60,12 @@ class CandidateStressScenario:
     max_new_positions: int = 0
     score_smoothing_observations: int = 0
     score_smoothing_step_days: int = 20
+    initial_cash: float | None = None
+    commission_rate: float | None = None
+    min_commission: float | None = None
+    stamp_tax: float | None = None
+    slippage_bps: float | None = None
+    lot_size: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -76,6 +82,12 @@ class CandidateStressScenario:
             "max_new_positions": self.max_new_positions,
             "score_smoothing_observations": self.score_smoothing_observations,
             "score_smoothing_step_days": self.score_smoothing_step_days,
+            "initial_cash": self.initial_cash,
+            "commission_rate": self.commission_rate,
+            "min_commission": self.min_commission,
+            "stamp_tax": self.stamp_tax,
+            "slippage_bps": self.slippage_bps,
+            "lot_size": self.lot_size,
         }
 
 
@@ -88,6 +100,10 @@ class CandidateStressResult:
     metrics: dict[str, float | int]
     order_count: int
     reject_rate: float
+    execution_initial_cash: float
+    final_cash_ratio: float
+    min_commission_hit_count: int
+    below_lot_reject_count: int
     avg_turnover_pct: float
     initial_turnover_pct: float
     avg_maintenance_turnover_pct: float
@@ -105,6 +121,10 @@ class CandidateStressResult:
             "metrics": self.metrics,
             "order_count": self.order_count,
             "reject_rate": self.reject_rate,
+            "execution_initial_cash": self.execution_initial_cash,
+            "final_cash_ratio": self.final_cash_ratio,
+            "min_commission_hit_count": self.min_commission_hit_count,
+            "below_lot_reject_count": self.below_lot_reject_count,
             "avg_turnover_pct": self.avg_turnover_pct,
             "initial_turnover_pct": self.initial_turnover_pct,
             "avg_maintenance_turnover_pct": self.avg_maintenance_turnover_pct,
@@ -252,6 +272,10 @@ class CandidateStressMatrixReport:
                     "max_drawdown": metrics.get("max_drawdown", 0.0),
                     "sharpe_ratio": metrics.get("sharpe_ratio", 0.0),
                     "reject_rate": result.reject_rate,
+                    "execution_initial_cash": result.execution_initial_cash,
+                    "final_cash_ratio": result.final_cash_ratio,
+                    "min_commission_hit_count": result.min_commission_hit_count,
+                    "below_lot_reject_count": result.below_lot_reject_count,
                     "avg_turnover_pct": result.avg_turnover_pct,
                     "initial_turnover_pct": result.initial_turnover_pct,
                     "avg_maintenance_turnover_pct": result.avg_maintenance_turnover_pct,
@@ -395,6 +419,29 @@ def default_candidate_stress_scenarios(spec: CandidateSpec) -> list[CandidateStr
             score_smoothing_observations=spec.score_smoothing_observations,
             score_smoothing_step_days=spec.score_smoothing_step_days,
         ),
+        *[
+            CandidateStressScenario(
+                name=f"small_capital_{slippage_bps}bps",
+                n_holdings=spec.n_holdings,
+                max_weight=spec.max_weight,
+                rebalance=spec.rebalance,
+                trend_filter=spec.trend_filter,
+                trend_scale=spec.trend_scale,
+                trend_gate=spec.trend_gate,
+                hold_rank_buffer=spec.hold_rank_buffer,
+                min_trade_weight=spec.min_trade_weight,
+                max_new_positions=spec.max_new_positions,
+                score_smoothing_observations=spec.score_smoothing_observations,
+                score_smoothing_step_days=spec.score_smoothing_step_days,
+                initial_cash=100_000.0,
+                commission_rate=0.00025,
+                min_commission=5.0,
+                stamp_tax=0.0005,
+                slippage_bps=float(slippage_bps),
+                lot_size=100,
+            )
+            for slippage_bps in (5, 10, 20)
+        ],
     ]
     if spec.trend_filter:
         scenarios.extend(
@@ -544,29 +591,70 @@ def _run_candidate_scenario(
         )
     else:
         strategy = MultiFactorTargetStrategy(universe_filter, pipeline, strategy_config)
+    initial_cash = float(scenario.initial_cash or cfg.research.initial_cash)
+    commission_rate = (
+        float(scenario.commission_rate)
+        if scenario.commission_rate is not None
+        else float(cfg.broker.commission_rate) * scenario.cost_multiplier
+    )
+    min_commission = (
+        float(scenario.min_commission)
+        if scenario.min_commission is not None
+        else float(cfg.broker.min_commission)
+    )
+    stamp_tax = (
+        float(scenario.stamp_tax)
+        if scenario.stamp_tax is not None
+        else float(cfg.broker.stamp_tax) * scenario.cost_multiplier
+    )
+    slippage_bps = (
+        float(scenario.slippage_bps)
+        if scenario.slippage_bps is not None
+        else float(cfg.broker.slippage_bps) * scenario.cost_multiplier
+    )
+    lot_size = int(scenario.lot_size or cfg.broker.lot_size)
+    if scenario.cost_multiplier > 1:
+        commission_rate = max(commission_rate, 0.00025)
+        min_commission = max(min_commission, 5.0)
+        stamp_tax = max(stamp_tax, 0.0005)
+        slippage_bps = max(slippage_bps, 10.0)
     broker = PaperBroker(
         PaperBrokerConfig(
-            commission_rate=float(cfg.broker.commission_rate) * scenario.cost_multiplier,
-            min_commission=float(cfg.broker.min_commission),
-            stamp_tax=float(cfg.broker.stamp_tax) * scenario.cost_multiplier,
-            slippage_bps=float(cfg.broker.slippage_bps) * scenario.cost_multiplier,
+            commission_rate=commission_rate,
+            min_commission=min_commission,
+            stamp_tax=stamp_tax,
+            slippage_bps=slippage_bps,
             price_limit_pct=cfg.broker.price_limit_pct,
-            lot_size=cfg.broker.lot_size,
+            lot_size=lot_size,
         )
     )
     engine = ResearchEngine(
         data,
         strategy,
         broker,
-        Portfolio(initial_cash=cfg.research.initial_cash),
+        Portfolio(initial_cash=initial_cash),
         pipeline,
         max_drawdown_stop=cfg.risk.max_drawdown_stop,
     )
     result = engine.run(cfg.research.start, cfg.research.end, rebalance=scenario.rebalance)
-    metrics = compute_report(result.equity_curve, result.fills).to_dict()
+    metrics = compute_report(
+        result.equity_curve,
+        result.fills,
+        initial_equity=initial_cash,
+    ).to_dict()
     order_count = len(result.orders)
     reject_count = sum(1 for order in result.orders if order.status == "rejected")
     reject_rate = reject_count / order_count if order_count else 0.0
+    below_lot_reject_count = sum(
+        1 for order in result.orders if order.status == "rejected" and order.reason == "below_lot"
+    )
+    min_commission_hit_count = sum(
+        1
+        for fill in result.fills
+        if min_commission > 0 and abs(float(fill.commission) - min_commission) <= 1e-9
+    )
+    final_equity = float(metrics.get("final_equity", 0.0) or 0.0)
+    final_cash_ratio = float(result.portfolio.cash) / final_equity if final_equity > 0 else 0.0
     turnover_summary = summarize_turnover(result.turnover)
     avg_turnover = float(turnover_summary["avg_turnover_pct"])
     avg_maintenance_turnover = float(turnover_summary["avg_maintenance_turnover_pct"])
@@ -588,10 +676,22 @@ def _run_candidate_scenario(
             avg_maintenance_turnover=avg_maintenance_turnover,
             maintenance_turnover_count=maintenance_turnover_count,
         ),
-        parameters=scenario.to_dict(),
+        parameters={
+            **scenario.to_dict(),
+            "effective_initial_cash": initial_cash,
+            "effective_commission_rate": commission_rate,
+            "effective_min_commission": min_commission,
+            "effective_stamp_tax": stamp_tax,
+            "effective_slippage_bps": slippage_bps,
+            "effective_lot_size": lot_size,
+        },
         metrics=metrics,
         order_count=order_count,
         reject_rate=reject_rate,
+        execution_initial_cash=initial_cash,
+        final_cash_ratio=final_cash_ratio,
+        min_commission_hit_count=min_commission_hit_count,
+        below_lot_reject_count=below_lot_reject_count,
         avg_turnover_pct=avg_turnover,
         initial_turnover_pct=float(turnover_summary["initial_turnover_pct"]),
         avg_maintenance_turnover_pct=avg_maintenance_turnover,
@@ -712,6 +812,10 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         "max_drawdown",
         "sharpe_ratio",
         "reject_rate",
+        "execution_initial_cash",
+        "final_cash_ratio",
+        "min_commission_hit_count",
+        "below_lot_reject_count",
         "avg_turnover_pct",
         "initial_turnover_pct",
         "avg_maintenance_turnover_pct",

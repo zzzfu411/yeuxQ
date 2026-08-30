@@ -1,9 +1,11 @@
 """Recoverable daily paper-trading loop for A-share research candidates."""
 from __future__ import annotations
 
+import hashlib
 import json
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime
+from math import isclose
 from pathlib import Path
 from typing import Any
 
@@ -36,8 +38,9 @@ class PaperLoopState:
     order_count: int
     rejected_order_count: int
     broker_connection: str = "none"
+    run_context: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> dict[str, str | int | float]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "as_of": self.as_of,
             "observed_days": self.observed_days,
@@ -49,6 +52,7 @@ class PaperLoopState:
             "order_count": self.order_count,
             "rejected_order_count": self.rejected_order_count,
             "broker_connection": self.broker_connection,
+            "run_context": self.run_context,
         }
 
     def to_markdown(self) -> str:
@@ -97,6 +101,8 @@ def run_paper_loop(
     end: str | None = None,
     candidate: str | None = None,
     initial_cash: float | None = None,
+    expected_cache_sha256: str | None = None,
+    expected_dataset_fingerprint: str | None = None,
 ) -> PaperLoopResult:
     """Advance a local paper account over cached daily bars.
 
@@ -106,42 +112,65 @@ def run_paper_loop(
     root = Path(state_dir)
     root.mkdir(parents=True, exist_ok=True)
     spec = _select_candidate(cfg, candidate)
-    days = data.trading_days(start or cfg.research.start, end or cfg.research.end)
+    requested_start = start or cfg.research.start
+    requested_end = end or cfg.research.end
+    days = data.trading_days(requested_start, requested_end)
     if not days:
         raise ValueError("No trading days are available for paper loop.")
     prior_state = _read_json(root / "paper_state.json")
-    _validate_prior_paper_context(root, prior_state, spec.name)
+    broker_config = _broker_config(cfg)
+    run_context = _paper_run_context(data, cfg, spec, broker_config)
+    _validate_expected_data_identity(
+        run_context,
+        expected_cache_sha256=expected_cache_sha256,
+        expected_dataset_fingerprint=expected_dataset_fingerprint,
+    )
+    resolved_initial_cash = _resolve_initial_cash(cfg, prior_state, initial_cash)
+    _validate_prior_paper_context(root, prior_state, spec.name, run_context)
     run_days = _pending_days(days, str(prior_state.get("as_of", "")))
     portfolio = _restore_portfolio(
         root,
-        float(initial_cash or prior_state.get("initial_cash", cfg.research.initial_cash)),
+        resolved_initial_cash,
         as_of=str(prior_state.get("as_of", "")),
     )
-    broker = PaperBroker(_broker_config(cfg))
+    broker = PaperBroker(broker_config)
     strategy = _strategy_for_candidate(cfg, spec)
-    rebalance_set = set(_rebalance_days(days, spec.rebalance))
+    schedule_start = min(str(cfg.research.start), str(requested_start))
+    schedule_days = data.trading_days(schedule_start, requested_end)
+    rebalance_set = set(_rebalance_days(schedule_days, spec.rebalance))
+    previous_day = {
+        day: schedule_days[index - 1]
+        for index, day in enumerate(schedule_days)
+        if index > 0
+    }
     all_symbols = data.all_symbols()
-    last_prices: dict[str, float] = {}
+    prior_as_of = str(prior_state.get("as_of", "") or "")
+    last_prices = data.latest_prices(all_symbols, prior_as_of) if prior_as_of else {}
     prev_prices: dict[str, float] = {}
     new_orders: list[PaperOrder] = []
     daily_rows: list[dict[str, Any]] = []
     position_rows: list[dict[str, Any]] = []
 
-    for day in run_days:
-        portfolio.on_new_day(datetime.fromisoformat(day).date())
-        prices = data.latest_prices(all_symbols, day)
-        if prices:
-            prev_prices = last_prices
-            last_prices = prices
-        rebalanced = day in rebalance_set
+    for index, day in enumerate(run_days):
+        signal_date = previous_day.get(day, "")
+        if not prior_state and index == 0:
+            signal_date = ""
+        rebalanced = bool(signal_date and signal_date in rebalance_set)
         day_orders: list[PaperOrder] = []
         targets = []
         turnover = 0.0
         if rebalanced:
-            targets = strategy.on_rebalance(day, data, portfolio)
+            targets = strategy.on_rebalance(signal_date, data, portfolio)
+        portfolio.on_new_day(datetime.fromisoformat(day).date())
+        if rebalanced:
+            prev_prices = data.latest_prices(all_symbols, signal_date)
+            execution_prices = data.open_prices(all_symbols, day)
+            execution_targets = [
+                replace(target, timestamp=datetime.fromisoformat(day)) for target in targets
+            ]
             result = broker.rebalance(
-                targets,
-                prices,
+                execution_targets,
+                execution_prices,
                 portfolio,
                 suspended=data.suspended_symbols(day),
                 prev_closes=prev_prices,
@@ -149,11 +178,16 @@ def run_paper_loop(
             day_orders = result.orders
             turnover = result.turnover
             new_orders.extend(result.orders)
+        prices = data.latest_prices(all_symbols, day)
+        if prices:
+            last_prices = prices
         equity = portfolio.total_equity(last_prices)
         target_metrics = _target_deviation_metrics(targets, portfolio, last_prices, equity)
         daily_rows.append(
             {
                 "date": day,
+                "signal_date": signal_date if rebalanced else "",
+                "execution_date": day if rebalanced else "",
                 "candidate": spec.name,
                 "cash": portfolio.cash,
                 "equity": equity,
@@ -184,12 +218,13 @@ def run_paper_loop(
         position_count=_position_count(portfolio),
         order_count=len(all_orders),
         rejected_order_count=_rejected_count(all_orders),
+        run_context=run_context,
     )
     positions = position_rows or _snapshot_positions(state.as_of, portfolio, latest_prices)
     result = PaperLoopResult(
         state=state,
         run_days=run_days,
-        rebalance_days=[day for day in run_days if day in rebalance_set],
+        rebalance_days=[day for day in run_days if previous_day.get(day) in rebalance_set],
         orders=new_orders,
         positions=positions,
         daily=daily_rows,
@@ -297,13 +332,48 @@ def _select_candidate(cfg, name: str | None) -> CandidateSpec:
     return candidate_spec_by_name(cfg, name)
 
 
-def _validate_prior_paper_context(root: Path, prior_state: dict[str, Any], candidate: str) -> None:
+def _resolve_initial_cash(cfg, prior_state: dict[str, Any], initial_cash: float | None) -> float:
+    requested = float(cfg.research.initial_cash if initial_cash is None else initial_cash)
+    if "initial_cash" not in prior_state:
+        return requested
+    existing = float(prior_state["initial_cash"])
+    if initial_cash is not None and not isclose(requested, existing, rel_tol=0.0, abs_tol=1e-9):
+        raise ValueError(
+            "Existing paper_state.json has initial_cash "
+            f"{existing}; cannot continue with {requested}. Use a separate state_dir."
+        )
+    return existing
+
+
+def _validate_prior_paper_context(
+    root: Path,
+    prior_state: dict[str, Any],
+    candidate: str,
+    run_context: dict[str, Any],
+) -> None:
     existing_candidate = str(prior_state.get("candidate", "") or "")
     if existing_candidate and existing_candidate != candidate:
         raise ValueError(
             "Existing paper_state.json belongs to candidate "
             f"{existing_candidate!r}; use a separate state_dir for {candidate!r}."
         )
+    existing_context = prior_state.get("run_context")
+    if prior_state and (not isinstance(existing_context, dict) or not existing_context):
+        raise ValueError(
+            "Existing paper_state.json is missing run_context; refusing an unsafe legacy "
+            "resume. Use a separate state_dir."
+        )
+    if isinstance(existing_context, dict) and existing_context:
+        changed_sections = sorted(
+            section
+            for section, current_value in run_context.items()
+            if existing_context.get(section) != current_value
+        )
+        if changed_sections:
+            raise ValueError(
+                "Existing paper_state.json run context differs for "
+                f"{changed_sections!r}; use a separate state_dir."
+            )
     existing_daily = _read_csv(root / "paper_daily.csv")
     if existing_daily.empty or "candidate" not in existing_daily:
         return
@@ -317,6 +387,96 @@ def _validate_prior_paper_context(root: Path, prior_state: dict[str, Any], candi
             "Existing paper_daily.csv contains candidate history "
             f"{sorted(candidates)!r}; use a separate state_dir for {candidate!r}."
         )
+
+
+def _paper_run_context(
+    data: DataProvider,
+    cfg,
+    spec: CandidateSpec,
+    broker_config: PaperBrokerConfig,
+) -> dict[str, Any]:
+    cache_path = Path(data.storage.db_path).resolve()
+    metadata = data.storage.load_metadata()
+    return {
+        "backend": {
+            "type": "local_paper",
+            "broker_connection": "none",
+        },
+        "data": {
+            "provider": f"{type(data).__module__}.{type(data).__qualname__}",
+            "cache_path": str(cache_path),
+            "cache_sha256": _file_sha256(cache_path),
+            "dataset_fingerprint": _dataset_fingerprint(metadata),
+            "logical_bar_fingerprint": str(
+                metadata.get("cache_logical_bar_fingerprint", "") or ""
+            ),
+            "import_batch_id": str(metadata.get("cache_latest_import_batch_id", "") or ""),
+            "source": str(cfg.data.get("source", "") or ""),
+        },
+        "universe": {
+            "mode": str(cfg.universe.mode),
+            "index_code": str(cfg.universe.index_code),
+            "include_st": bool(cfg.universe.include_st),
+            "min_history_days": int(cfg.universe.min_history_days),
+        },
+        "strategy": {
+            "candidate": spec.name,
+            "factors": [
+                f"{type(factor).__module__}.{type(factor).__qualname__}" for factor in spec.factors
+            ],
+            "n_holdings": spec.n_holdings,
+            "max_weight": spec.max_weight,
+            "rebalance": spec.rebalance,
+            "trend_filter": spec.trend_filter,
+            "trend_scale": spec.trend_scale,
+            "trend_gate": spec.trend_gate,
+            "hold_rank_buffer": spec.hold_rank_buffer,
+            "min_trade_weight": spec.min_trade_weight,
+            "max_new_positions": spec.max_new_positions,
+            "score_smoothing_observations": spec.score_smoothing_observations,
+            "score_smoothing_step_days": spec.score_smoothing_step_days,
+        },
+        "broker": asdict(broker_config),
+    }
+
+
+def _validate_expected_data_identity(
+    run_context: dict[str, Any],
+    *,
+    expected_cache_sha256: str | None,
+    expected_dataset_fingerprint: str | None,
+) -> None:
+    data_context = run_context.get("data", {})
+    current_cache_sha256 = str(data_context.get("cache_sha256", "") or "")
+    current_fingerprint = str(data_context.get("dataset_fingerprint", "") or "")
+    if expected_cache_sha256 and current_cache_sha256 != expected_cache_sha256:
+        raise ValueError(
+            "Paper cache_sha256 does not match the selected research manifest; "
+            "regenerate the paper plan."
+        )
+    if expected_dataset_fingerprint and current_fingerprint != expected_dataset_fingerprint:
+        raise ValueError(
+            "Paper dataset fingerprint does not match the selected research manifest; "
+            "regenerate the paper plan."
+        )
+
+
+def _dataset_fingerprint(metadata: dict[str, str]) -> str:
+    return str(
+        metadata.get("csv_dataset_fingerprint")
+        or metadata.get("raw_vendor_bars_sha256")
+        or ""
+    ).strip()
+
+
+def _file_sha256(path: Path) -> str:
+    if not path.exists() or not path.is_file():
+        return ""
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _broker_config(cfg) -> PaperBrokerConfig:
@@ -483,6 +643,8 @@ def _paper_daily_review_payload(
         "status": status,
         "as_of": state.as_of,
         "candidate": state.candidate,
+        "signal_date": str(latest.get("signal_date", "") or ""),
+        "execution_date": str(latest.get("execution_date", "") or ""),
         "state": state.to_dict(),
         "latest_day": latest,
         "execution_quality": {
@@ -574,6 +736,8 @@ def _paper_daily_review_markdown(payload: dict[str, Any]) -> str:
         f"- Broker connection: `{state['broker_connection']}`",
         "",
         "## Latest Day",
+        f"- Signal date: `{payload.get('signal_date', '') or 'none'}`",
+        f"- Execution date: `{payload.get('execution_date', '') or 'none'}`",
         f"- Rebalanced: `{bool(latest.get('rebalanced', False))}`",
         f"- Orders: {int(latest.get('order_count', 0) or 0)}",
         f"- Filled orders: {int(latest.get('filled_order_count', 0) or 0)}",

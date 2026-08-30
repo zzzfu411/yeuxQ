@@ -81,7 +81,11 @@ def main() -> None:
                      "(Try: uv run python examples/download_data.py)")
         return
 
-    report = compute_report(portfolio.equity_curve, fills=portfolio.trade_log)
+    report = compute_report(
+        portfolio.equity_curve,
+        fills=portfolio.trade_log,
+        initial_equity=portfolio.initial_cash,
+    )
     logger.info("=== Performance ===")
     for k, v in report.to_dict().items():
         if isinstance(v, float):

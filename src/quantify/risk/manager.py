@@ -52,6 +52,7 @@ class RiskManager:
         signal: SignalEvent,
         portfolio: Portfolio,
         ref_price: float,
+        prices: dict[str, float] | None = None,
     ) -> OrderEvent | None:
         """Turn a signal into an order, or None if rejected."""
         pos = portfolio.positions.get(signal.symbol)
@@ -86,9 +87,9 @@ class RiskManager:
             return None
 
         # 单标的上限:已有仓位 + 新增 ≤ 总净值 * max_position_pct
-        equity = portfolio.cash + sum(
-            p.total_qty * ref_price for p in portfolio.positions.values()
-        )
+        marks = dict(prices or {})
+        marks[signal.symbol] = ref_price
+        equity = portfolio.total_equity(marks)
         existing_value = (pos.total_qty * ref_price) if pos else 0.0
         max_allowed_value = equity * self.config.max_position_pct
         new_value = qty * ref_price

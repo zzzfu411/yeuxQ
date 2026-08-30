@@ -24,6 +24,7 @@ try:
 except ModuleNotFoundError:
     ak = _AkshareShim("akshare")
     ak.stock_zh_a_hist = _missing_akshare  # type: ignore[attr-defined]
+    ak.stock_zh_a_daily = _missing_akshare  # type: ignore[attr-defined]
     ak.stock_zh_a_spot_em = _missing_akshare  # type: ignore[attr-defined]
     ak.index_stock_cons_csindex = _missing_akshare  # type: ignore[attr-defined]
     sys.modules.setdefault("akshare", ak)

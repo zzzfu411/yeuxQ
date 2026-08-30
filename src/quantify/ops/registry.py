@@ -7,6 +7,28 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from quantify.data.provenance import (
+    LATEST_IMPORT_BATCH_METADATA_KEY,
+    LINEAGE_SCHEMA_VERSION,
+    LINEAGE_SCHEMA_VERSION_METADATA_KEY,
+    LOGICAL_BAR_FINGERPRINT_ALGORITHM,
+    LOGICAL_BAR_FINGERPRINT_ALGORITHM_METADATA_KEY,
+    LOGICAL_BAR_FINGERPRINT_METADATA_KEY,
+)
+from quantify.research.evidence_validation import (
+    validate_benchmark_payload,
+    validate_multiple_testing_payload,
+    validate_trial_registry_review_payload,
+)
+from quantify.research.walk_forward_protocol import (
+    CANDIDATE_WALK_FORWARD_ARTIFACT,
+    WALK_FORWARD_ARTIFACT,
+    validate_robustness_selection_safe_payload,
+    validate_selection_safe_payload,
+)
+
+STRATEGY_REGISTRY_SCHEMA_VERSION = 3
+
 
 @dataclass(frozen=True, slots=True)
 class CandidateRegistry:
@@ -31,15 +53,18 @@ class CandidateRegistry:
             f"- Runs: {self.run_count}",
             f"- Candidates: {self.candidate_count}",
             "",
-            "| candidate | eligible | real_obs | demo_obs | latest_decision | latest_cwf | latest_regime | real_cwf_pass | avg_real_return | avg_real_drawdown | avg_real_sharpe | real_pass | total_obs |",
-            "| --- | --- | ---: | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+            "| candidate | eligible | real_obs | unattested_obs | selection_unsafe_obs | statistical_unsafe_obs | demo_obs | latest_decision | latest_cwf | latest_regime | real_cwf_pass | avg_real_return | avg_real_drawdown | avg_real_sharpe | real_pass | total_obs |",
+            "| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
         for row in self.leaders:
             lines.append(
-                "| {name} | `{eligible}` | {real_obs} | {demo_obs} | `{decision}` | `{cwf}` | `{regime}` | {cwf_pass:.2%} | {ret:.2%} | {dd:.2%} | {sharpe:.2f} | {real_pass} | {obs} |".format(
+                "| {name} | `{eligible}` | {real_obs} | {unattested_obs} | {selection_unsafe_obs} | {statistical_unsafe_obs} | {demo_obs} | `{decision}` | `{cwf}` | `{regime}` | {cwf_pass:.2%} | {ret:.2%} | {dd:.2%} | {sharpe:.2f} | {real_pass} | {obs} |".format(
                     name=row["name"],
                     eligible=row["promotion_eligible"],
                     real_obs=row["real_observation_count"],
+                    unattested_obs=row["unattested_observation_count"],
+                    selection_unsafe_obs=row["selection_unsafe_observation_count"],
+                    statistical_unsafe_obs=row["statistical_unsafe_observation_count"],
                     demo_obs=row["demo_observation_count"],
                     obs=row["observations"],
                     decision=row["latest_decision"],
@@ -86,12 +111,35 @@ def update_candidate_registry(
     robustness = _read_json(report_root / "robustness_report.json")
     llm_review = _read_json(report_root / "llm_review.json")
     summary = _read_json(report_root / "summary.json")
+    manifest = _read_json(report_root / "run_manifest.json")
+    walk_forward = _read_json(report_root / "walk_forward_report.json")
     candidate_walk_forward = _read_json(report_root / "candidate_walk_forward_report.json")
     candidate_walk_forward_summaries = _candidate_walk_forward_summaries(candidate_walk_forward)
     candidate_regime = _read_json(report_root / "candidate_regime_validation_report.json")
     candidate_regime_summaries = _candidate_regime_summaries(candidate_regime)
     run_id = report_root.name
     recorded_at = datetime.now(UTC).isoformat()
+    summary_demo_data_used = bool(
+        (summary.get("assumptions", {}) or {}).get("demo_data_used", False)
+    )
+    manifest_demo_data_used = bool(manifest.get("demo_data_used", False))
+    demo_data_used = summary_demo_data_used or manifest_demo_data_used
+    attestation = _data_attestation(manifest, demo_data_used=demo_data_used)
+    selection_safety = _selection_safety(
+        walk_forward,
+        candidate_walk_forward,
+        robustness,
+    )
+    statistical_safety = _statistical_evidence_safety(
+        report_root,
+        selection=selection,
+        manifest=manifest,
+    )
+    promotion_eligible_real_observation = (
+        attestation["attested_real_observation"] is True
+        and selection_safety["selection_safe"] is True
+        and statistical_safety["statistical_evidence_safe"] is True
+    )
 
     run_record = {
         "run_id": run_id,
@@ -111,7 +159,11 @@ def update_candidate_registry(
         "candidate_regime_validation_status": candidate_regime.get("status", "UNKNOWN"),
         "candidate_regime_validation_best_candidate": candidate_regime.get("best_candidate", ""),
         "llm_review_decision": llm_review.get("decision", "UNKNOWN"),
-        "demo_data_used": bool((summary.get("assumptions", {}) or {}).get("demo_data_used", False)),
+        "demo_data_used": demo_data_used,
+        **attestation,
+        **selection_safety,
+        **statistical_safety,
+        "promotion_eligible_real_observation": promotion_eligible_real_observation,
     }
     runs.append(run_record)
 
@@ -165,6 +217,46 @@ def update_candidate_registry(
                 "market_regime": market.get("label", "unknown"),
                 "weekly_decision": run_record["weekly_decision"],
                 "demo_data_used": run_record["demo_data_used"],
+                "data_source": run_record["data_source"],
+                "cache_logical_bar_fingerprint": run_record[
+                    "cache_logical_bar_fingerprint"
+                ],
+                "cache_logical_bar_fingerprint_algorithm": run_record[
+                    "cache_logical_bar_fingerprint_algorithm"
+                ],
+                "cache_latest_import_batch_id": run_record[
+                    "cache_latest_import_batch_id"
+                ],
+                "cache_lineage_schema_version": run_record[
+                    "cache_lineage_schema_version"
+                ],
+                "attestation_status": run_record["attestation_status"],
+                "attestation_reason": run_record["attestation_reason"],
+                "attested_real_observation": run_record["attested_real_observation"],
+                "walk_forward_selection_safe": run_record[
+                    "walk_forward_selection_safe"
+                ],
+                "candidate_walk_forward_selection_safe": run_record[
+                    "candidate_walk_forward_selection_safe"
+                ],
+                "robustness_selection_safe": run_record["robustness_selection_safe"],
+                "selection_safe": run_record["selection_safe"],
+                "selection_safety_status": run_record["selection_safety_status"],
+                "selection_safety_reason": run_record["selection_safety_reason"],
+                "benchmark_evidence_pass": run_record["benchmark_evidence_pass"],
+                "multiple_testing_evidence_pass": run_record[
+                    "multiple_testing_evidence_pass"
+                ],
+                "trial_registry_evidence_pass": run_record[
+                    "trial_registry_evidence_pass"
+                ],
+                "statistical_evidence_safe": run_record["statistical_evidence_safe"],
+                "statistical_evidence_status": run_record["statistical_evidence_status"],
+                "statistical_evidence_reason": run_record["statistical_evidence_reason"],
+                "statistical_evidence_contract_version": STRATEGY_REGISTRY_SCHEMA_VERSION,
+                "promotion_eligible_real_observation": run_record[
+                    "promotion_eligible_real_observation"
+                ],
             }
         )
         candidates[name] = {
@@ -176,6 +268,7 @@ def update_candidate_registry(
         }
 
     payload = {
+        "schema_version": STRATEGY_REGISTRY_SCHEMA_VERSION,
         "updated_at": recorded_at,
         "runs": runs,
         "candidates": candidates,
@@ -224,11 +317,47 @@ def _registry_report(registry_file: Path, payload: dict[str, Any]) -> CandidateR
 
 def _candidate_summary(name: str, history: list[dict[str, Any]]) -> dict[str, Any]:
     decisions = [str(row.get("decision", "UNKNOWN")) for row in history]
-    real_history = [row for row in history if not row.get("demo_data_used")]
+    real_history = [row for row in history if _is_promotion_eligible_real_observation(row)]
     demo_history = [row for row in history if row.get("demo_data_used")]
+    unattested_history = [
+        row
+        for row in history
+        if not row.get("demo_data_used") and row.get("attested_real_observation") is not True
+    ]
+    selection_unsafe_history = [
+        row
+        for row in history
+        if not row.get("demo_data_used")
+        and row.get("attested_real_observation") is True
+        and not _has_safe_walk_forward_selection(row)
+    ]
+    statistical_unsafe_history = [
+        row
+        for row in history
+        if not row.get("demo_data_used")
+        and row.get("attested_real_observation") is True
+        and _has_safe_walk_forward_selection(row)
+        and not _has_safe_statistical_evidence(row)
+    ]
     real_decisions = [str(row.get("decision", "UNKNOWN")) for row in real_history]
     demo_decisions = [str(row.get("decision", "UNKNOWN")) for row in demo_history]
     promotion_eligible, promotion_reason = _promotion_state(real_history, real_decisions)
+    if unattested_history:
+        promotion_reason = (
+            f"{promotion_reason} {len(unattested_history)} non-demo observation(s) were excluded "
+            "because data attestation did not pass."
+        )
+    if selection_unsafe_history:
+        promotion_reason = (
+            f"{promotion_reason} {len(selection_unsafe_history)} attested non-demo "
+            "observation(s) were excluded because walk-forward selection safety did not pass."
+        )
+    if statistical_unsafe_history:
+        promotion_reason = (
+            f"{promotion_reason} {len(statistical_unsafe_history)} attested selection-safe "
+            "observation(s) were excluded because benchmark, multiple-testing, or prospective "
+            "trial evidence did not pass."
+        )
     return {
         "name": name,
         "observations": len(history),
@@ -254,6 +383,13 @@ def _candidate_summary(name: str, history: list[dict[str, Any]]) -> dict[str, An
         "avg_reject_rate": _avg(history, "reject_rate"),
         "avg_turnover_pct": _avg(history, "avg_turnover_pct"),
         "real_observation_count": len(real_history),
+        "selection_contract_version": STRATEGY_REGISTRY_SCHEMA_VERSION,
+        "statistical_evidence_contract_version": STRATEGY_REGISTRY_SCHEMA_VERSION,
+        "selection_safe_real_observation_count": len(real_history),
+        "statistical_safe_real_observation_count": len(real_history),
+        "unattested_observation_count": len(unattested_history),
+        "selection_unsafe_observation_count": len(selection_unsafe_history),
+        "statistical_unsafe_observation_count": len(statistical_unsafe_history),
         "demo_observation_count": len(demo_history),
         "real_pass_count": real_decisions.count("PASS"),
         "real_watch_count": real_decisions.count("WATCH"),
@@ -337,7 +473,11 @@ def _promotion_state(
     real_decisions: list[str],
 ) -> tuple[bool, str]:
     if len(real_history) < 3:
-        return False, "Needs at least 3 real-data observations before promotion discussion."
+        return (
+            False,
+            "Needs at least 3 real-data observations with PASS data attestation and "
+            "selection-safe walk-forward reports before promotion discussion.",
+        )
     if real_decisions.count("BLOCK"):
         return False, "Real-data history contains BLOCK observations."
     if real_decisions.count("PASS") < 2:
@@ -381,6 +521,219 @@ def _promotion_state(
     if _avg(real_history, "reject_rate") >= 0.20:
         return False, "Real-data average reject rate is too high."
     return True, "Eligible for deeper paper-stage review; still not a live trading instruction."
+
+
+def _data_attestation(
+    manifest: dict[str, Any],
+    *,
+    demo_data_used: bool,
+) -> dict[str, Any]:
+    data_version = manifest.get("data_version", {}) or {}
+    if not isinstance(data_version, dict):
+        data_version = {}
+    data_source = str(
+        manifest.get("data_source") or data_version.get("data_source") or ""
+    ).strip()
+    logical_fingerprint = str(
+        data_version.get(LOGICAL_BAR_FINGERPRINT_METADATA_KEY, "") or ""
+    ).strip()
+    algorithm = str(
+        data_version.get(LOGICAL_BAR_FINGERPRINT_ALGORITHM_METADATA_KEY, "") or ""
+    ).strip()
+    batch_id = str(data_version.get(LATEST_IMPORT_BATCH_METADATA_KEY, "") or "").strip()
+    lineage_schema_version = str(
+        data_version.get(LINEAGE_SCHEMA_VERSION_METADATA_KEY, "") or ""
+    ).strip()
+    blockers: list[str] = []
+    if not manifest:
+        blockers.append("run_manifest.json is missing")
+    if not logical_fingerprint:
+        blockers.append("cache_logical_bar_fingerprint is missing")
+    if algorithm != LOGICAL_BAR_FINGERPRINT_ALGORITHM:
+        blockers.append(
+            "cache_logical_bar_fingerprint_algorithm must be "
+            f"{LOGICAL_BAR_FINGERPRINT_ALGORITHM}"
+        )
+    if not batch_id:
+        blockers.append("cache_latest_import_batch_id is missing")
+    if lineage_schema_version != LINEAGE_SCHEMA_VERSION:
+        blockers.append(f"cache_lineage_schema_version must be {LINEAGE_SCHEMA_VERSION}")
+    if str(data_version.get("data_source_qa_status", "") or "").upper() != "PASS":
+        blockers.append("data_source_qa_status must be PASS")
+    if _is_csv_route(manifest, data_version):
+        if not str(data_version.get("csv_dataset_fingerprint", "") or "").strip():
+            blockers.append("CSV route requires csv_dataset_fingerprint")
+        if str(data_version.get("data_source_csv_qa_status", "") or "").upper() != "PASS":
+            blockers.append("CSV route requires data_source_csv_qa_status=PASS")
+
+    if demo_data_used:
+        status = "DEMO_DATA"
+        reason = "Demo data observations are never attested real observations."
+    elif blockers:
+        status = "UNATTESTED"
+        reason = "; ".join(blockers) + "."
+    else:
+        status = "PASS"
+        reason = "Run manifest contains the required cache provenance attestation."
+    return {
+        "data_source": data_source,
+        "cache_logical_bar_fingerprint": logical_fingerprint,
+        "cache_logical_bar_fingerprint_algorithm": algorithm,
+        "cache_latest_import_batch_id": batch_id,
+        "cache_lineage_schema_version": lineage_schema_version,
+        "attestation_status": status,
+        "attestation_reason": reason,
+        "attested_real_observation": status == "PASS" and not demo_data_used,
+    }
+
+
+def _selection_safety(
+    walk_forward: dict[str, Any],
+    candidate_walk_forward: dict[str, Any],
+    robustness: dict[str, Any],
+) -> dict[str, Any]:
+    walk_forward_validation = validate_selection_safe_payload(
+        walk_forward,
+        artifact_type=WALK_FORWARD_ARTIFACT,
+    )
+    candidate_validation = validate_selection_safe_payload(
+        candidate_walk_forward,
+        artifact_type=CANDIDATE_WALK_FORWARD_ARTIFACT,
+    )
+    robustness_validation = validate_robustness_selection_safe_payload(robustness)
+    walk_forward_safe = walk_forward_validation.safe
+    candidate_walk_forward_safe = candidate_validation.safe
+    robustness_safe = robustness_validation.safe
+    selection_safe = walk_forward_safe and candidate_walk_forward_safe and robustness_safe
+    if selection_safe:
+        reason = (
+            "Walk-forward and robustness reports satisfy their complete selection-safe contracts."
+        )
+    else:
+        unsafe_reports = []
+        if not walk_forward_safe:
+            unsafe_reports.append(
+                "walk_forward_report.json (" + "; ".join(walk_forward_validation.reasons) + ")"
+            )
+        if not candidate_walk_forward_safe:
+            unsafe_reports.append(
+                "candidate_walk_forward_report.json ("
+                + "; ".join(candidate_validation.reasons)
+                + ")"
+            )
+        if not robustness_safe:
+            unsafe_reports.append(
+                "robustness_report.json (" + "; ".join(robustness_validation.reasons) + ")"
+            )
+        reason = (
+            "Excluded from promotion-eligible real observations because selection_safe is not "
+            f"exactly true in {', '.join(unsafe_reports)}."
+        )
+    return {
+        "walk_forward_selection_safe": walk_forward_safe,
+        "candidate_walk_forward_selection_safe": candidate_walk_forward_safe,
+        "robustness_selection_safe": robustness_safe,
+        "selection_safe": selection_safe,
+        "selection_safety_status": "PASS" if selection_safe else "UNSAFE",
+        "selection_safety_reason": reason,
+    }
+
+
+def _has_safe_walk_forward_selection(row: dict[str, Any]) -> bool:
+    return (
+        row.get("walk_forward_selection_safe") is True
+        and row.get("candidate_walk_forward_selection_safe") is True
+        and row.get("robustness_selection_safe") is True
+    )
+
+
+def _has_safe_statistical_evidence(row: dict[str, Any]) -> bool:
+    return (
+        row.get("statistical_evidence_contract_version") == STRATEGY_REGISTRY_SCHEMA_VERSION
+        and row.get("benchmark_evidence_pass") is True
+        and row.get("multiple_testing_evidence_pass") is True
+        and row.get("trial_registry_evidence_pass") is True
+        and row.get("statistical_evidence_safe") is True
+    )
+
+
+def _is_promotion_eligible_real_observation(row: dict[str, Any]) -> bool:
+    return (
+        not row.get("demo_data_used")
+        and row.get("attested_real_observation") is True
+        and _has_safe_walk_forward_selection(row)
+        and _has_safe_statistical_evidence(row)
+    )
+
+
+def _statistical_evidence_safety(
+    report_root: Path,
+    *,
+    selection: dict[str, Any],
+    manifest: dict[str, Any],
+) -> dict[str, Any]:
+    candidate = str(
+        selection.get("selected_candidate") or selection.get("best_candidate") or ""
+    )
+    parameters = manifest.get("research_parameters", {})
+    expected_symbol = (
+        str(parameters.get("index_code") or "") if isinstance(parameters, dict) else ""
+    )
+    benchmark_payload = _read_json(report_root / "benchmark_report.json")
+    multiple_payload = _read_json(report_root / "multiple_testing_report.json")
+    trial_payload = _read_json(report_root / "trial_registry_review.json")
+    benchmark = validate_benchmark_payload(
+        benchmark_payload,
+        expected_symbol=expected_symbol,
+    )
+    multiple = validate_multiple_testing_payload(
+        multiple_payload,
+        expected_candidate=candidate,
+    )
+    trial = validate_trial_registry_review_payload(
+        trial_payload,
+        expected_candidate=candidate,
+        report_dir=report_root,
+    )
+    checks = (
+        ("benchmark_report.json", benchmark),
+        ("multiple_testing_report.json", multiple),
+        ("trial_registry_review.json", trial),
+    )
+    passed = {
+        filename: validation.valid and validation.status == "PASS"
+        for filename, validation in checks
+    }
+    safe = all(passed.values())
+    reasons = []
+    for filename, validation in checks:
+        if passed[filename]:
+            continue
+        detail = validation.reasons[0] if validation.reasons else f"status={validation.status}"
+        reasons.append(f"{filename}: {detail}")
+    return {
+        "benchmark_evidence_pass": passed["benchmark_report.json"],
+        "multiple_testing_evidence_pass": passed["multiple_testing_report.json"],
+        "trial_registry_evidence_pass": passed["trial_registry_review.json"],
+        "statistical_evidence_safe": safe,
+        "statistical_evidence_status": "PASS" if safe else "UNSAFE",
+        "statistical_evidence_reason": (
+            "Benchmark, multiple-testing, and prospective trial evidence passed."
+            if safe
+            else "Excluded from promotion-eligible observations because " + "; ".join(reasons)
+        ),
+    }
+
+
+def _is_csv_route(manifest: dict[str, Any], data_version: dict[str, Any]) -> bool:
+    route_values = (
+        manifest.get("data_source"),
+        data_version.get("data_source"),
+        data_version.get("last_import_source"),
+    )
+    return bool(str(data_version.get("csv_dataset_fingerprint", "") or "").strip()) or any(
+        "csv" in str(value or "").strip().lower() for value in route_values
+    )
 
 
 def _avg(history: list[dict[str, Any]], key: str) -> float:

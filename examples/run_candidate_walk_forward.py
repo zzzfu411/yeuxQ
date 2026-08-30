@@ -27,7 +27,11 @@ def main() -> None:
     parser.add_argument("--config", default="config/research.yaml", help="YAML config path")
     parser.add_argument("--cache", default=None, help="Override config data.cache_path")
     parser.add_argument("--output-dir", required=True, help="Output directory")
+    parser.add_argument("--mode", choices=("expanding", "rolling"), default="expanding")
     parser.add_argument("--train-days", type=int, default=120)
+    parser.add_argument("--purge-days", type=int, default=5)
+    parser.add_argument("--selection-days", type=int, default=20)
+    parser.add_argument("--embargo-days", type=int, default=5)
     parser.add_argument("--test-days", type=int, default=60)
     parser.add_argument("--step-days", type=int, default=60)
     parser.add_argument("--max-windows", type=int, default=None, help="Optional cap using the latest N windows")
@@ -60,14 +64,18 @@ def main() -> None:
         provider,
         cfg,
         train_days=args.train_days,
+        purge_days=args.purge_days,
+        selection_days=args.selection_days,
+        embargo_days=args.embargo_days,
         test_days=args.test_days,
         step_days=args.step_days,
+        mode=args.mode,
         max_windows=args.max_windows,
         specs=candidate_specs_for_names(cfg, args.candidate),
     )
     out = write_candidate_walk_forward_report(report, Path(args.output_dir))
     logger.info("Candidate walk-forward status: {}", report.status)
-    logger.info("Best candidate: {}", report.best_candidate)
+    logger.info("Candidate locked before latest test: {}", report.best_candidate)
     logger.info("Candidate walk-forward report written to {}", out.resolve())
 
 

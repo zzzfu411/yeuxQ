@@ -5,6 +5,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+from tests.selection_safe_fixtures import selection_safe_walk_forward_payload
+
 from quantify.research.candidate_experiment_completion import (
     build_candidate_experiment_completion,
     write_candidate_experiment_completion,
@@ -379,23 +381,24 @@ def test_candidate_experiment_completion_blocks_multi_candidate_walk_forward(
     experiment_dir = tmp_path / "candidate_experiments" / "run"
     _write_launch(tmp_path, experiment_dir)
     _write_required_outputs(experiment_dir, status="PASS")
-    _write_json(
-        experiment_dir / "candidate_walk_forward_report.json",
+    payload = _candidate_walk_forward_payload()
+    payload["candidate_count"] = 2
+    payload["summaries"].append(
         {
+            "candidate": "price_volume_defensive",
             "status": "PASS",
-            "best_candidate": "core_multifactor",
-            "candidate_count": 2,
-            "window_count": 3,
-            "summaries": [
-                {"candidate": "core_multifactor"},
-                {"candidate": "price_volume_defensive"},
-            ],
-            "windows": [
-                {"candidate": "core_multifactor"},
-                {"candidate": "price_volume_defensive"},
-            ],
-        },
+            "window_count": 6,
+        }
     )
+    payload["selections"].extend(
+        {
+            "candidate": "price_volume_defensive",
+            "window": window["window"],
+            "rank": 2,
+        }
+        for window in payload["windows"]
+    )
+    _write_json(experiment_dir / "candidate_walk_forward_report.json", payload)
 
     review = build_candidate_experiment_completion(tmp_path)
 
@@ -720,37 +723,29 @@ def _candidate_walk_forward_payload(
     worst_max_drawdown: float = 0.04,
     positive_return_ratio: float = 1.0,
 ) -> dict:
-    return {
-        "status": status,
-        "best_candidate": "core_multifactor",
-        "candidate_count": 1,
-        "window_count": 6,
-        "summaries": [
-            {
-                "candidate": "core_multifactor",
-                "status": status,
-                "window_count": 6,
-                "pass_count": 6 if status == "PASS" else 3,
-                "watch_count": 0 if status == "PASS" else 3,
-                "block_count": 1 if status == "BLOCK" else 0,
-                "positive_return_ratio": positive_return_ratio,
-                "worst_total_return": worst_total_return,
-                "worst_max_drawdown": worst_max_drawdown,
-                "avg_total_return": 0.06,
-                "avg_max_drawdown": 0.04,
-                "avg_sharpe_ratio": 1.0,
-                "avg_reject_rate": 0.02,
-            }
-        ],
-        "windows": [
-            {
-                "candidate": "core_multifactor",
-                "window": f"wf_{idx:02d}",
-                "test_trading_days": 40,
-            }
-            for idx in range(1, 7)
-        ],
-    }
+    payload = selection_safe_walk_forward_payload(
+        status=status,
+        candidate="core_multifactor",
+        window_count=6,
+    )
+    summary = payload["summaries"][0]
+    summary.update(
+        {
+            "pass_count": 6 if status == "PASS" else 3,
+            "watch_count": 0 if status == "PASS" else 3,
+            "block_count": 1 if status == "BLOCK" else 0,
+            "positive_return_ratio": positive_return_ratio,
+            "worst_total_return": worst_total_return,
+            "worst_max_drawdown": worst_max_drawdown,
+            "avg_total_return": 0.06,
+            "avg_max_drawdown": 0.04,
+            "avg_sharpe_ratio": 1.0,
+            "avg_reject_rate": 0.02,
+        }
+    )
+    for window in payload["windows"]:
+        window["test_trading_days"] = 40
+    return payload
 
 
 def _write_execution(

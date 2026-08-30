@@ -38,10 +38,12 @@ def test_weekly_pipeline_writes_offline_evidence_chain(tmp_path: Path) -> None:
     assert (out / "robustness_report.json").exists()
     assert (out / "walk_forward_report.json").exists()
     assert (out / "candidate_walk_forward_report.json").exists()
+    assert (out / "selection_evidence_manifest.json").exists()
     assert (out / "candidate_factor_diagnostics.json").exists()
     assert (out / "candidate_regime_validation_report.json").exists()
     assert (out / "candidate_selection.json").exists()
-    assert (out / "paper_state.json").exists()
+    assert not (out / "paper_state.json").exists()
+    assert (out / "research_execution_preview.json").exists()
     assert (out / "paper_daily_review.json").exists()
     assert (out / "paper_stability.json").exists()
     assert (out / "llm_review.json").exists()
@@ -61,13 +63,41 @@ def test_weekly_pipeline_writes_offline_evidence_chain(tmp_path: Path) -> None:
     pipeline = json.loads((out / "weekly_pipeline.json").read_text(encoding="utf-8"))
     summary = json.loads((out / "summary.json").read_text(encoding="utf-8"))
     selection = json.loads((out / "candidate_selection.json").read_text(encoding="utf-8"))
+    candidate_walk_forward = json.loads(
+        (out / "candidate_walk_forward_report.json").read_text(encoding="utf-8")
+    )
+    robustness = json.loads((out / "robustness_report.json").read_text(encoding="utf-8"))
+    paper_daily = json.loads((out / "paper_daily_review.json").read_text(encoding="utf-8"))
     assert pipeline["weekly_decision"] in {"research_only", "pause_and_fix", "continue_paper"}
     assert summary["evidence"]["data_audit_status"] in {"PASS", "WATCH", "BLOCK"}
     assert selection["results"]
+    assert paper_daily["status"] == "BLOCK"
+    assert paper_daily["code"] == "NO_CONTINUOUS_PAPER_RUN"
+    assert paper_daily["state"]["observed_days"] == 0
     assert "candidate_regime_validation_status" in selection["results"][0]
-    assert selection["results"][0]["candidate_regime_validation_status"] in {"PASS", "WATCH", "BLOCK"}
+    assert selection["results"][0]["candidate_regime_validation_status"] in {
+        "PASS",
+        "WATCH",
+        "BLOCK",
+        "UNKNOWN",
+    }
+    locked_result = next(
+        item
+        for item in selection["results"]
+        if item["name"] == candidate_walk_forward["selected_candidate"]
+    )
+    assert locked_result["candidate_regime_validation_status"] in {"PASS", "WATCH", "BLOCK"}
     assert summary["evidence"]["run_manifest_purpose"] == "weekly_pipeline"
     assert "run_manifest_cache_sha256" in summary["evidence"]
+    assert robustness["configuration"] == {
+        "mode": "expanding",
+        "train_days": 40,
+        "purge_days": 5,
+        "selection_days": 20,
+        "embargo_days": 5,
+        "test_days": 30,
+        "step_days": 30,
+    }
     assert any(stage["name"] == "llm_review" for stage in pipeline["stages"])
     assert any(stage["name"] == "recent_candidate_research" for stage in pipeline["stages"])
     assert any(stage["name"] == "real_data_bootstrap" for stage in pipeline["stages"])
@@ -76,6 +106,9 @@ def test_weekly_pipeline_writes_offline_evidence_chain(tmp_path: Path) -> None:
     assert any(stage["name"] == "data_coverage" for stage in pipeline["stages"])
     assert any(stage["name"] == "walk_forward" for stage in pipeline["stages"])
     assert any(stage["name"] == "candidate_walk_forward" for stage in pipeline["stages"])
+    assert any(
+        stage["name"] == "selection_evidence_manifest" for stage in pipeline["stages"]
+    )
     assert any(stage["name"] == "candidate_factor_diagnostics" for stage in pipeline["stages"])
     assert any(stage["name"] == "candidate_regime_validation" for stage in pipeline["stages"])
     assert any(stage["name"] == "paper_stability" for stage in pipeline["stages"])
@@ -378,7 +411,17 @@ def _write_stable_paper_dir(root: Path) -> None:
     ).to_csv(root / "paper_daily.csv", index=False)
     state = json.loads((root / "paper_state.json").read_text(encoding="utf-8"))
     state["as_of"] = str(dates[-1].date())
+    state["run_context"] = {
+        "backend": {"type": "local_paper", "broker_connection": "none"},
+        "data": {"cache_sha256": "unit-test-cache", "dataset_fingerprint": "unit-test-data"},
+        "strategy": {"candidate": "core_multifactor"},
+        "broker": {"lot_size": 100},
+    }
     (root / "paper_state.json").write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    (root / "paper_loop_run.json").write_text(
+        json.dumps({"state": state}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     pd.DataFrame(
         {
             "timestamp": ["2024-01-02"] * 3,

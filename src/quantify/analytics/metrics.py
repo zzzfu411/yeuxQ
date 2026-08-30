@@ -53,21 +53,32 @@ def compute_report(
     equity_curve: list[tuple[datetime, float]],
     fills: list[FillEvent],
     risk_free_rate: float = 0.0,
+    *,
+    initial_equity: float | None = None,
 ) -> PerformanceReport:
     if len(equity_curve) < 2:
         raise ValueError("Need ≥2 equity samples to compute returns")
 
-    s = pd.Series(
+    curve = pd.Series(
         [eq for _, eq in equity_curve],
         index=pd.DatetimeIndex([ts for ts, _ in equity_curve]),
     ).astype(float)
+
+    if initial_equity is None:
+        s = curve
+        n_periods = len(curve) - 1
+    else:
+        initial_value = float(initial_equity)
+        if not np.isfinite(initial_value) or initial_value <= 0:
+            raise ValueError("initial_equity must be a positive finite number")
+        s = pd.Series([initial_value, *curve.tolist()], dtype=float)
+        n_periods = len(curve)
 
     initial = s.iloc[0]
     final = s.iloc[-1]
     total_ret = final / initial - 1
 
     # 年化:用实际交易日数,假设每个 equity 点 = 1 个交易日
-    n_periods = len(s) - 1
     if n_periods > 0:
         ann_ret = (final / initial) ** (TRADING_DAYS_PER_YEAR / n_periods) - 1
     else:
@@ -96,7 +107,7 @@ def compute_report(
         max_drawdown=float(max_dd),
         n_round_trips=n_rt,
         win_rate=float(win_rate),
-        n_bars=len(s),
+        n_bars=len(curve),
     )
 
 

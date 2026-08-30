@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from quantify.data.provider import DataProvider
 from quantify.data.storage import BarStorage
@@ -77,3 +78,59 @@ def test_run_manifest_records_config_cache_and_data_version(tmp_path: Path) -> N
     assert payload["data_version"]["csv_dataset_fingerprint"] == "fingerprint-1"
     assert payload["data_version"]["raw_vendor_bars_sha256"] == "raw-fingerprint-1"
     assert payload["symbol_count"] == 1
+
+
+def test_run_manifest_rejects_configured_cache_path_mismatch(tmp_path: Path) -> None:
+    actual = BarStorage(tmp_path / "actual.db")
+    configured_cache = tmp_path / "configured.db"
+    cfg = _config(configured_cache)
+
+    with pytest.raises(ValueError, match="cache identity mismatch"):
+        build_run_manifest(DataProvider(actual), cfg, storage=actual)
+
+
+def test_run_manifest_rejects_provider_storage_path_mismatch(tmp_path: Path) -> None:
+    storage = BarStorage(tmp_path / "storage.db")
+    provider_storage = BarStorage(tmp_path / "provider.db")
+    cfg = _config(storage.db_path)
+
+    with pytest.raises(ValueError, match="cache identity mismatch"):
+        build_run_manifest(DataProvider(provider_storage), cfg, storage=storage)
+
+
+def test_run_manifest_rejects_configured_source_mismatch(tmp_path: Path) -> None:
+    storage = BarStorage(tmp_path / "research.db")
+    storage.save_metadata({"data_source": "akshare"})
+    cfg = _config(storage.db_path, source="csv")
+
+    with pytest.raises(ValueError, match="Configured data source"):
+        build_run_manifest(DataProvider(storage), cfg, storage=storage)
+
+
+def _config(cache: Path, *, source: str = "csv") -> Config:
+    return Config(
+        {
+            "research": {
+                "start": "2024-01-02",
+                "end": "2024-01-02",
+                "initial_cash": 1_000_000,
+                "rebalance": "monthly",
+            },
+            "data": {"source": source, "cache_path": str(cache)},
+            "universe": {
+                "mode": "all_a",
+                "index_code": "000906",
+                "include_st": False,
+                "min_history_days": 1,
+            },
+            "strategy": {"name": "multi_factor", "n_holdings": 10, "max_weight": 0.1},
+            "risk": {"max_drawdown_stop": 0.2},
+            "broker": {
+                "commission_rate": 0.0,
+                "stamp_tax": 0.0,
+                "slippage_bps": 0.0,
+                "price_limit_pct": 0.1,
+                "lot_size": 100,
+            },
+        }
+    )

@@ -9,7 +9,7 @@ from __future__ import annotations
 import csv
 import json
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +44,7 @@ class CandidateReportBundle:
     factor_diagnostics: dict[str, Any] = field(default_factory=dict)
     regime_validation: dict[str, Any] = field(default_factory=dict)
     stress_matrix: dict[str, Any] = field(default_factory=dict)
+    run_manifest: dict[str, Any] = field(default_factory=dict)
 
     def source_files(self) -> list[str]:
         files = []
@@ -59,6 +60,8 @@ class CandidateReportBundle:
             files.append("candidate_regime_validation_report.json")
         if self.stress_matrix:
             files.append("candidate_stress_matrix.json")
+        if self.run_manifest:
+            files.append("run_manifest.json")
         return files
 
 
@@ -212,6 +215,7 @@ def load_candidate_report_bundle(report_dir: str | Path) -> CandidateReportBundl
         factor_diagnostics=_read_json(root / "candidate_factor_diagnostics.json"),
         regime_validation=_read_json(root / "candidate_regime_validation_report.json"),
         stress_matrix=_read_json(root / "candidate_stress_matrix.json"),
+        run_manifest=_read_json(root / "run_manifest.json"),
     )
 
 
@@ -269,6 +273,19 @@ def build_candidate_next_experiments_report(
             experiments.append(experiment)
             priority += 1
 
+    config_path = _shared_manifest_config_path(bundle_list)
+    if config_path:
+        experiments = [
+            replace(
+                experiment,
+                command_hint=experiment.command_hint.replace(
+                    "config/research_recent.yaml",
+                    config_path,
+                ),
+            )
+            for experiment in experiments
+        ]
+
     report_dirs = [bundle.report_dir for bundle in bundle_list]
     source_files = sorted({file for bundle in bundle_list for file in bundle.source_files()})
     return CandidateNextExperimentsReport(
@@ -283,6 +300,16 @@ def build_candidate_next_experiments_report(
         allowed_actions=list(DEFAULT_ALLOWED_ACTIONS),
         prohibited_actions=list(DEFAULT_PROHIBITED_ACTIONS),
     )
+
+
+def _shared_manifest_config_path(bundles: list[CandidateReportBundle]) -> str:
+    paths = {
+        str(bundle.run_manifest.get("config_path") or "").strip()
+        for bundle in bundles
+        if bundle.run_manifest
+    }
+    paths.discard("")
+    return next(iter(paths)) if len(paths) == 1 else ""
 
 
 def write_candidate_next_experiments_report(
