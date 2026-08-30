@@ -5,6 +5,13 @@ build/
 dist/
 wheels/
 *.egg-info
+*.pdb
+*.exe
+*.dll
+*.so
+*.dylib
+*.rlib
+*.rmeta
 
 # Tool caches
 .uv-cache/
@@ -16,6 +23,12 @@ htmlcov/
 
 # Virtual environments
 .venv
+
+# Local environment files may hold service or broker credentials.
+.env
+.env.*
+!.env.example
+!**/.env.example
 
 # Project-specific
 data_cache/
@@ -41,6 +54,19 @@ data_exports/prospective/*
 !data_exports/source_qa_evidence/README.md
 !data_exports/source_qa_evidence/README_source_qa_evidence_dropzone.md
 data_exports/data_source_qa_answers.json
+
+# yeuxQ integration: local configuration and generated runtime artifacts.
+target/
+output/
+.playwright-cli/
+**/config/intel.local.yaml
+**/config/intel.local.yml
+**/data/*.db
+**/data/*.db-*
+**/data/*.log
+**/data/backtest_compare.json
+**/data/observations/
+**/data/reports/
 
 # IDE
 .vscode/

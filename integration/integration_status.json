@@ -1,0 +1,499 @@
+{
+  "schema_version": "1.0.0",
+  "updated_at": "2026-08-30T21:13:40+08:00",
+  "project": {
+    "name": "yeuxQ",
+    "canonical_repo_id": "quantify/yeuxQ",
+    "canonical_local_path": "D:\\Develop\\claude\\quantify",
+    "canonical_remote": "https://github.com/zzzfu411/yeuxQ",
+    "canonical_python_core": "src/quantify",
+    "integration_namespace": "src/yeuxq",
+    "donor": {
+      "id": "stock_v2",
+      "local_path": "D:\\Develop\\grok\\stock\\stock_v2",
+      "role": "donor",
+      "copy_policy": "allowlist_or_clean_room_only"
+    },
+    "reference_only": {
+      "id": "trend_tool_v4",
+      "local_path": "D:\\Develop\\grok\\stock\\趋势分析实时买卖点工具-v4.0-发行版",
+      "role": "reference_only",
+      "copy_policy": "no_code_assets_binaries_data_or_license_material"
+    }
+  },
+  "overall": {
+    "status": "in_progress",
+    "active_phase": "observation_platform",
+    "completed_phases": 2,
+    "total_phases": 7,
+    "progress_percent": 29,
+    "release_readiness": "BLOCK",
+    "release_block_reason": "The architecture/contracts baseline is complete, but donor rights, credential rotation and other open P0 release risks remain.",
+    "operating_boundary": "research_only_advisory_only"
+  },
+  "frontend_sync": {
+    "required": true,
+    "source_of_truth": "integration/integration_status.json",
+    "current_availability": "static_read_only_projection",
+    "delivery": "read_only_static_or_api_projection",
+    "static_entrypoint": "integration/index.html",
+    "target_api_path": "/api/integration/status",
+    "target_http_method": "GET",
+    "ui_mutation_allowed": false,
+    "unknown_or_invalid_state": "BLOCK",
+    "refresh_strategy": "etag_or_updated_at_polling",
+    "update_rule": "implementation_tests_evidence_and_status_change_must_share_one_commit",
+    "last_event": {
+        "phase": "contracts",
+        "status": "completed",
+        "message": "Architecture, immutable observation contracts, hash-chain storage, fail-closed secret scanning, dual-package build and the read-only status UI passed Phase 1 acceptance."
+    }
+  },
+  "verification": {
+    "verified_at": "2026-08-30T21:13:40+08:00",
+    "status_contract": "PASS",
+    "json_parser": "PASS",
+    "targeted_tests": {
+      "status": "PASS",
+      "passed": 51,
+      "failed": 0,
+      "scope": [
+        "tests/yeuxq",
+        "tests/test_secret_scan.py",
+        "tests/test_integration_status_ui.py"
+      ]
+    },
+    "full_tests": {
+      "status": "PASS",
+      "passed": 1076,
+      "failed": 0,
+      "duration_seconds": 1165.17,
+      "scope": [
+        "tests"
+      ]
+    },
+    "secret_scan": {
+      "status": "PASS",
+      "candidate_files": 521,
+      "scope": "canonical_git_candidates"
+    },
+    "distribution_build": {
+      "status": "PASS",
+      "backend": "uv_build",
+      "contains_quantify": true,
+      "contains_yeuxq": true,
+      "artifacts": [
+        "quantify-0.1.0.tar.gz",
+        "quantify-0.1.0-py3-none-any.whl"
+      ]
+    },
+    "visual_qa": {
+      "status": "PASS",
+      "desktop_viewport": "1440x1000",
+      "mobile_viewport": "390x844",
+      "horizontal_overflow": false,
+      "valid_console_errors": 0,
+      "offline_fail_closed": true
+    },
+    "diff_check": "PASS",
+    "notes": [
+      "Pytest cache writes were disabled for the acceptance run; no cache warning was emitted.",
+      "Playwright verified the static projection on desktop and mobile and confirmed offline requests reset all displayed evidence to BLOCK.",
+      "Donor credential findings are not included in values or logs; two credentials require owner rotation."
+    ]
+  },
+  "boundaries": {
+    "live_observation": {
+      "status": "contract_completed",
+      "contract_module": "src/yeuxq/contracts.py",
+      "store_module": "src/yeuxq/observation_store.py",
+      "storage_class": "append_only_hash_chained_jsonl",
+      "allowed_uses": [
+        "dashboard_display",
+        "human_review",
+        "provider_health_check",
+        "bounded_technical_analysis",
+        "temporary_scanning"
+      ],
+      "prohibited_uses": [
+        "broker_order",
+        "account_access",
+        "automatic_execution",
+        "automatic_research_promotion",
+        "promotion_gate_upgrade",
+        "profit_claim"
+      ],
+      "fixed_safety_fields": {
+        "prohibited_live_use": true,
+        "broker_access": false,
+        "live_trading_allowed": false
+      },
+      "research_eligible_by_default": false
+    },
+    "research": {
+      "status": "canonical_existing_core",
+      "authority": "src/quantify",
+      "mode": "research_only",
+      "required_controls": [
+        "source_qa_and_reuse_rights",
+        "raw_input_hash",
+        "symbol_timezone_calendar_adjustment_normalization",
+        "atomic_import_batch",
+        "row_lineage",
+        "logical_dataset_fingerprint",
+        "point_in_time_and_lookahead_checks",
+        "preregistration_and_frozen_holdout",
+        "selection_safe_walk_forward",
+        "robustness_and_benchmark_review",
+        "deterministic_pass_watch_block",
+        "human_approval"
+      ],
+      "only_gate_authority": "src/quantify/readiness",
+      "implicit_observation_promotion": false
+    },
+    "execution": {
+      "broker_integration": false,
+      "account_access": false,
+      "live_orders": false,
+      "automatic_trading": false,
+      "paper_simulation_only": true
+    }
+  },
+  "phases": [
+    {
+      "id": "audit",
+      "order": 0,
+      "name": "Repository and compliance audit",
+      "status": "completed",
+      "progress_percent": 100,
+      "started_at": "2026-08-30",
+      "completed_at": "2026-08-30",
+      "owner": "integration",
+      "evidence": [
+        "docs/30_Stock_Integration_Plan.md#3-已完成的仓库审计",
+        "docs/adr/0001-unified-yeuxq-architecture.md"
+      ],
+      "acceptance": [
+        "Canonical, donor and reference-only roles are fixed.",
+        "Secrets, runtime artifacts and license risks are inventoried without copying their contents.",
+        "No donor or v4 directory was bulk-copied into the canonical repository."
+      ],
+      "notes": "Audit completion is an inventory milestone, not license clearance or strategy approval."
+    },
+    {
+      "id": "contracts",
+      "order": 1,
+      "name": "Architecture, contracts, compliance and status UI baseline",
+      "status": "completed",
+      "progress_percent": 100,
+      "started_at": "2026-08-30",
+      "completed_at": "2026-08-30",
+      "owner": "integration",
+      "evidence": [
+        "docs/30_Stock_Integration_Plan.md#5-两条数据通道的强制边界",
+        "integration/integration_status.json",
+        "src/yeuxq/contracts.py",
+        "src/yeuxq/observation_store.py",
+        "tests/yeuxq",
+        "scripts/check_secrets.py",
+        "tests/test_secret_scan.py",
+        "THIRD_PARTY_NOTICES.md",
+        "integration/index.html",
+        "integration/status.js",
+        "integration/status.css",
+        "tests/test_integration_status_ui.py",
+        "pyproject.toml"
+      ],
+      "release_blockers_outside_phase": [
+        "Rotate the two real credentials detected in the donor local intel configuration without copying or exposing them.",
+        "Record the user's project LICENSE decision or keep release blocked."
+      ],
+      "acceptance": [
+        "Canonical serialization and SHA-256 are deterministic.",
+        "Tampering, duplicate IDs and path escape fail closed.",
+        "Research-only and no-broker invariants are mandatory fields.",
+        "Repository secret scan passes and synthetic leak fixtures are detected.",
+        "Status JSON parses and unsupported schema versions fail closed."
+      ]
+    },
+    {
+      "id": "observation_platform",
+      "order": 2,
+      "name": "Controlled stock_v2 application and observation migration",
+      "status": "in_progress",
+      "progress_percent": 5,
+      "started_at": "2026-08-30",
+      "completed_at": null,
+      "owner": "integration",
+      "evidence": [
+        "docs/30_Stock_Integration_Plan.md#phase-2--observation-platform-migration-进行中"
+      ],
+      "acceptance": [
+        "Provider failures, rate limits, stale cache and unavailable capabilities are explicit.",
+        "Observation storage is physically separate from research storage.",
+        "No provider path can write to the research database.",
+        "Optional Rust failure falls back to a tested Python implementation."
+      ]
+    },
+    {
+      "id": "unified_api",
+      "order": 3,
+      "name": "Unified API and research facade",
+      "status": "not_started",
+      "progress_percent": 0,
+      "started_at": null,
+      "completed_at": null,
+      "owner": "unassigned",
+      "evidence": [],
+      "acceptance": [
+        "Versioned API uses public contracts and read-only research facades.",
+        "No account, broker, order, cancel or live-execution endpoint exists.",
+        "File access is allowlisted and path traversal is rejected.",
+        "Offline startup and OpenAPI contract tests pass."
+      ]
+    },
+    {
+      "id": "frontend",
+      "order": 4,
+      "name": "Clean-room frontend and continuous status UI",
+      "status": "not_started",
+      "progress_percent": 0,
+      "started_at": null,
+      "completed_at": null,
+      "owner": "unassigned",
+      "evidence": [],
+      "acceptance": [
+        "UI status matches this JSON and shows invalid state as BLOCK.",
+        "Observation source, timestamps, freshness and unavailable state are visible.",
+        "Observation signals, research gates and paper simulation are visually distinct.",
+        "No v4 expressive code or assets are reused."
+      ]
+    },
+    {
+      "id": "hardening",
+      "order": 5,
+      "name": "Research integration and regression hardening",
+      "status": "not_started",
+      "progress_percent": 0,
+      "started_at": null,
+      "completed_at": null,
+      "owner": "unassigned",
+      "evidence": [],
+      "acceptance": [
+        "Existing quantify regression suite passes.",
+        "Observation cannot upgrade research gates.",
+        "Donor backtest and LLM outputs remain advisory only.",
+        "Python and optional Rust parity tests pass.",
+        "All P0 risks are closed."
+      ]
+    },
+    {
+      "id": "release",
+      "order": 6,
+      "name": "Release, migration and donor deprecation",
+      "status": "not_started",
+      "progress_percent": 0,
+      "started_at": null,
+      "completed_at": null,
+      "owner": "unassigned",
+      "evidence": [],
+      "acceptance": [
+        "Clean checkout install, test, startup and UI smoke pass.",
+        "Project LICENSE and third-party notices are complete.",
+        "CI enforces lint, tests, secrets and license checks.",
+        "Local, remote and UI commit SHA agree.",
+        "Donor is read-only and canonical is the only release source."
+      ]
+    }
+  ],
+  "risks": [
+    {
+      "id": "P0-01",
+      "priority": "P0",
+      "title": "Donor redistribution rights are not established",
+      "status": "open",
+      "owner": "repository_owner",
+      "release_blocking": true,
+      "closure": "Obtain rights confirmation or use only clean-room rewrites with per-file provenance."
+    },
+    {
+      "id": "P0-02",
+      "priority": "P0",
+      "title": "v4 license-bound and vendored material could be copied accidentally",
+      "status": "mitigated",
+      "owner": "compliance",
+      "release_blocking": true,
+      "closure": "Keep reference-only controls and staged-content scans passing through release."
+    },
+    {
+      "id": "P0-03",
+      "priority": "P0",
+      "title": "Donor local configuration contains real LLM or MCP credentials",
+      "status": "open",
+      "owner": "repository_owner",
+      "release_blocking": true,
+      "closure": "Rotate credentials and prove ignore plus secret scanner coverage without exposing values."
+    },
+    {
+      "id": "P0-04",
+      "priority": "P0",
+      "title": "Live observations could contaminate research data or evidence",
+      "status": "open",
+      "owner": "data_boundary",
+      "release_blocking": true,
+      "closure": "Use physically separate storage, no implicit promotion and passing negative boundary tests."
+    },
+    {
+      "id": "P0-05",
+      "priority": "P0",
+      "title": "Trend plans or predictions could be interpreted as live trading instructions",
+      "status": "open",
+      "owner": "api_ui",
+      "release_blocking": true,
+      "closure": "Lock contract, API and UI to research-only with no broker or order capability."
+    },
+    {
+      "id": "P0-06",
+      "priority": "P0",
+      "title": "Duplicate backtests or gates could issue contradictory promotion results",
+      "status": "open",
+      "owner": "research",
+      "release_blocking": true,
+      "closure": "Make src/quantify the sole gate authority and donor diagnostics advisory-only."
+    },
+    {
+      "id": "P0-07",
+      "priority": "P0",
+      "title": "Frontend integration progress could diverge from repository evidence",
+      "status": "mitigated",
+      "owner": "integration_ui",
+      "release_blocking": true,
+      "closure": "Validate and project this file read-only; commit status updates with implementation and tests."
+    },
+    {
+      "id": "P1-01",
+      "priority": "P1",
+      "title": "Symbol and exchange normalization may diverge",
+      "status": "mitigated",
+      "owner": "contracts",
+      "release_blocking": false,
+      "closure": "Use canonical SymbolId and cross-market fixtures."
+    },
+    {
+      "id": "P1-02",
+      "priority": "P1",
+      "title": "Timezone, calendar, adjustment and suspension semantics may diverge",
+      "status": "open",
+      "owner": "data_boundary",
+      "release_blocking": false,
+      "closure": "Publish a data dictionary and pass boundary fixtures."
+    },
+    {
+      "id": "P1-03",
+      "priority": "P1",
+      "title": "Stale provider cache may be displayed as real-time",
+      "status": "open",
+      "owner": "providers_ui",
+      "release_blocking": false,
+      "closure": "Enforce TTL, explicit stale reasons and visible frontend freshness."
+    },
+    {
+      "id": "P1-04",
+      "priority": "P1",
+      "title": "SQLite locking and schema evolution may be unsafe",
+      "status": "open",
+      "owner": "storage",
+      "release_blocking": false,
+      "closure": "Separate databases, version schemas and pass concurrency plus recovery tests."
+    },
+    {
+      "id": "P1-05",
+      "priority": "P1",
+      "title": "Python and Rust analysis may drift",
+      "status": "open",
+      "owner": "analysis",
+      "release_blocking": false,
+      "closure": "Pass parity fixtures and retain deterministic Python fallback."
+    },
+    {
+      "id": "P1-06",
+      "priority": "P1",
+      "title": "File, URL or rich-text API surfaces may be exploitable",
+      "status": "open",
+      "owner": "api_ui",
+      "release_blocking": false,
+      "closure": "Use allowlists, reject traversal and arbitrary proxies, and sanitize rendered content."
+    },
+    {
+      "id": "P1-07",
+      "priority": "P1",
+      "title": "Third-party web dependency notices may be incomplete",
+      "status": "open",
+      "owner": "compliance",
+      "release_blocking": false,
+      "closure": "Pin versions and retain verified source and license notices."
+    },
+    {
+      "id": "P1-08",
+      "priority": "P1",
+      "title": "Donor runtime or build artifacts could leak into Git",
+      "status": "mitigated",
+      "owner": "compliance",
+      "release_blocking": false,
+      "closure": "Enforce denylist, ignore rules and staged artifact scans."
+    },
+    {
+      "id": "P1-09",
+      "priority": "P1",
+      "title": "Documentation or UI may overstate real-time capability",
+      "status": "open",
+      "owner": "documentation_ui",
+      "release_blocking": false,
+      "closure": "Review capability matrix, fallback semantics and research-only wording."
+    }
+  ],
+  "excluded_scope": [
+    "v4_source_assets_binaries_archives_license_files_and_vendored_libraries",
+    "donor_credentials_local_databases_reports_browser_state_and_build_outputs",
+    "license_bypass_or_reverse_engineering",
+    "broker_sdk_login_account_order_cancel_or_funds_transfer",
+    "automatic_trading_or_live_execution",
+    "l2_or_dark_pool_claims_without_source_capability",
+    "automatic_observation_to_research_promotion",
+    "llm_or_donor_score_gate_upgrade",
+    "profit_guarantees_or_personalized_investment_advice",
+    "bulk_directory_copy_or_binary_history_merge"
+  ],
+  "next_actions": [
+    {
+      "order": 1,
+      "phase": "release",
+      "action": "Rotate the two donor-exposed credentials without copying or displaying their values.",
+      "blocking": true
+    },
+    {
+      "order": 2,
+      "phase": "observation_platform",
+      "action": "Migrate only the reviewed stock_v2 source, tests, static assets and optional Rust crate into the yeuxq namespace; exclude all runtime and v4 material.",
+      "blocking": true
+    },
+    {
+      "order": 3,
+      "phase": "release",
+      "action": "Ask the repository owner to choose the project LICENSE or retain release BLOCK.",
+      "blocking": true
+    },
+    {
+      "order": 4,
+      "phase": "observation_platform",
+      "action": "Apply the report path, bind authentication, secret isolation, market breadth, index, horizon and split-boundary fixes during migration.",
+      "blocking": false
+    },
+    {
+      "order": 5,
+      "phase": "observation_platform",
+      "action": "Keep Python as the canonical analysis implementation until Rust parity fixtures pass.",
+      "blocking": false
+    }
+  ]
+}

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="referrer" content="no-referrer">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'"
+    >
+    <meta
+      name="description"
+      content="yeuxQ 集成工程的只读、失败关闭状态投影。"
+    >
+    <title>yeuxQ // Integration Flight Recorder</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23090a09'/%3E%3Cpath d='M7 7h18v18H7z' fill='none' stroke='%23ff5a1f' stroke-width='2'/%3E%3Cpath d='m10 19 4-5 3 3 5-7' fill='none' stroke='%23f2eee4' stroke-width='2'/%3E%3C/svg%3E"
+    >
+    <link rel="stylesheet" href="status.css">
+    <script src="status.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到状态正文</a>
+
+    <div class="airframe" aria-hidden="true">
+      <span>INTEGRATION / 01</span>
+      <span>READ-ONLY TELEMETRY</span>
+      <span>ASIA/SHANGHAI</span>
+    </div>
+
+    <header class="masthead">
+      <div class="identity-lockup">
+        <p class="kicker">RESEARCH SYSTEMS INTEGRATION LOG</p>
+        <p class="wordmark" aria-label="yeux Q">yeux<span>Q</span></p>
+      </div>
+      <div class="recorder-state" aria-label="状态文件读取器正在运行">
+        <span class="recorder-lamp" aria-hidden="true"></span>
+        <span>REC / STATUS PROJECTION</span>
+      </div>
+    </header>
+
+    <aside class="boundary-tape" aria-label="不可跨越的系统边界">
+      <p>
+        <span class="tape-index">B-01</span>
+        <strong>RESEARCH-ONLY</strong>
+        观测与预测仅供研究和人工复核
+      </p>
+      <p>
+        <span class="tape-index">B-02</span>
+        <strong>NO BROKER / NO LIVE ORDERS</strong>
+        无账户、券商、下单或自动执行能力
+      </p>
+      <p>
+        <span class="tape-index">B-03</span>
+        <strong>FAIL CLOSED</strong>
+        未知、缺失或不支持的状态一律按 BLOCK 处理
+      </p>
+    </aside>
+
+    <main id="main-content">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="section-code">FR–00 / COMMAND LEDGER</p>
+          <h1 id="page-title">集成飞行记录器</h1>
+          <p class="hero-deck">
+            两套代码库向一个可审计研究平台收敛。这里不是控制台；它只投影仓库证据，
+            不批准发布，也不触发任何交易动作。
+          </p>
+          <dl class="source-ledger" aria-label="状态数据来源">
+            <div>
+              <dt>唯一状态源</dt>
+              <dd id="source-ref">正在校验…</dd>
+            </div>
+            <div>
+              <dt>最后同步</dt>
+              <dd id="updated-at">尚未验证</dd>
+            </div>
+            <div>
+              <dt>当前阶段</dt>
+              <dd id="active-phase">未知</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="readiness-instrument" aria-labelledby="readiness-title">
+          <div class="instrument-topline">
+            <p id="readiness-title">RELEASE READINESS</p>
+            <p id="connection-state" role="status" aria-live="polite">VALIDATING</p>
+          </div>
+          <p class="readiness-value is-block" id="readiness-value">BLOCK</p>
+          <p class="readiness-caption" id="readiness-caption">
+            状态未验证。任何未知输入均保持发布阻断。
+          </p>
+          <div
+            class="progress-track"
+            id="overall-progress-track"
+            role="progressbar"
+            aria-label="总体集成进度"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          >
+            <span id="overall-progress-fill"></span>
+          </div>
+          <div class="progress-readout">
+            <span id="overall-progress">0%</span>
+            <span id="phase-count">0 / 0 PHASES</span>
+          </div>
+          <button class="refresh-control" id="refresh-status" type="button">
+            <span aria-hidden="true">↻</span> 重新读取状态源
+          </button>
+        </div>
+      </section>
+
+      <section
+        class="block-notice"
+        id="block-notice"
+        aria-labelledby="block-title"
+        aria-live="assertive"
+      >
+        <p class="notice-flag" id="block-title">BLOCK — 状态未验证</p>
+        <p id="block-message">等待读取并严格校验状态文件。</p>
+      </section>
+
+      <section class="status-section phase-section" aria-labelledby="phase-title">
+        <header class="section-heading">
+          <div>
+            <p class="section-code">FR–01 / PROGRAM TRACE</p>
+            <h2 id="phase-title">七段集成轨迹</h2>
+          </div>
+          <p>每一段完成后，仓库证据与这面状态墙必须在同一提交中同步。</p>
+        </header>
+        <ol class="phase-rail" id="phase-list">
+          <li class="empty-state">等待经过校验的阶段记录。</li>
+        </ol>
+      </section>
+
+      <section class="status-section risk-section" aria-labelledby="risk-title">
+        <header class="section-heading">
+          <div>
+            <p class="section-code">FR–02 / OPEN ANOMALIES</p>
+            <h2 id="risk-title">风险告警板</h2>
+          </div>
+          <p id="risk-summary">未校验状态下，所有风险按未关闭处理。</p>
+        </header>
+        <div class="risk-ledger" id="risk-list">
+          <p class="empty-state">等待经过校验的风险记录。</p>
+        </div>
+      </section>
+
+      <section class="status-section verification-section" aria-labelledby="verification-title">
+        <header class="section-heading">
+          <div>
+            <p class="section-code">FR–03 / EVIDENCE CHANNELS</p>
+            <h2 id="verification-title">验证回执</h2>
+          </div>
+          <p>PASS 只表示对应检查有证据，不会自动提升研究或发布权限。</p>
+        </header>
+        <dl class="verification-strip" id="verification-list">
+          <div>
+            <dt>STATUS CONTRACT</dt>
+            <dd class="gate gate-block">BLOCK</dd>
+          </div>
+          <div>
+            <dt>JSON PARSER</dt>
+            <dd class="gate gate-block">BLOCK</dd>
+          </div>
+          <div>
+            <dt>TARGETED TESTS</dt>
+            <dd class="gate gate-block">BLOCK</dd>
+          </div>
+          <div>
+            <dt>FULL REGRESSION</dt>
+            <dd class="gate gate-block">BLOCK</dd>
+          </div>
+          <div>
+            <dt>SECRET SCAN</dt>
+            <dd class="gate gate-block">BLOCK</dd>
+          </div>
+          <div>
+            <dt>PACKAGE BUILD</dt>
+            <dd class="gate gate-block">BLOCK</dd>
+          </div>
+          <div>
+            <dt>DIFF CHECK</dt>
+            <dd class="gate gate-block">BLOCK</dd>
+          </div>
+        </dl>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>yeuxQ / CANONICAL RESEARCH REPOSITORY</p>
+      <p>只读投影 · 不回写 · 不授权 · 不连接券商</p>
+    </footer>
+
+    <noscript>
+      <div class="noscript-block" role="alert">
+        BLOCK — JavaScript 未启用，无法验证状态源。发布就绪度保持阻断。
+      </div>
+    </noscript>
+  </body>
+</html>
