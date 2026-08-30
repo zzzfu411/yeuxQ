@@ -249,7 +249,19 @@ diff check 和覆盖 521 个候选文件的 canonical secret scan 通过；wheel
 扫描能命中 synthetic fixture 且仓库扫描为 PASS；整体 LICENSE 选择由用户明确决定，未决定前
 发布门保持 BLOCK；状态 JSON 可被标准 JSON parser 读取。
 
-### Phase 2 — Observation platform migration（进行中）
+### Phase 2 — Observation platform migration（已完成）
+
+验收结果：54 个经审查的 donor Python 模块、8 个 donor 测试、可选 Rust workspace、
+clean-room 安全层与包内 Web 资源已经迁入 canonical 仓库；provider 对 timeout、429、HTTP、
+JSON、schema、network、all-host failure 以及 HIT/MISS/STALE 缓存状态提供显式分类。观测只由
+`ObservationService.capture()` 写入独立的 append-only hash-chain store，不能写入或升级
+`src/quantify` 的研究 gate。Python 保持默认 canonical 实现，Rust 仅在显式
+`YEUXQ_ENGINE=rust` 时启用并带确定性 fallback。
+
+本阶段定向验收为 226 passed、3 skipped；3 个 skip 均为 Windows 当前账户无法创建 symlink
+的环境限制。Rust 测试 3 项通过，Ruff check/format、覆盖 630 个候选文件的 secret scan、
+wheel-like 解包启动和包外运行时写入烟测均通过。donor 迁移清单记录逐文件来源与 SHA-256；
+v4、真实凭据、数据库、研报、浏览器状态和构建产物均未迁入。
 
 工作包：
 
@@ -263,7 +275,17 @@ diff check 和覆盖 521 个候选文件的 canonical secret scan 通过；wheel
 验收：离线 fixture、超时、限流、空响应、错误 schema、stale cache 和 provider fallback 测试
 通过；任何运行路径都不能写入 research DB；网络关闭时 UI/API 明确降级而非伪造数据。
 
-### Phase 3 — Unified API and research facade（未开始）
+### Phase 3 — Unified API and research facade（已完成）
+
+验收结果：生产 application factory 已挂载 `/api/v1`，通过显式容器接入 integration status、
+observation capture/store 与 canonical research readiness 三个 bounded facade。统一响应包含 request
+ID、错误 envelope、`no-store` 和固定 research-only safety fields；输入长度、枚举、symbol、run ID
+与 observation ID 均受限，路径穿越和未知 schema fail closed。OpenAPI 负向合同确认不存在 account、
+broker、order、cancel、trade 或 execution endpoint；唯一 POST 是显式本地 observation capture。
+
+P3 与相关安全/路径/状态合同定向验收 51 项通过、2 项因 Windows symlink 权限跳过；冻结版本的
+`tests/yeuxq` 为 228 passed、3 skipped，完整 `tests/` 回归为 1266 passed、3 skipped，耗时
+1649.70 秒。Ruff、secret scan、Rust、wheel/sdist 和真实浏览器状态页验收继续通过。
 
 工作包：
 
@@ -277,7 +299,7 @@ diff check 和覆盖 521 个候选文件的 canonical secret scan 通过；wheel
 验收：OpenAPI/contract snapshot、输入模糊测试、路径穿越测试和无网络启动测试通过；不存在
 order/account/broker endpoint；实时 endpoint 响应固定含 advisory 边界。
 
-### Phase 4 — Clean-room frontend and continuous UI status（未开始）
+### Phase 4 — Clean-room frontend and continuous UI status（进行中）
 
 工作包：
 
@@ -415,8 +437,9 @@ git ls-remote origin refs/heads/main
 
 ## 13. 当前下一步
 
-Phase 1 已完成，当前推进 Phase 2：按 allowlist 迁移 donor 的可维护 Python 源码、测试、
-静态资源与可选 Rust crate，统一到 `src/yeuxq`，同时修复研报路径/安全删除、非本机绑定
-鉴权、秘密注入、指数 fallback、全市场宽度、预测 horizon 和回测分段边界。v4、真实凭据、
-数据库、研报、浏览器状态和构建产物继续严格排除。项目 LICENSE 与凭据轮换作为发布阻塞项
-持续展示在状态 UI 中，不允许因迁移进展而自动解除。
+Phase 3 已完成，当前推进 Phase 4：让 clean-room 工作台只调用 `/api/v1` bounded facade，统一
+observation、canonical readiness 与 integration status 的来源、时间、新鲜度和不可用状态，并把
+“买入、卖出、扫描”等 donor 文案收窄为分析标签而非交易指令。桌面与移动端均需验证无溢出、
+无重叠、离线 fail closed、无任意 URL/HTML 注入和无 broker/account/order surface。v4 与所有
+运行时/受限材料继续严格排除；donor 再分发权、项目 LICENSE 与两项凭据轮换持续作为发布阻塞
+项展示，不能因工程阶段完成而自动解除。

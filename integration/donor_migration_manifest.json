@@ -1,0 +1,809 @@
+{
+  "schema_version": 2,
+  "donor": "stock_v2",
+  "generated_on": "2026-08-30",
+  "release_boundary": {
+    "python_wheel": {
+      "package_modules": [
+        "quantify",
+        "yeuxq"
+      ],
+      "rust_included": false,
+      "excluded_rust_paths": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "crates/**",
+        "target/**"
+      ]
+    },
+    "rust": {
+      "lifecycle": "development_only",
+      "activation": "explicit_opt_in",
+      "canonical_runtime": "python",
+      "parity_required_before_default": true
+    },
+    "project_license": "not_selected_by_migration",
+    "design_evidence": [
+      {
+        "id": "security_and_secret_isolation",
+        "scope": [
+          "src/yeuxq/api/app.py",
+          "src/yeuxq/api/deps.py",
+          "src/yeuxq/api/routes_research.py",
+          "src/yeuxq/intel/*.py",
+          "src/yeuxq/settings.py",
+          "src/yeuxq/main.py",
+          "config/yeuxq.default.yaml"
+        ],
+        "changes": "Local-secret exclusion, bind/auth boundaries, safe report identifiers, bounded report storage, and environment-only runtime secret injection were applied after donor migration.",
+        "evidence": [
+          "tests/yeuxq/test_bind_security.py",
+          "tests/yeuxq/test_report_store_security.py",
+          "tests/yeuxq/test_secret_isolation.py",
+          "tests/yeuxq/test_runtime_paths.py"
+        ]
+      },
+      {
+        "id": "correctness_and_canonical_fallback",
+        "scope": [
+          "src/yeuxq/analysis/engine.py",
+          "src/yeuxq/analysis/momentum_quality.py",
+          "src/yeuxq/analysis/plugins/rule_predictor.py",
+          "src/yeuxq/analysis/rust_bridge.py",
+          "src/yeuxq/services/analyze.py",
+          "src/yeuxq/services/backtest.py",
+          "crates/trendlab-core/src/backtest.rs",
+          "crates/trendlab-core/src/lib.rs"
+        ],
+        "changes": "Market breadth, index mapping, fixed five-day horizon, adjusted-decision recomputation, non-overlapping evaluation boundaries, and Python-canonical Rust opt-in behavior were hardened after migration.",
+        "evidence": [
+          "tests/yeuxq/test_correctness_guards.py",
+          "tests/yeuxq/donor/test_engine.py",
+          "tests/yeuxq/donor/test_indicators.py"
+        ]
+      },
+      {
+        "id": "provider_and_runtime_boundaries",
+        "scope": [
+          "src/yeuxq/providers/*.py",
+          "src/yeuxq/storage/*.py",
+          "src/yeuxq/scan/worker.py",
+          "src/yeuxq/risk/pipeline.py"
+        ],
+        "changes": "Provider normalization, bounded HTTP/runtime behavior, cache and storage separation, and deterministic unavailable/fallback semantics were applied after donor migration.",
+        "evidence": [
+          "tests/yeuxq/test_correctness_guards.py",
+          "tests/yeuxq/test_runtime_paths.py",
+          "tests/yeuxq/donor/test_store.py",
+          "tests/yeuxq/donor/test_orderflow_unit.py"
+        ]
+      },
+      {
+        "id": "api_and_web_safety",
+        "scope": [
+          "src/yeuxq/api/routes_*.py",
+          "src/yeuxq/web/**"
+        ],
+        "changes": "Strict identifiers, no arbitrary path disclosure, fail-closed rich-text rendering, no broker/live execution surface, and read-only integration navigation were added after donor migration.",
+        "evidence": [
+          "tests/yeuxq/test_v1_api_contract.py",
+          "tests/yeuxq/test_web_assets.py",
+          "tests/yeuxq/donor/test_agentic_reports.py",
+          "tests/yeuxq/donor/test_vision.py"
+        ]
+      },
+      {
+        "id": "release_and_regression_boundary",
+        "scope": [
+          "tests/yeuxq/donor/**",
+          "src/yeuxq/**",
+          "crates/trendlab-core/**"
+        ],
+        "changes": "Migrated tests were namespaced and extended for integrated behavior; Python sources were formatter-normalized; Rust remains development-only and outside the Python wheel.",
+        "evidence": [
+          "tests/yeuxq/test_donor_migration_manifest.py",
+          "pyproject.toml",
+          "THIRD_PARTY_NOTICES.md"
+        ]
+      }
+    ]
+  },
+  "reference_only": [
+    {
+      "source": "v4_distribution/**",
+      "target": null,
+      "disposition": "reference_only_never_migrate",
+      "prohibited_material": [
+        "source_code",
+        "web_assets",
+        "binaries",
+        "archives",
+        "license_files",
+        "runtime_data",
+        "vendored_libraries"
+      ]
+    }
+  ],
+  "transformations": [
+    "Python import/module/log namespace: stock_v2 -> yeuxq",
+    "Default config path: config/default.yaml -> config/yeuxq.default.yaml",
+    "Python sources and migrated donor tests were Ruff-formatted after namespace rewriting; differing hashes do not imply verbatim copies.",
+    "Security hardening added bind/auth checks, environment-only secrets, bounded report identifiers/storage, and removal of server filesystem paths from public responses.",
+    "Correctness hardening fixed index mapping, full-market breadth, complete decision recomputation, the supported five-day horizon, non-overlapping evaluation boundaries, and Python-canonical Rust fallback.",
+    "Runtime hardening moved writable data beneath an explicit runtime root and kept local configuration, databases, reports, output, target, and egg-info outside migration and release inputs.",
+    "Provider hardening added normalized identifiers, bounded HTTP/cache behavior, explicit unavailable/fallback semantics, and separation from canonical research storage.",
+    "API hardening added strict identifiers and payload bounds, structured errors, research-only advisory fields, safe report access, and no broker/order/account/live-execution surface.",
+    "Web hardening added fail-closed Markdown sanitization, read-only integration navigation, offline-only assets, and retained third-party vendor provenance.",
+    "Migrated donor tests were namespaced and updated to assert integrated security, correctness, runtime, provider, API, and report-storage behavior.",
+    "Rust source remains a development-only explicit opt-in, requires parity before default use, and is excluded from the Python wheel."
+  ],
+  "entries": [
+    {
+      "source": "src/stock_v2/__init__.py",
+      "target": "src/yeuxq/__init__.py",
+      "source_sha256": "e70679e977137a8a1e04e5cb26e4e0c66e011888cd2ace2f53887a3c37997e6a",
+      "target_sha256": "479ee116f1fc6fc3b2765cca071e3d3b347270509c626bbab23ccb2623637642",
+      "disposition": "not_copied_existing_yeuxq_boundary_preserved"
+    },
+    {
+      "source": "src/stock_v2/analysis/__init__.py",
+      "target": "src/yeuxq/analysis/__init__.py",
+      "source_sha256": "3ebdd658d3efd87ace006c8319e20be413c3df7acc09e4363f691ee592ff4938",
+      "target_sha256": "3ebdd658d3efd87ace006c8319e20be413c3df7acc09e4363f691ee592ff4938",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/analysis/breakout.py",
+      "target": "src/yeuxq/analysis/breakout.py",
+      "source_sha256": "75526e7b75eeca29d353de8acea147eefce61c51df993b6f993fa1333f4b3da9",
+      "target_sha256": "e669181dbadbe74dfbbc8c57a1a093264256a8e2d908fd670972a602e9266de0",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/analysis/chanlun_daily.py",
+      "target": "src/yeuxq/analysis/chanlun_daily.py",
+      "source_sha256": "f31d91f6cfcdac8ee52b5bef833fbc7405cebb5e8fb7da9c6d60981666bb9906",
+      "target_sha256": "4950b9e8ad87045b35c8947153b32213bb5ce72fc265fa8c7a0449f06440b5ba",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/analysis/chanlun_minute.py",
+      "target": "src/yeuxq/analysis/chanlun_minute.py",
+      "source_sha256": "abba4d1583afc3a675edaf081994bf060c8fd7ab7f104f29180fa8b5f3e7c439",
+      "target_sha256": "0d33a8b53e6db50635cfb4c007a95e4d18cfb5b6b8cce4ae46506cf86f3d8651",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/analysis/engine.py",
+      "target": "src/yeuxq/analysis/engine.py",
+      "source_sha256": "8350c48fbea977cdd56e65a918c165bc0a82c27ed994f213e59f288bcf613c0d",
+      "target_sha256": "2e1755cfde2fcf4b70d04076110586aadc15b0943519ec671caa803ea407a420",
+      "disposition": "migrated_namespace_and_correctness_hardening"
+    },
+    {
+      "source": "src/stock_v2/analysis/indicators.py",
+      "target": "src/yeuxq/analysis/indicators.py",
+      "source_sha256": "847587d858623b9df96b9a45f383daed2eca4fca7ff81497e48f622c39f9c525",
+      "target_sha256": "5f6ac89f25689fc62f33ab80bdd7442bed5ebae32edebb936b98c3b4028aaf8e",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/analysis/momentum_quality.py",
+      "target": "src/yeuxq/analysis/momentum_quality.py",
+      "source_sha256": "ca0b85fc199c0c62e4d654a2b0c444a1979c80682e54377e9a4dd35419f21e8c",
+      "target_sha256": "a6c4c23e83c74a4f8e2b42313db19f5668ae89c1f04384b19169a96a1306cb85",
+      "disposition": "migrated_namespace_and_correctness_hardening"
+    },
+    {
+      "source": "src/stock_v2/analysis/pattern.py",
+      "target": "src/yeuxq/analysis/pattern.py",
+      "source_sha256": "e19cbbdbb68de93ae9465a22fc73164b86512a97815edd6610fb8c9d9fceb2a2",
+      "target_sha256": "dbcd9861a9c4110897257b83d4e2620fda047c165cd5d7bb44ce2691bc9d6514",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/analysis/plugins/__init__.py",
+      "target": "src/yeuxq/analysis/plugins/__init__.py",
+      "source_sha256": "688d47245b638f18d873b0eb52422208f546a084c4f9a15ae7d3f81b80a69624",
+      "target_sha256": "688d47245b638f18d873b0eb52422208f546a084c4f9a15ae7d3f81b80a69624",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/analysis/plugins/base.py",
+      "target": "src/yeuxq/analysis/plugins/base.py",
+      "source_sha256": "9e2691a4b330759317f7e92e2e6c319c906d2155068ac0e3b89d13bc4a6ba490",
+      "target_sha256": "ce73a745f15a776e857eb20f28a9687a4bc1d1ea2bdd7a498eed4459aabd0763",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/analysis/plugins/rule_predictor.py",
+      "target": "src/yeuxq/analysis/plugins/rule_predictor.py",
+      "source_sha256": "1ef03b1f720465b2f2f0a289639e8df2c0d211fdf34a3f599439d09565429181",
+      "target_sha256": "6a01e64483e7a91dfecaf63d82becae87c0b2e5d0d0375d4d5413d98d48531db",
+      "disposition": "migrated_namespace_and_correctness_hardening"
+    },
+    {
+      "source": "src/stock_v2/analysis/rust_bridge.py",
+      "target": "src/yeuxq/analysis/rust_bridge.py",
+      "source_sha256": "fe4c6b68ce4282a7d388f2a9959e2981ec67d3ed5c6be48d9ab470c0fcb4b8bb",
+      "target_sha256": "5e460f35161dbfaa85935e5663628dcfb77c05d3eebc0891b2cf6211626d7b9a",
+      "disposition": "migrated_namespace_runtime_and_rust_opt_in_hardening"
+    },
+    {
+      "source": "src/stock_v2/analysis/trend.py",
+      "target": "src/yeuxq/analysis/trend.py",
+      "source_sha256": "8acd8d88d89f0996353b74ea6f3f96c297be3479d03fd9ebc7fba7037c8f8ce7",
+      "target_sha256": "1814c34ef78fdd2d4f64511d5cb71ea7a8e1a0764d828f3f0337c60010e2c9f7",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/analysis/volume_price.py",
+      "target": "src/yeuxq/analysis/volume_price.py",
+      "source_sha256": "9525d83d762a5a15cfa61e2739669ddaba652e6a07e1de3c36872931520a084d",
+      "target_sha256": "a45a6f8d5d61dfd7c8d29c77118b5e1fcb0eab9f2ee263751c69c440e009789f",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/api/__init__.py",
+      "target": "src/yeuxq/api/__init__.py",
+      "source_sha256": "5abaf4212df43f25dcd2e0cef8da2b25a97b6756bdfe28f38f172d64f7c22a3e",
+      "target_sha256": "5abaf4212df43f25dcd2e0cef8da2b25a97b6756bdfe28f38f172d64f7c22a3e",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/api/app.py",
+      "target": "src/yeuxq/api/app.py",
+      "source_sha256": "b78867ca4191e888f37166cd6b5b6b2a8dc8b5294f610b7eccaa124353e56a37",
+      "target_sha256": "9925a5896ddd7386908917ae0101dcf832204fe102cbebf00af2184f28d55cd6",
+      "disposition": "migrated_namespace_and_api_security_hardening"
+    },
+    {
+      "source": "src/stock_v2/api/deps.py",
+      "target": "src/yeuxq/api/deps.py",
+      "source_sha256": "c7e9cea780f28aca6ac2332c6e8fbd542e61a91b50bcb54920ed3e35c791c832",
+      "target_sha256": "c087e761e75d82a2530ae795122761134e9685dd1c7936c7ad4982a93494397b",
+      "disposition": "migrated_namespace_and_api_security_hardening"
+    },
+    {
+      "source": "src/stock_v2/api/routes_analyze.py",
+      "target": "src/yeuxq/api/routes_analyze.py",
+      "source_sha256": "a5df71e6da562547e6c72fc88aa970a723b59be79e3f57fdc622049448a970af",
+      "target_sha256": "96bcedcfd106a8b48f326bb6d5e1aa8db6bb03934e76c4e8a8433828ca282a5a",
+      "disposition": "migrated_namespace_and_api_correctness_hardening"
+    },
+    {
+      "source": "src/stock_v2/api/routes_backtest.py",
+      "target": "src/yeuxq/api/routes_backtest.py",
+      "source_sha256": "edb67cd795550b9dd0937cb9d9785f682d6eb4fe630f113680399e1eff676734",
+      "target_sha256": "f41ec5577c59e390dae268f254da1e1476dbd11ba2ee29051efa5b6a6a5ff40b",
+      "disposition": "migrated_namespace_and_api_correctness_hardening"
+    },
+    {
+      "source": "src/stock_v2/api/routes_market.py",
+      "target": "src/yeuxq/api/routes_market.py",
+      "source_sha256": "0fcfc73ec1bac3997255b6b0fea4aa6bebf7bd9d1b056261acf842ebb7c003ff",
+      "target_sha256": "9ac6113e55f140b93f1b294a6a9674e0479b8eca32c688bbde474d4198f2ed3c",
+      "disposition": "migrated_namespace_and_api_correctness_hardening"
+    },
+    {
+      "source": "src/stock_v2/api/routes_orderflow.py",
+      "target": "src/yeuxq/api/routes_orderflow.py",
+      "source_sha256": "73eb24381a976f63d93ca9cdfd775b2381722cadbde71fcb879b2b1e24b3f67a",
+      "target_sha256": "d996010b58498a8485e00d20105b7d153610610182df23299f41c677c28e06ac",
+      "disposition": "migrated_namespace_and_provider_api_hardening"
+    },
+    {
+      "source": "src/stock_v2/api/routes_research.py",
+      "target": "src/yeuxq/api/routes_research.py",
+      "source_sha256": "b4dff4fda8975f065937d5554fc62b4a003054e6b66515fc70849b29f723d11e",
+      "target_sha256": "6059bae0284c2722b47df80100135aaa4b2e3464f6c6658aa45b6bb13439847e",
+      "disposition": "migrated_namespace_and_api_security_hardening"
+    },
+    {
+      "source": "src/stock_v2/api/routes_scan.py",
+      "target": "src/yeuxq/api/routes_scan.py",
+      "source_sha256": "fb0bdd370d5935a9cf463f09d08a4fd333da78184c505f8040ba6d03ebaa9ae4",
+      "target_sha256": "07898035009d7173c6438a7424ffcfc6ddce263d6cb46dd9496de5d5aa315cdc",
+      "disposition": "migrated_namespace_and_bounded_api_integration"
+    },
+    {
+      "source": "src/stock_v2/domain/__init__.py",
+      "target": "src/yeuxq/domain/__init__.py",
+      "source_sha256": "3102f65ae991e109a4904a054442c9521882d3941f1dbeb0843e1144dd6da820",
+      "target_sha256": "3102f65ae991e109a4904a054442c9521882d3941f1dbeb0843e1144dd6da820",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/domain/models.py",
+      "target": "src/yeuxq/domain/models.py",
+      "source_sha256": "b02b24867e682370c8605cbd68fa3b796d84e6d8b2225ce57863705f75056379",
+      "target_sha256": "c8cf1525303147ea9ba81060b39ba301d04b31adcc343004d0bfd7259bb20df2",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/intel/__init__.py",
+      "target": "src/yeuxq/intel/__init__.py",
+      "source_sha256": "24b95db0ff056e91d8ca229bc0f228b9eab47f75b1b82ddcb5473bcaf1970813",
+      "target_sha256": "a708adae8ccf6938c178cdc50ac5b81da42f0395725df3fe2b15dea7a0de1261",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/intel/agent_tools.py",
+      "target": "src/yeuxq/intel/agent_tools.py",
+      "source_sha256": "19dc53006c6eeb3f20d7b526a8ed20b80227c76ea8ede1411ca03a148da1c202",
+      "target_sha256": "9b589fe8b93884a58c4dc92014b6d7c5aa5bea126998f63adad7aa58e5db3845",
+      "disposition": "migrated_namespace_and_runtime_input_hardening"
+    },
+    {
+      "source": "src/stock_v2/intel/fundamentals.py",
+      "target": "src/yeuxq/intel/fundamentals.py",
+      "source_sha256": "eefbc43863856b925736537fc4195d71350875bea2b367cbe55eeb398cbc65df",
+      "target_sha256": "f5eb08903341a1b5de4aefb4831c9371d1a5be55bf5372407a155f90c13fe409",
+      "disposition": "migrated_namespace_and_runtime_input_hardening"
+    },
+    {
+      "source": "src/stock_v2/intel/llm_client.py",
+      "target": "src/yeuxq/intel/llm_client.py",
+      "source_sha256": "80c9219e09aeb3fd358729c4e10d39430401052ba1b0348d9a5d3c8b65bdc961",
+      "target_sha256": "d1202b9aa685b6ab42ccb0681809d49d13ccc4a1b9799cd438f4af9a334606a1",
+      "disposition": "migrated_namespace_security_and_runtime_hardening"
+    },
+    {
+      "source": "src/stock_v2/intel/research.py",
+      "target": "src/yeuxq/intel/research.py",
+      "source_sha256": "4763960d3554b47a784139ab86d4cfcb8d3d0a60409782145feb698a9f934a9e",
+      "target_sha256": "6909acdfc035cf51a9ed4205fff0e14637f004de1dc0c83c383872a3c55554ef",
+      "disposition": "migrated_namespace_security_and_runtime_hardening"
+    },
+    {
+      "source": "src/stock_v2/intel/secrets.py",
+      "target": "src/yeuxq/intel/secrets.py",
+      "source_sha256": "b44cce6d5a1c581421441ec09fa61dc218588d9f337cc52e434d57d74a681d01",
+      "target_sha256": "a28ca343da1cad2792dd5fab1d9f858eadca55ebe3aaec6675ccb128ed6f6dd7",
+      "disposition": "migrated_namespace_security_and_runtime_hardening"
+    },
+    {
+      "source": "src/stock_v2/intel/yeux_client.py",
+      "target": "src/yeuxq/intel/yeux_client.py",
+      "source_sha256": "23ea9f8fda3a954536267c90afdcbbae1ac674f13bf153c8622ad375de23903a",
+      "target_sha256": "bafb5dd48cea34fd93c463097a8bc7e31d864115c7d60a7dbaf25adcdd4e1736",
+      "disposition": "migrated_namespace_security_and_runtime_hardening"
+    },
+    {
+      "source": "src/stock_v2/main.py",
+      "target": "src/yeuxq/main.py",
+      "source_sha256": "393b8c58b3a96ba0203ebecc183df01887ff8191fb17809a914bc1ecdc0f702c",
+      "target_sha256": "613f756977d66269226bc4f87031637083900217cc38d8d240f2e17e25254a83",
+      "disposition": "migrated_namespace_security_and_runtime_hardening"
+    },
+    {
+      "source": "src/stock_v2/providers/__init__.py",
+      "target": "src/yeuxq/providers/__init__.py",
+      "source_sha256": "290f94663f0912f52b4b712190df936d1bcd885183f39ae305486c42ce2b0ef9",
+      "target_sha256": "290f94663f0912f52b4b712190df936d1bcd885183f39ae305486c42ce2b0ef9",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/providers/base.py",
+      "target": "src/yeuxq/providers/base.py",
+      "source_sha256": "14214d4b0808c7f41dc41142191a45609165a670d44ea189927e0bd64c2547b7",
+      "target_sha256": "d7d9a6e8e62d5df83ac72da42b3b1b0715110955506d3a23def742a445803256",
+      "disposition": "migrated_namespace_and_provider_hardening"
+    },
+    {
+      "source": "src/stock_v2/providers/composite.py",
+      "target": "src/yeuxq/providers/composite.py",
+      "source_sha256": "3ff579784a475928f88b3df82239ae04a558feb8c0a52d2e51aac413589b6234",
+      "target_sha256": "794a99b03dd1ac49b76cd2a0c0790e30bc3f01b94c646fcb422a30318d3122c9",
+      "disposition": "migrated_namespace_and_provider_hardening"
+    },
+    {
+      "source": "src/stock_v2/providers/http_client.py",
+      "target": "src/yeuxq/providers/http_client.py",
+      "source_sha256": "5a1bde2bdf497be9ecc34d0ef30b801bb916fdeaf1b0fc9413d5c9c91a3438a2",
+      "target_sha256": "748cd93379e1c33806a03757484bc5be29aefe0030d6a04e5ed8531bffea44cf",
+      "disposition": "migrated_namespace_and_provider_hardening"
+    },
+    {
+      "source": "src/stock_v2/providers/orderflow.py",
+      "target": "src/yeuxq/providers/orderflow.py",
+      "source_sha256": "34d42e986779616bd0d7586229fcace002949bd4ec60551259c15bb5a1803c5f",
+      "target_sha256": "e009f78ca9c6785706e76a614ccd3e2564b28a044d9edd1f665293d4e6fb28be",
+      "disposition": "migrated_namespace_and_provider_hardening"
+    },
+    {
+      "source": "src/stock_v2/risk/__init__.py",
+      "target": "src/yeuxq/risk/__init__.py",
+      "source_sha256": "0d7f2ebad0cbc30d036e3e12b0d1cd6a0e2d03eeb53838bb5b4c9cec6611fa7d",
+      "target_sha256": "0d7f2ebad0cbc30d036e3e12b0d1cd6a0e2d03eeb53838bb5b4c9cec6611fa7d",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/risk/pipeline.py",
+      "target": "src/yeuxq/risk/pipeline.py",
+      "source_sha256": "3e223b1d5fa2e2ebd81505f0bc3d79cf6bfd7172dc8418688945cf5c5ef25fd6",
+      "target_sha256": "dfe03b84ff7a9630bf804a724c6dc8fbc637e4b2617382657272c2ce49dd432c",
+      "disposition": "migrated_namespace_and_correctness_hardening"
+    },
+    {
+      "source": "src/stock_v2/scan/__init__.py",
+      "target": "src/yeuxq/scan/__init__.py",
+      "source_sha256": "32aa8406c332dd955976f04da81c56f4801e1a78aca58233254058efe30d2d32",
+      "target_sha256": "32aa8406c332dd955976f04da81c56f4801e1a78aca58233254058efe30d2d32",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/scan/worker.py",
+      "target": "src/yeuxq/scan/worker.py",
+      "source_sha256": "43b04927c879b8d61e0ff8ee4af482e9af52d191ddc7e8a261803a028eae3228",
+      "target_sha256": "e0117e00b49a0c4bad7606719523f3d5e216d4d3cb93bda1d24c9a904316c32e",
+      "disposition": "migrated_namespace_and_bounded_runtime_hardening"
+    },
+    {
+      "source": "src/stock_v2/services/__init__.py",
+      "target": "src/yeuxq/services/__init__.py",
+      "source_sha256": "cdcaa3937ac7890c51bd5f9cdada6bb8140be75bb01f05f682f231ba41087ea1",
+      "target_sha256": "cdcaa3937ac7890c51bd5f9cdada6bb8140be75bb01f05f682f231ba41087ea1",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/services/analyze.py",
+      "target": "src/yeuxq/services/analyze.py",
+      "source_sha256": "d65d9484a8fe3f7624266d02f37698dc3107279f8eaf6ea3b3e4160e75b62bb0",
+      "target_sha256": "d54eee37fa8f65b1132529afd632040205b257124fbe14b12231aa3085c13d83",
+      "disposition": "migrated_namespace_and_correctness_hardening"
+    },
+    {
+      "source": "src/stock_v2/services/backtest.py",
+      "target": "src/yeuxq/services/backtest.py",
+      "source_sha256": "cb0b6676338ef175da19889d1a67a47769e434fd15147f727736c073289dc92c",
+      "target_sha256": "7404a570d832d7d284b6209a0f96b0ca317ad0ca745f13c89f77d4c6b256039f",
+      "disposition": "migrated_namespace_and_correctness_hardening"
+    },
+    {
+      "source": "src/stock_v2/services/serialize.py",
+      "target": "src/yeuxq/services/serialize.py",
+      "source_sha256": "87a2180e3edfac36eb6695149d7a3d2e10e146cb6c607a1c3e7f819f9b9201e0",
+      "target_sha256": "9bff185c8b350d4e7cacdfea90b8e2e090dd77bea58dd85ee56028ebcc228e40",
+      "disposition": "migrated_namespace_and_response_hardening"
+    },
+    {
+      "source": "src/stock_v2/settings.py",
+      "target": "src/yeuxq/settings.py",
+      "source_sha256": "bcd2c8d2939fb92ae8fda9c9182f484e5805427ff54e60f29060f33d1b05734b",
+      "target_sha256": "346b71b37c7ff89e310095257be5bd2d0cd6cb56a90e91b55a05801b4f0d83d5",
+      "disposition": "migrated_namespace_config_security_and_runtime_hardening"
+    },
+    {
+      "source": "src/stock_v2/storage/__init__.py",
+      "target": "src/yeuxq/storage/__init__.py",
+      "source_sha256": "62a04dc84f2e15c0a58bad6b89ef7f7da647783facc4be66da9f5dc0bf68882b",
+      "target_sha256": "62a04dc84f2e15c0a58bad6b89ef7f7da647783facc4be66da9f5dc0bf68882b",
+      "disposition": "migrated_namespace_rewrite"
+    },
+    {
+      "source": "src/stock_v2/storage/cache.py",
+      "target": "src/yeuxq/storage/cache.py",
+      "source_sha256": "1f45d824a594c42fdfa35f31b46831e3515b00c11dac4de09ebd65c622a563f0",
+      "target_sha256": "a206a4e28fd4978bfadcaeb2815048b676001efe80cd7e3e4689cf920397920b",
+      "disposition": "migrated_namespace_and_runtime_storage_hardening"
+    },
+    {
+      "source": "src/stock_v2/storage/kline_store.py",
+      "target": "src/yeuxq/storage/kline_store.py",
+      "source_sha256": "917a324b9b62a93617b518bb5e001a50d1b9bc12c12b38482b5c517d90907d90",
+      "target_sha256": "a39948ca41ae192e17b79820eb24b08818c3bdb6f2f5332fa5a9da4c234135a1",
+      "disposition": "migrated_namespace_and_runtime_storage_hardening"
+    },
+    {
+      "source": "tests/test_agentic_reports.py",
+      "target": "tests/yeuxq/donor/test_agentic_reports.py",
+      "source_sha256": "1ce2d68a9378a64b6773b7c39a77aa85b9eeb09acfe8f9a99c2f91568966980a",
+      "target_sha256": "ee821acc4008112cf848ecee9c72d641cfc7faf1b7458fbcd2321e3df18d2017",
+      "disposition": "migrated_test_namespace_and_regression_hardening"
+    },
+    {
+      "source": "tests/test_engine.py",
+      "target": "tests/yeuxq/donor/test_engine.py",
+      "source_sha256": "f8b1286f96d15ec7b0b44512f0e7322407af164874af82ebe17d4bc1c9449a90",
+      "target_sha256": "08e046eb16c38e8c65f16c6920c31960e56a73ebc895168996fed57196a4e0c3",
+      "disposition": "migrated_test_namespace_and_regression_hardening"
+    },
+    {
+      "source": "tests/test_indicators.py",
+      "target": "tests/yeuxq/donor/test_indicators.py",
+      "source_sha256": "177e3ef8be2f004e8786c60d4458f75bf0c0b1bd85f2a189531b7a5340df1952",
+      "target_sha256": "3ddaae40e8ef495a4ae96bdfe4291f2930944c31fd9f311827fc944ac7437f62",
+      "disposition": "migrated_test_namespace_and_regression_hardening"
+    },
+    {
+      "source": "tests/test_orderflow_unit.py",
+      "target": "tests/yeuxq/donor/test_orderflow_unit.py",
+      "source_sha256": "17008e84f6831bd49ad61003ed1591b42b418bc1c153ec5808d26926be330d44",
+      "target_sha256": "cde6247baee0d4fd80246a5400229f4ac27546127ead0e1999962e4148bf43b5",
+      "disposition": "migrated_test_namespace_and_regression_hardening"
+    },
+    {
+      "source": "tests/test_research_store.py",
+      "target": "tests/yeuxq/donor/test_research_store.py",
+      "source_sha256": "40bfc6d683e4af01c9d492de94fdd58865dccb933984559ec422b91240565525",
+      "target_sha256": "9bbad0173902c9d19d5c1eca6762702a3f0feb8a99de367b4e7f9e2435f34ee5",
+      "disposition": "migrated_test_namespace_and_regression_hardening"
+    },
+    {
+      "source": "tests/test_store.py",
+      "target": "tests/yeuxq/donor/test_store.py",
+      "source_sha256": "e0b487505c0bad922ac43bd9bf24d0bb5c2917379526513d63c72208a8417eab",
+      "target_sha256": "d534fa18768993892ecf961c09bff223b4d167f0a76f88906b594408514e5916",
+      "disposition": "migrated_test_namespace_and_regression_hardening"
+    },
+    {
+      "source": "tests/test_vision.py",
+      "target": "tests/yeuxq/donor/test_vision.py",
+      "source_sha256": "737401bac7bc4c7201028357b6c64eb26d41420b5903bbb2c62ef6efcb4b7ff1",
+      "target_sha256": "99e4db49b0f32f308a5646e1a786bcc1923085763951b427edc1689dca1907cf",
+      "disposition": "migrated_test_namespace_and_regression_hardening"
+    },
+    {
+      "source": "tests/test_yeux_parse.py",
+      "target": "tests/yeuxq/donor/test_yeux_parse.py",
+      "source_sha256": "acd575033e760c30d64ce6b66bc6b809d167cb5dabc5e794b3f4536efe947c9e",
+      "target_sha256": "1084f730df7861567c693b5f73e7b0dd22f8f4460b670524aa42b3125b9fe344",
+      "disposition": "migrated_test_namespace_and_regression_hardening"
+    },
+    {
+      "source": "config/default.yaml",
+      "target": "config/yeuxq.default.yaml",
+      "source_sha256": "54687d4240348ad5ed27b43f3aa687c3064a76841595dc09637259fc17cda68b",
+      "target_sha256": "f974d57fbefd34ee69a8f1d62bf36f8593b41bbcd086d4d6ba3b704f0eab620b",
+      "disposition": "migrated_config_runtime_and_secret_isolation"
+    },
+    {
+      "source": "web/css/app.css",
+      "target": "src/yeuxq/web/css/app.css",
+      "source_sha256": "fbfe9edd2c8e0e9d42bbe85b00c5934d07259227667768fecfb323823977aeca",
+      "target_sha256": "3858801173c19d5a449615619149865422efa5cc0f6ae6c0592023ddbfce490e",
+      "disposition": "migrated_web_first_party_hardened"
+    },
+    {
+      "source": "web/index.html",
+      "target": "src/yeuxq/web/index.html",
+      "source_sha256": "a767ad6f08103205e90b5833f9ab11b2262739c51e5b7f655ed82ca9ec39b0af",
+      "target_sha256": "ec26bb4a59a239f254fd340148f02040b0225a4298cccc1c3bd8d83487ac7bf2",
+      "disposition": "migrated_web_first_party_hardened"
+    },
+    {
+      "source": "web/js/api.js",
+      "target": "src/yeuxq/web/js/api.js",
+      "source_sha256": "1751a408c11d9093bba9fc389c26adc93e594d0b0b26178d29229389f02a1463",
+      "target_sha256": "1751a408c11d9093bba9fc389c26adc93e594d0b0b26178d29229389f02a1463",
+      "disposition": "migrated_web_first_party_verbatim"
+    },
+    {
+      "source": "web/js/cells.js",
+      "target": "src/yeuxq/web/js/cells.js",
+      "source_sha256": "2beddb1298b9ffb6d3b7d167bcea71361d1d608c24ff71600787e052afeebeae",
+      "target_sha256": "2beddb1298b9ffb6d3b7d167bcea71361d1d608c24ff71600787e052afeebeae",
+      "disposition": "migrated_web_first_party_verbatim"
+    },
+    {
+      "source": "web/js/charts.js",
+      "target": "src/yeuxq/web/js/charts.js",
+      "source_sha256": "911a4a7a8346774dfb7e6bdddd59e9a805526518b05effef07d9af7e81580ca8",
+      "target_sha256": "a7b6d5c2dd42e45b38ed8ce3a1bafbac37349606de88cc62aeef6e3cbdfdc705",
+      "disposition": "migrated_web_first_party_hardened"
+    },
+    {
+      "source": "web/js/main.js",
+      "target": "src/yeuxq/web/js/main.js",
+      "source_sha256": "7f4c77559e7eca38e75a5cedd827f7e285cf325c269160ec9982e4d1622b173d",
+      "target_sha256": "7f4c77559e7eca38e75a5cedd827f7e285cf325c269160ec9982e4d1622b173d",
+      "disposition": "migrated_web_first_party_verbatim"
+    },
+    {
+      "source": "web/js/orderflow.js",
+      "target": "src/yeuxq/web/js/orderflow.js",
+      "source_sha256": "90a972b745afdf0f92545bedeb2adb2dec83e5d9261604476c12b76797035b28",
+      "target_sha256": "90a972b745afdf0f92545bedeb2adb2dec83e5d9261604476c12b76797035b28",
+      "disposition": "migrated_web_first_party_verbatim"
+    },
+    {
+      "source": "web/js/panels.js",
+      "target": "src/yeuxq/web/js/panels.js",
+      "source_sha256": "8abc45aae725a5aced79461146b0bfaeb6150bc680a24892ba9950da33dc6eb3",
+      "target_sha256": "8abc45aae725a5aced79461146b0bfaeb6150bc680a24892ba9950da33dc6eb3",
+      "disposition": "migrated_web_first_party_verbatim"
+    },
+    {
+      "source": "web/js/rail.js",
+      "target": "src/yeuxq/web/js/rail.js",
+      "source_sha256": "7090180936014098815d14baaf2176127d0933aa603a19894980a6eb3a851f1d",
+      "target_sha256": "7090180936014098815d14baaf2176127d0933aa603a19894980a6eb3a851f1d",
+      "disposition": "migrated_web_first_party_verbatim"
+    },
+    {
+      "source": "web/js/research.js",
+      "target": "src/yeuxq/web/js/research.js",
+      "source_sha256": "b6619081d84fd7aa382dfbb78bac2200da865642b96e81557319c68040aa57c5",
+      "target_sha256": "4b18cafc72ceb69a6564d4fddd2b3006c57a044d5c98e52e6de684c7f3bb372e",
+      "disposition": "migrated_web_first_party_hardened"
+    },
+    {
+      "source": "web/js/state.js",
+      "target": "src/yeuxq/web/js/state.js",
+      "source_sha256": "09fa46c0d9e69031ab35f8253ba041bc10cd5e7072a6961f31d6ee0937fe8d57",
+      "target_sha256": "09fa46c0d9e69031ab35f8253ba041bc10cd5e7072a6961f31d6ee0937fe8d57",
+      "disposition": "migrated_web_first_party_verbatim"
+    },
+    {
+      "source": "web/js/trace.js",
+      "target": "src/yeuxq/web/js/trace.js",
+      "source_sha256": "d94477736bdb1d8638f5b0d4e98273636afd91ba8ca4b7f93308390d538c0743",
+      "target_sha256": "d94477736bdb1d8638f5b0d4e98273636afd91ba8ca4b7f93308390d538c0743",
+      "disposition": "migrated_web_first_party_verbatim"
+    },
+    {
+      "source": "web/js/util.js",
+      "target": "src/yeuxq/web/js/util.js",
+      "source_sha256": "f6e101a9eb36918296301aa175891c0429a89a364726eb7d886aeb120527fbbb",
+      "target_sha256": "6b782b6852cdc8f2e483d8a3b9c9271c73becebb933f0447cf89086cfa4b96b3",
+      "disposition": "migrated_web_first_party_hardened"
+    },
+    {
+      "source": "web/js/vision.js",
+      "target": "src/yeuxq/web/js/vision.js",
+      "source_sha256": "a6f4c8e3773c6fc1a409e488f8a19b5a5245e567ed9ad434dd05855760c06ecc",
+      "target_sha256": "7d0428bca50752527f9da0548fb69c97ec79b2ef27059073633a1ed7d8afdcf0",
+      "disposition": "migrated_web_first_party_hardened"
+    },
+    {
+      "source": "web/vendor/echarts.min.js",
+      "target": "src/yeuxq/web/vendor/echarts.min.js",
+      "source_sha256": "42f8329d989b6f6539dd2b15bbdf0d82025762ac112fbb60dc57b27d7bcf3946",
+      "target_sha256": "42f8329d989b6f6539dd2b15bbdf0d82025762ac112fbb60dc57b27d7bcf3946",
+      "disposition": "migrated_web_vendor_verbatim"
+    },
+    {
+      "source": "web/vendor/marked.min.js",
+      "target": "src/yeuxq/web/vendor/marked.min.js",
+      "source_sha256": "15fabce5b65898b32b03f5ed25e9f891a729ad4c0d6d877110a7744aa847a894",
+      "target_sha256": "15fabce5b65898b32b03f5ed25e9f891a729ad4c0d6d877110a7744aa847a894",
+      "disposition": "migrated_web_vendor_verbatim"
+    },
+    {
+      "source": "web/vendor/purify.min.js",
+      "target": "src/yeuxq/web/vendor/purify.min.js",
+      "source_sha256": "c0845096a7c4a6741f362ac506c94c1c7d27dc603bcc1bf64a587f76f2dbe3a1",
+      "target_sha256": "c0845096a7c4a6741f362ac506c94c1c7d27dc603bcc1bf64a587f76f2dbe3a1",
+      "disposition": "migrated_web_vendor_verbatim"
+    },
+    {
+      "source": "Cargo.toml",
+      "target": "Cargo.toml",
+      "source_sha256": "73d125c2e86843094759a76f0b52c409c7d5be985756d7d5331f69d3cfae36d4",
+      "target_sha256": "73d125c2e86843094759a76f0b52c409c7d5be985756d7d5331f69d3cfae36d4",
+      "disposition": "copied_verbatim"
+    },
+    {
+      "source": "Cargo.lock",
+      "target": "Cargo.lock",
+      "source_sha256": "d8472b3d5736b2e52fdddcb8f63189566b0f4938586158cb7048c655ce6b9946",
+      "target_sha256": "d8472b3d5736b2e52fdddcb8f63189566b0f4938586158cb7048c655ce6b9946",
+      "disposition": "copied_verbatim"
+    },
+    {
+      "source": "crates/trendlab-core/Cargo.toml",
+      "target": "crates/trendlab-core/Cargo.toml",
+      "source_sha256": "7035e76291d8c4b6837725b4be38b0eb86e4fe4d1d722bc688a563449404fd21",
+      "target_sha256": "7035e76291d8c4b6837725b4be38b0eb86e4fe4d1d722bc688a563449404fd21",
+      "disposition": "copied_verbatim"
+    },
+    {
+      "source": "crates/trendlab-core/src/backtest.rs",
+      "target": "crates/trendlab-core/src/backtest.rs",
+      "source_sha256": "cc033940f9b92ff41b6b965298074a08a273c4755c69c05b75def0387a95b91a",
+      "target_sha256": "d69c26186c72ae98d139dad53a70a6c7c71600da60e8ef63a5bc16c875c57b68",
+      "disposition": "migrated_rust_correctness_hardening"
+    },
+    {
+      "source": "crates/trendlab-core/src/bin/trendlab.rs",
+      "target": "crates/trendlab-core/src/bin/trendlab.rs",
+      "source_sha256": "5b0fd04e7a59276a60324f03eb5dab4f21d69f1f829300a59f673c119b1a4816",
+      "target_sha256": "5b0fd04e7a59276a60324f03eb5dab4f21d69f1f829300a59f673c119b1a4816",
+      "disposition": "copied_verbatim"
+    },
+    {
+      "source": "crates/trendlab-core/src/engine.rs",
+      "target": "crates/trendlab-core/src/engine.rs",
+      "source_sha256": "031dbc9cc39a47cb0cc0d3470786aeddef1617e2ada747ab1412d20e5df95cc4",
+      "target_sha256": "031dbc9cc39a47cb0cc0d3470786aeddef1617e2ada747ab1412d20e5df95cc4",
+      "disposition": "copied_verbatim"
+    },
+    {
+      "source": "crates/trendlab-core/src/indicators.rs",
+      "target": "crates/trendlab-core/src/indicators.rs",
+      "source_sha256": "3c155e5b8831ecd0818f89c16ff38a9787a3200416884b532489d3d943e3130e",
+      "target_sha256": "3c155e5b8831ecd0818f89c16ff38a9787a3200416884b532489d3d943e3130e",
+      "disposition": "copied_verbatim"
+    },
+    {
+      "source": "crates/trendlab-core/src/lib.rs",
+      "target": "crates/trendlab-core/src/lib.rs",
+      "source_sha256": "2ba28b62824c5c5fe29e6ee6c1aa928c5f7eaf14aa56c4ab4d5907555c20febf",
+      "target_sha256": "0f4379454c4f69747a5c45b9785ecf0d51892a49dbbdae4a1e033ac295490169",
+      "disposition": "migrated_rust_correctness_hardening"
+    },
+    {
+      "source": "crates/trendlab-core/src/modules.rs",
+      "target": "crates/trendlab-core/src/modules.rs",
+      "source_sha256": "d6842cb95abc659a8f5a071133f8ff1ed6c8f99e6b42ad0eb7e91df8be3887cb",
+      "target_sha256": "d6842cb95abc659a8f5a071133f8ff1ed6c8f99e6b42ad0eb7e91df8be3887cb",
+      "disposition": "copied_verbatim"
+    },
+    {
+      "source": "crates/trendlab-core/src/types.rs",
+      "target": "crates/trendlab-core/src/types.rs",
+      "source_sha256": "b1a9337f5b8ed57e41c1ab05ddfca330ba98c6a531e4d7bde1419cb41e1c41dd",
+      "target_sha256": "b1a9337f5b8ed57e41c1ab05ddfca330ba98c6a531e4d7bde1419cb41e1c41dd",
+      "disposition": "copied_verbatim"
+    }
+  ],
+  "rejected": [
+    {
+      "source": "config/intel.local.yaml",
+      "target": null,
+      "disposition": "rejected_local_secret_configuration",
+      "content_read": false,
+      "hash_policy": "not_computed"
+    },
+    {
+      "source": "data/*.db",
+      "target": null,
+      "disposition": "rejected_runtime_database",
+      "content_read": false,
+      "hash_policy": "not_computed"
+    },
+    {
+      "source": "data/reports/**",
+      "target": null,
+      "disposition": "rejected_generated_reports",
+      "content_read": false,
+      "hash_policy": "not_computed"
+    },
+    {
+      "source": "reports/**",
+      "target": null,
+      "disposition": "rejected_generated_reports",
+      "content_read": false,
+      "hash_policy": "not_computed"
+    },
+    {
+      "source": "output/**",
+      "target": null,
+      "disposition": "rejected_generated_output",
+      "content_read": false,
+      "hash_policy": "not_computed"
+    },
+    {
+      "source": "target/**",
+      "target": null,
+      "disposition": "rejected_build_output",
+      "content_read": false,
+      "hash_policy": "not_computed"
+    },
+    {
+      "source": "*.egg-info/**",
+      "target": null,
+      "disposition": "rejected_python_build_metadata",
+      "content_read": false,
+      "hash_policy": "not_computed"
+    },
+    {
+      "source": "**/*.egg-info/**",
+      "target": null,
+      "disposition": "rejected_python_build_metadata",
+      "content_read": false,
+      "hash_policy": "not_computed"
+    }
+  ]
+}

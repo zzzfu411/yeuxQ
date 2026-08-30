@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-08-30T21:13:40+08:00",
+  "updated_at": "2026-08-30T23:00:41+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "quantify/yeuxQ",
@@ -23,12 +23,12 @@
   },
   "overall": {
     "status": "in_progress",
-    "active_phase": "observation_platform",
-    "completed_phases": 2,
+    "active_phase": "frontend",
+    "completed_phases": 4,
     "total_phases": 7,
-    "progress_percent": 29,
+    "progress_percent": 57,
     "release_readiness": "BLOCK",
-    "release_block_reason": "The architecture/contracts baseline is complete, but donor rights, credential rotation and other open P0 release risks remain.",
+    "release_block_reason": "The unified API is complete, but donor redistribution rights, credential rotation, project licensing, frontend semantics and hardening remain open.",
     "operating_boundary": "research_only_advisory_only"
   },
   "frontend_sync": {
@@ -44,37 +44,37 @@
     "refresh_strategy": "etag_or_updated_at_polling",
     "update_rule": "implementation_tests_evidence_and_status_change_must_share_one_commit",
     "last_event": {
-        "phase": "contracts",
-        "status": "completed",
-        "message": "Architecture, immutable observation contracts, hash-chain storage, fail-closed secret scanning, dual-package build and the read-only status UI passed Phase 1 acceptance."
+      "phase": "unified_api",
+      "status": "completed",
+      "message": "The production application now mounts a versioned API backed by explicit observation, integration-status and canonical research-readiness facades; offline, OpenAPI and negative execution-surface contracts passed Phase 3 acceptance."
     }
   },
   "verification": {
-    "verified_at": "2026-08-30T21:13:40+08:00",
+    "verified_at": "2026-08-30T23:00:41+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
       "status": "PASS",
-      "passed": 51,
+      "passed": 228,
       "failed": 0,
+      "skipped": 3,
       "scope": [
-        "tests/yeuxq",
-        "tests/test_secret_scan.py",
-        "tests/test_integration_status_ui.py"
+        "tests/yeuxq"
       ]
     },
     "full_tests": {
       "status": "PASS",
-      "passed": 1076,
+      "passed": 1266,
       "failed": 0,
-      "duration_seconds": 1165.17,
+      "skipped": 3,
+      "duration_seconds": 1649.70,
       "scope": [
         "tests"
       ]
     },
     "secret_scan": {
       "status": "PASS",
-      "candidate_files": 521,
+      "candidate_files": 630,
       "scope": "canonical_git_candidates"
     },
     "distribution_build": {
@@ -99,14 +99,20 @@
     "notes": [
       "Pytest cache writes were disabled for the acceptance run; no cache warning was emitted.",
       "Playwright verified the static projection on desktop and mobile and confirmed offline requests reset all displayed evidence to BLOCK.",
-      "Donor credential findings are not included in values or logs; two credentials require owner rotation."
+      "Donor credential findings are not included in values or logs; two credentials require owner rotation.",
+      "Phase 2 added 226 passing yeuxQ tests with three Windows symlink-permission skips, plus three passing Rust tests.",
+      "Python is canonical by default; Rust is development-only, explicitly selected and falls back without exposing internal errors.",
+      "A wheel-like extraction smoke test served the packaged Web UI and kept writable data outside site-packages.",
+      "The production app mounts only bounded v1 observation, integration-status and canonical readiness facades; OpenAPI contains no account, broker, order, cancel, trade or execution endpoint.",
+      "The complete Python regression passed 1266 tests with three Windows symlink-permission skips; one Starlette TestClient deprecation warning remains tracked for hardening."
     ]
   },
   "boundaries": {
     "live_observation": {
-      "status": "contract_completed",
+      "status": "platform_completed",
       "contract_module": "src/yeuxq/contracts.py",
       "store_module": "src/yeuxq/observation_store.py",
+      "bridge_module": "src/yeuxq/services/observation.py",
       "storage_class": "append_only_hash_chained_jsonl",
       "allowed_uses": [
         "dashboard_display",
@@ -220,13 +226,22 @@
       "id": "observation_platform",
       "order": 2,
       "name": "Controlled stock_v2 application and observation migration",
-      "status": "in_progress",
-      "progress_percent": 5,
+      "status": "completed",
+      "progress_percent": 100,
       "started_at": "2026-08-30",
-      "completed_at": null,
+      "completed_at": "2026-08-30",
       "owner": "integration",
       "evidence": [
-        "docs/30_Stock_Integration_Plan.md#phase-2--observation-platform-migration-进行中"
+        "docs/30_Stock_Integration_Plan.md#phase-2--observation-platform-migration-已完成",
+        "integration/donor_migration_manifest.json",
+        "src/yeuxq/providers/status.py",
+        "src/yeuxq/providers/http_client.py",
+        "src/yeuxq/services/observation.py",
+        "src/yeuxq/security",
+        "src/yeuxq/intel/report_store.py",
+        "src/yeuxq/web",
+        "crates/trendlab-core",
+        "tests/yeuxq"
       ],
       "acceptance": [
         "Provider failures, rate limits, stale cache and unavailable capabilities are explicit.",
@@ -239,12 +254,21 @@
       "id": "unified_api",
       "order": 3,
       "name": "Unified API and research facade",
-      "status": "not_started",
-      "progress_percent": 0,
-      "started_at": null,
-      "completed_at": null,
-      "owner": "unassigned",
-      "evidence": [],
+      "status": "completed",
+      "progress_percent": 100,
+      "started_at": "2026-08-30",
+      "completed_at": "2026-08-30",
+      "owner": "integration",
+      "evidence": [
+        "docs/30_Stock_Integration_Plan.md#phase-3--unified-api-and-research-facade-已完成",
+        "src/yeuxq/api/routes_v1.py",
+        "src/yeuxq/api/app.py",
+        "src/yeuxq/api/deps.py",
+        "src/yeuxq/services/integration_status.py",
+        "src/yeuxq/services/research_facade.py",
+        "tests/yeuxq/test_v1_api_contract.py",
+        "tests/yeuxq/test_research_facade.py"
+      ],
       "acceptance": [
         "Versioned API uses public contracts and read-only research facades.",
         "No account, broker, order, cancel or live-execution endpoint exists.",
@@ -256,12 +280,14 @@
       "id": "frontend",
       "order": 4,
       "name": "Clean-room frontend and continuous status UI",
-      "status": "not_started",
+      "status": "in_progress",
       "progress_percent": 0,
-      "started_at": null,
+      "started_at": "2026-08-30",
       "completed_at": null,
-      "owner": "unassigned",
-      "evidence": [],
+      "owner": "integration",
+      "evidence": [
+        "docs/30_Stock_Integration_Plan.md#phase-4--clean-room-frontend-and-continuous-ui-status-进行中"
+      ],
       "acceptance": [
         "UI status matches this JSON and shows invalid state as BLOCK.",
         "Observation source, timestamps, freshness and unavailable state are visible.",
@@ -338,10 +364,10 @@
       "id": "P0-04",
       "priority": "P0",
       "title": "Live observations could contaminate research data or evidence",
-      "status": "open",
+      "status": "mitigated",
       "owner": "data_boundary",
       "release_blocking": true,
-      "closure": "Use physically separate storage, no implicit promotion and passing negative boundary tests."
+      "closure": "Independent append-only observation storage, explicit capture and negative promotion-boundary tests are in place; retain them through full hardening before closing."
     },
     {
       "id": "P0-05",
@@ -356,10 +382,10 @@
       "id": "P0-06",
       "priority": "P0",
       "title": "Duplicate backtests or gates could issue contradictory promotion results",
-      "status": "open",
+      "status": "mitigated",
       "owner": "research",
       "release_blocking": true,
-      "closure": "Make src/quantify the sole gate authority and donor diagnostics advisory-only."
+      "closure": "The v1 research facade reads only canonical src/quantify readiness artifacts and strips donor, LLM and observation promotion fields; retain negative tests through hardening before closing."
     },
     {
       "id": "P0-07",
@@ -392,10 +418,10 @@
       "id": "P1-03",
       "priority": "P1",
       "title": "Stale provider cache may be displayed as real-time",
-      "status": "open",
+      "status": "mitigated",
       "owner": "providers_ui",
       "release_blocking": false,
-      "closure": "Enforce TTL, explicit stale reasons and visible frontend freshness."
+      "closure": "Provider TTL and HIT/MISS/STALE reasons are explicit; complete visible freshness QA in the unified frontend before closing."
     },
     {
       "id": "P1-04",
@@ -419,19 +445,19 @@
       "id": "P1-06",
       "priority": "P1",
       "title": "File, URL or rich-text API surfaces may be exploitable",
-      "status": "open",
+      "status": "mitigated",
       "owner": "api_ui",
       "release_blocking": false,
-      "closure": "Use allowlists, reject traversal and arbitrary proxies, and sanitize rendered content."
+      "closure": "Report paths are allowlisted, traversal is rejected, no arbitrary proxy is exposed and packaged rich text uses DOMPurify; re-audit the versioned API and frontend before closing."
     },
     {
       "id": "P1-07",
       "priority": "P1",
       "title": "Third-party web dependency notices may be incomplete",
-      "status": "open",
+      "status": "mitigated",
       "owner": "compliance",
       "release_blocking": false,
-      "closure": "Pin versions and retain verified source and license notices."
+      "closure": "Bundled web dependencies have pinned versions, SHA-256 values, upstream sources and SPDX notices; retain automated manifest verification through release."
     },
     {
       "id": "P1-08",
@@ -468,13 +494,13 @@
     {
       "order": 1,
       "phase": "release",
-      "action": "Rotate the two donor-exposed credentials without copying or displaying their values.",
+      "action": "Confirm redistribution rights for the donor source or replace source-derived files with independently authorized clean-room implementations.",
       "blocking": true
     },
     {
       "order": 2,
-      "phase": "observation_platform",
-      "action": "Migrate only the reviewed stock_v2 source, tests, static assets and optional Rust crate into the yeuxq namespace; exclude all runtime and v4 material.",
+      "phase": "release",
+      "action": "Rotate the two donor-exposed credentials without copying or displaying their values.",
       "blocking": true
     },
     {
@@ -485,14 +511,14 @@
     },
     {
       "order": 4,
-      "phase": "observation_platform",
-      "action": "Apply the report path, bind authentication, secret isolation, market breadth, index, horizon and split-boundary fixes during migration.",
+      "phase": "frontend",
+      "action": "Connect the clean-room workbench to v1 facades and label buy, sell and scan outputs as bounded analysis rather than trading instructions.",
       "blocking": false
     },
     {
       "order": 5,
-      "phase": "observation_platform",
-      "action": "Keep Python as the canonical analysis implementation until Rust parity fixtures pass.",
+      "phase": "hardening",
+      "action": "Keep legacy micro-live readiness semantics behind the canonical offline research boundary and add negative exposure tests before release.",
       "blocking": false
     }
   ]

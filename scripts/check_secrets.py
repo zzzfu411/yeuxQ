@@ -92,7 +92,13 @@ TOKEN_PATTERNS = (
 )
 
 ASSIGNMENT_PATTERN = re.compile(
-    r"^\s*(?:export\s+)?(?P<key>[A-Za-z_][A-Za-z0-9_.-]*)\s*[:=]\s*(?P<value>.*?)\s*$"
+    r"^\s*(?:export\s+)?"
+    r"(?P<key>\"[^\"\r\n]+\"|'[^'\r\n]+'|[A-Za-z_][A-Za-z0-9_.-]*)"
+    r"\s*[:=]\s*(?P<value>.*?)\s*$"
+)
+JSON_ASSIGNMENT_PATTERN = re.compile(
+    r"(?P<key>\"[^\"\r\n]+\")\s*:\s*"
+    r"(?P<value>\"(?:\\.|[^\"\\])*\"|[^,}\]\r\n]+)"
 )
 SENSITIVE_KEY_PARTS = frozenset(
     {
@@ -111,7 +117,7 @@ SENSITIVE_KEY_PARTS = frozenset(
         "token",
     }
 )
-CONFIG_SUFFIXES = frozenset({".yaml", ".yml"})
+CONFIG_SUFFIXES = frozenset({".cfg", ".conf", ".ini", ".json", ".toml", ".yaml", ".yml"})
 PLACEHOLDER_WORDS = frozenset(
     {
         "changeme",
@@ -140,7 +146,7 @@ def _is_excluded(path: Path, root: Path | None = None) -> bool:
     return any(part in EXCLUDED_DIRECTORY_NAMES for part in parts[:-1])
 
 
-def _is_env_or_yaml(path: Path) -> bool:
+def _is_env_or_config(path: Path) -> bool:
     name = path.name.lower()
     return name == ".env" or name.startswith(".env.") or path.suffix.lower() in CONFIG_SUFFIXES
 
@@ -178,18 +184,26 @@ def _is_placeholder(value: str) -> bool:
     return len(value) < 6
 
 
-def _credential_match(path: Path, line: str) -> tuple[str, tuple[int, int]] | None:
-    if not _is_env_or_yaml(path):
-        return None
-    match = ASSIGNMENT_PATTERN.match(line)
-    if match is None or not _is_sensitive_key(match.group("key")):
-        return None
-    raw_value = match.group("value")
-    value_without_comment = raw_value.split(" #", 1)[0].strip()
-    if _is_placeholder(value_without_comment):
-        return None
-    start = match.start("value")
-    return "credential-assignment", (start, start + len(value_without_comment))
+def _credential_matches(path: Path, line: str) -> list[tuple[str, tuple[int, int]]]:
+    if not _is_env_or_config(path):
+        return []
+    matches = (
+        list(JSON_ASSIGNMENT_PATTERN.finditer(line))
+        if path.suffix.lower() == ".json"
+        else ([match] if (match := ASSIGNMENT_PATTERN.match(line)) is not None else [])
+    )
+    findings: list[tuple[str, tuple[int, int]]] = []
+    for match in matches:
+        key = _unquote(match.group("key"))
+        if not _is_sensitive_key(key):
+            continue
+        raw_value = match.group("value")
+        value_without_comment = raw_value.split(" #", 1)[0].strip().rstrip(",")
+        if _is_placeholder(value_without_comment):
+            continue
+        start = match.start("value")
+        findings.append(("credential-assignment", (start, start + len(value_without_comment))))
+    return findings
 
 
 def _redact(line: str, spans: Iterable[tuple[int, int]]) -> str:
@@ -221,9 +235,7 @@ def scan_file(path: Path) -> list[Finding]:
             detected.extend(
                 (rule.rule_id, match.span()) for match in rule.expression.finditer(line)
             )
-        credential = _credential_match(path, line)
-        if credential is not None:
-            detected.append(credential)
+        detected.extend(_credential_matches(path, line))
         if not detected:
             continue
         safe_line = _redact(line, (span for _, span in detected))

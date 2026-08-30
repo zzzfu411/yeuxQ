@@ -49,6 +49,50 @@ def test_yaml_and_env_assignments_skip_placeholders(tmp_path: Path) -> None:
     assert env_secret not in env_findings[0].redacted_line
 
 
+def test_json_toml_and_ini_assignments_are_detected_and_redacted(
+    tmp_path: Path,
+) -> None:
+    first = "json" + "-credential-123456"
+    second = "toml" + "-credential-123456"
+    third = "ini" + "-credential-123456"
+    json_path = tmp_path / "settings.json"
+    json_path.write_text(
+        '{"llm_api_key": "' + first + '", "max_tokens": 4096}',
+        encoding="utf-8",
+    )
+    toml_path = tmp_path / "settings.toml"
+    toml_path.write_text('client_secret = "' + second + '"\n', encoding="utf-8")
+    ini_path = tmp_path / "settings.ini"
+    ini_path.write_text("broker.password=" + third + "\n", encoding="utf-8")
+
+    json_findings = scan_file(json_path)
+    toml_findings = scan_file(toml_path)
+    ini_findings = scan_file(ini_path)
+
+    assert [item.rule_id for item in json_findings] == ["credential-assignment"]
+    assert [item.rule_id for item in toml_findings] == ["credential-assignment"]
+    assert [item.rule_id for item in ini_findings] == ["credential-assignment"]
+    combined = "\n".join(
+        item.redacted_line for item in [*json_findings, *toml_findings, *ini_findings]
+    )
+    assert first not in combined
+    assert second not in combined
+    assert third not in combined
+    assert "max_tokens" in json_findings[0].redacted_line
+
+
+def test_structured_config_placeholders_and_non_secret_token_settings_are_safe(
+    tmp_path: Path,
+) -> None:
+    config = tmp_path / "public.json"
+    config.write_text(
+        '{"api_key": "${YEUXQ_LLM_API_KEY}", "max_tokens": 4096, "token_budget": 8}',
+        encoding="utf-8",
+    )
+
+    assert scan_file(config) == []
+
+
 def test_git_candidates_include_tracked_and_untracked_but_exclude_generated(
     tmp_path: Path,
 ) -> None:

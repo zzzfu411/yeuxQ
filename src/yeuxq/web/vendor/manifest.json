@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "name": "Apache ECharts",
+      "version": "5.5.0",
+      "spdx": "Apache-2.0",
+      "upstream": "https://github.com/apache/echarts",
+      "release": "https://github.com/apache/echarts/releases/tag/5.5.0",
+      "license": "https://github.com/apache/echarts/blob/5.5.0/LICENSE",
+      "files": [
+        {
+          "path": "echarts.min.js",
+          "sha256": "42f8329d989b6f6539dd2b15bbdf0d82025762ac112fbb60dc57b27d7bcf3946"
+        }
+      ]
+    },
+    {
+      "name": "Marked",
+      "version": "12.0.2",
+      "spdx": "MIT",
+      "upstream": "https://github.com/markedjs/marked",
+      "release": "https://github.com/markedjs/marked/releases/tag/v12.0.2",
+      "license": "https://github.com/markedjs/marked/blob/v12.0.2/LICENSE.md",
+      "files": [
+        {
+          "path": "marked.min.js",
+          "sha256": "15fabce5b65898b32b03f5ed25e9f891a729ad4c0d6d877110a7744aa847a894"
+        }
+      ]
+    },
+    {
+      "name": "DOMPurify",
+      "version": "3.1.6",
+      "spdx": "Apache-2.0 OR MPL-2.0",
+      "upstream": "https://github.com/cure53/DOMPurify",
+      "release": "https://github.com/cure53/DOMPurify/releases/tag/3.1.6",
+      "license": "https://github.com/cure53/DOMPurify/blob/3.1.6/LICENSE",
+      "files": [
+        {
+          "path": "purify.min.js",
+          "sha256": "c0845096a7c4a6741f362ac506c94c1c7d27dc603bcc1bf64a587f76f2dbe3a1"
+        }
+      ]
+    }
+  ]
+}

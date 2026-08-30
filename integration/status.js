@@ -21,6 +21,7 @@
     observationBoundary: Object.freeze([
       "not_started",
       "contract_completed",
+      "platform_completed",
       "implemented",
       "verified",
       "blocked",
