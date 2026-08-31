@@ -2,7 +2,7 @@
 
 Status: in progress
 Evidence date: 2026-08-31
-Rehearsed commit: `32c7cf4a253af73fa1460e6a17bf09eed4484f59`
+Rehearsed commit: `bbf48a0c380ad2d16017dbf0edf539370a676614`
 Canonical branch: `codex/integrate-stock-v2`
 
 This rehearsal validates the committed repository in a new Windows clone. It
@@ -26,7 +26,7 @@ Commit `32c7cf4` fixes both conditions:
   LF byte streams;
 - CI creates `./tmp` before passing `--basetemp ./tmp/pytest-ci`.
 
-In the new clone, Git reported `core.autocrlf=true` while
+In the final `bbf48a0` rehearsal clone, Git reported `core.autocrlf=true` while
 `integration/donor_migration_manifest.json`, `src/yeuxq/__init__.py`, and
 `src/yeuxq/web/vendor/manifest.json` all remained `i/lf w/lf`.
 
@@ -39,7 +39,7 @@ In the new clone, Git reported `core.autocrlf=true` while
 | Ruff lint/format | PASS — repository lint and 96 integrated files formatted |
 | Rust workspace | PASS — 3 passed |
 | First-party JavaScript | PASS — 13 modules passed `node --check` |
-| Secret scan | PASS — 651 candidate files checked |
+| Secret scan | PASS — 652 candidate files checked |
 | Wheel/sdist build | PASS — both archives built from the clean clone |
 | Distribution compliance | PASS — 2 archives audited |
 | Wheel import/startup smoke | PASS — `quantify` and `yeuxq` import, bounded v1 app starts with an explicit writable `YEUXQ_DATA_DIR` |
@@ -47,6 +47,7 @@ In the new clone, Git reported `core.autocrlf=true` while
 | Wheel UI | PASS — packaged assets render; source-only integration page fails closed |
 | Full clean regression at `32c7cf4` | INVESTIGATED — 1313 passed, 6 skipped, 1 test-isolation failure |
 | Isolated router correction | PASS — failing case passed alone; related router/status/CI/distribution suite passed 76 tests |
+| Final full clean regression at `bbf48a0` | PASS — 1314 passed, 6 skipped, 1 tracked deprecation warning |
 
 The single full-suite failure was not a product-path regression. The test did
 not provide `latest_import_report_path`, so its expected router result depended
@@ -54,9 +55,10 @@ on whether the checkout happened to contain the untracked workspace artifact
 `results/import/recent/data_import.json`. A clean checkout correctly produced
 `WATCH` under the existing data-intake-router contract, while the long-lived
 working tree produced `BLOCK`. The test now supplies an explicitly missing path
-inside `tmp_path` and asserts the contracted `WATCH` result. A new committed
-clean clone and full regression remain required before this rehearsal can be
-closed.
+inside `tmp_path` and asserts the contracted `WATCH` result. A new ordinary
+Windows clone of commit `bbf48a0` then passed the isolated case and the complete
+Python regression. Ruff, Rust, JavaScript, secret scanning, archive build and
+distribution compliance also passed from that clone.
 
 ## Browser acceptance
 
@@ -77,6 +79,13 @@ The wheel-installed app was started with a temporary explicit
 showed `RESEARCH ONLY` and `NO BROKER`, and had no horizontal overflow or
 console warnings/errors. `/integration/` returned the intentional source-only
 `503` JSON response rather than inventing packaged status evidence.
+
+After recording the final `bbf48a0` clean-clone results, the source status page
+was served again and inspected in the in-app browser. It projected Phase 6 as
+`75% / IN PROGRESS`, full regression as `1314 passed / 0 failed`, secret scan as
+`652 candidate files`, and release readiness as `BLOCK`. At the browser's
+1280-pixel viewport, document width remained within the viewport and no console
+warning or error was recorded.
 
 ## Remaining blockers
 

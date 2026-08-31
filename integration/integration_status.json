@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-08-31T21:03:00+08:00",
+  "updated_at": "2026-08-31T21:28:00+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "zzzfu411/yeuxQ",
@@ -46,11 +46,11 @@
       "last_event": {
       "phase": "release",
       "status": "in_progress",
-      "message": "The commit 32c7cf4 clean-clone full regression reached 1313 passed and 6 skipped with one workspace-artifact-dependent test; its isolation fix and 76 related tests now pass, and a new committed clean-clone rerun is next."
+      "message": "The final Windows clean clone of bbf48a0 passed locked install, the isolated router case, 1314-test full regression, lint/format, secret scan, Rust, JavaScript, archive build and distribution audit; external release prerequisites remain BLOCK."
     }
   },
   "verification": {
-    "verified_at": "2026-08-31T21:03:00+08:00",
+    "verified_at": "2026-08-31T21:28:00+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
@@ -64,17 +64,17 @@
     },
     "full_tests": {
       "status": "PASS",
-      "passed": 1316,
+      "passed": 1314,
       "failed": 0,
-      "skipped": 3,
-      "duration_seconds": 1423.88,
+      "skipped": 6,
+      "duration_seconds": 1252.32,
       "scope": [
         "tests"
       ]
     },
     "secret_scan": {
       "status": "PASS",
-      "candidate_files": 651,
+      "candidate_files": 652,
       "scope": "canonical_git_candidates"
     },
     "distribution_build": {
@@ -83,8 +83,8 @@
       "contains_quantify": true,
       "contains_yeuxq": true,
       "artifacts": [
-        "dist-phase6-final/quantify-0.1.0.tar.gz",
-        "dist-phase6-final/quantify-0.1.0-py3-none-any.whl"
+        "dist-phase6-bbf48a0/quantify-0.1.0.tar.gz",
+        "dist-phase6-bbf48a0/quantify-0.1.0-py3-none-any.whl"
       ]
     },
     "visual_qa": {
@@ -112,7 +112,8 @@
       "Final release-contract rerun passed 10 tests; the isolated-cache Phase 6 wheel/sdist build plus audit passed.",
       "Phase 6 added repository-wide LF checkout policy and explicit CI temp-directory creation after an ordinary Windows clean clone exposed line-ending-sensitive provenance hashes; tests/yeuxq now passes 275 tests with three environment skips and the latest secret scan checked 651 candidates.",
       "An ordinary Windows clean clone of commit 32c7cf4 passed locked install, 282 targeted tests with six environment skips, Ruff, three Rust tests, 13 JavaScript syntax checks, secret scan, distribution build/audit, wheel startup and desktop/mobile/status UI browser smoke.",
-      "The commit 32c7cf4 full clean regression completed with 1313 passed, six skipped and one test-isolation failure: a pipeline test implicitly read an untracked workspace import report. The test now supplies an explicitly missing tmp_path report, asserts the existing WATCH router contract, passes alone, and passes in a 76-test related router/status/CI/distribution suite."
+      "The commit 32c7cf4 full clean regression completed with 1313 passed, six skipped and one test-isolation failure: a pipeline test implicitly read an untracked workspace import report. The test now supplies an explicitly missing tmp_path report, asserts the existing WATCH router contract, passes alone, and passes in a 76-test related router/status/CI/distribution suite.",
+      "A new ordinary Windows clone of bbf48a0 passed locked install, LF checkout verification, the isolated router case, the full suite with 1314 passed and six environment skips, Ruff lint/format, a 652-candidate secret scan, three Rust tests, 13 JavaScript syntax checks, wheel/sdist build and two-archive distribution compliance."
     ]
   },
   "boundaries": {
@@ -555,7 +556,7 @@
     {
       "order": 4,
       "phase": "release",
-      "action": "Commit the isolated router-test correction, then rerun the full regression and release checks from a new ordinary Windows clean clone.",
+      "action": "Preserve the passing bbf48a0 clean-clone rehearsal evidence while completing the external licensing, credential-rotation and remote-SHA release prerequisites.",
       "blocking": false
     },
     {
