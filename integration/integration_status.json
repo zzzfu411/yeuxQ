@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-08-31T22:25:00+08:00",
+  "updated_at": "2026-08-31T22:30:00+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "zzzfu411/yeuxQ",
@@ -46,11 +46,11 @@
       "last_event": {
       "phase": "release",
       "status": "in_progress",
-      "message": "The single release operations runbook and executable donor-deprecation boundary now pass: canonical yeuxQ is the only release source and stock_v2 is read-only migration evidence; owner rights, credential rotation and public push remain BLOCK."
+      "message": "GitHub read-only audit confirms zzzfu411/yeuxQ is public and the remote integration branch is behind the verified local candidate; legacy pytest temp roots are now ignored, while owner rights, credential rotation and public push remain BLOCK."
     }
   },
   "verification": {
-    "verified_at": "2026-08-31T22:25:00+08:00",
+    "verified_at": "2026-08-31T22:30:00+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
@@ -116,7 +116,8 @@
       "A new ordinary Windows clone of bbf48a0 passed locked install, LF checkout verification, the isolated router case, the full suite with 1314 passed and six environment skips, Ruff lint/format, a 652-candidate secret scan, three Rust tests, 13 JavaScript syntax checks, wheel/sdist build and two-archive distribution compliance.",
       "GitHub CLI authentication was rechecked in the host environment on 2026-08-31: the Windows keyring authenticated zzzfu411, the user API succeeded, and repository/workflow token scopes were present. Authentication is no longer the push blocker.",
       "The repository owner selected Apache-2.0 with Copyright 2026 zzzfu411. Root LICENSE/NOTICE, README and pyproject metadata are present; rebuilt wheel/sdist archives package all three declared license files and pass the strengthened offline distribution audit. License-focused acceptance passed 53 tests and the current secret scan checked 654 candidates.",
-      "Phase 6 now has a single source/wheel install, startup, configuration, upgrade, rollback and donor-deprecation runbook. The donor manifest marks stock_v2 as read-only evidence and never a runtime or release source; an executable preflight and five focused tests enforce the contract. The combined Phase 6 operations suite passed 57 tests and the secret scan checked 657 candidates."
+      "Phase 6 now has a single source/wheel install, startup, configuration, upgrade, rollback and donor-deprecation runbook. The donor manifest marks stock_v2 as read-only evidence and never a runtime or release source; an executable preflight and five focused tests enforce the contract. The combined Phase 6 operations suite passed 57 tests and the secret scan checked 657 candidates.",
+      "A read-only GitHub audit confirmed zzzfu411/yeuxQ is PUBLIC with default branch main; remote codex/integrate-stock-v2 was 02471852469229c0744a51d7f2c186bbb6fa1da9 while verified local commit bc9a6f2b0b2a9def28891f341ae02c3bc0b1e102 was eight commits ahead. No push occurred. Root tmp_pytest_* artifacts are now ignored."
     ]
   },
   "boundaries": {

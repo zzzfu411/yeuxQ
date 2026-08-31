@@ -97,6 +97,13 @@ def inspect_release_boundary(root: Path = ROOT) -> list[str]:
     for filename in ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"):
         if not (root / filename).is_file():
             errors.append(f"missing canonical release document: {filename}")
+    try:
+        gitignore = (root / ".gitignore").read_text(encoding="utf-8")
+    except OSError as exc:
+        errors.append(f"cannot read .gitignore: {exc}")
+    else:
+        if "tmp_pytest_*/" not in gitignore:
+            errors.append("pytest root temp directories must be ignored")
 
     overall = status.get("overall", {})
     if overall.get("release_readiness") != "BLOCK":

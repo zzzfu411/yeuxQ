@@ -17,6 +17,7 @@ wheels/
 .uv-cache/
 .ruff_cache/
 .pytest_cache/
+tmp_pytest_*/
 .mypy_cache/
 .coverage
 htmlcov/

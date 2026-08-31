@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_release_boundary_contract_passes() -> None:
     assert inspect_release_boundary(ROOT) == []
+    assert "tmp_pytest_*/" in (ROOT / ".gitignore").read_text(encoding="utf-8")
 
 
 def test_release_boundary_cli_reports_fail_closed_owner_actions(capsys) -> None:

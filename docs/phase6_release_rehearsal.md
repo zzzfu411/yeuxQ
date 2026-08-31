@@ -118,6 +118,15 @@ validates this contract, rejects canonical `stock_v2` imports and keeps the UI
 at BLOCK while owner actions remain unresolved; its focused suite passed five
 tests.
 
+A read-only GitHub audit on 2026-08-31 confirmed that `zzzfu411/yeuxQ` is
+public, its default branch is `main`, and remote branch
+`codex/integrate-stock-v2` was at `02471852469229c0744a51d7f2c186bbb6fa1da9`
+while the verified local release-operations commit was
+`bc9a6f2b0b2a9def28891f341ae02c3bc0b1e102`. The local branch was eight commits
+ahead; no push occurred. Three legacy root-level pytest temp directories were
+also found and are now covered by `tmp_pytest_*/` so they cannot enter Git
+candidate enumeration or produce release-tool permission warnings.
+
 ## Remaining blockers
 
 Phase 6 remains in progress and public release remains `BLOCK` until all of the
