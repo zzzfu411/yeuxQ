@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-08-31T20:30:00+08:00",
+  "updated_at": "2026-08-31T21:03:00+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "zzzfu411/yeuxQ",
@@ -46,11 +46,11 @@
       "last_event": {
       "phase": "release",
       "status": "in_progress",
-      "message": "Release rehearsal checks pass locally and the Windows clean-checkout failure is fixed with repository-wide LF policy plus explicit CI temp-directory creation; ordinary clean-clone verification remains active."
+      "message": "The commit 32c7cf4 clean-clone full regression reached 1313 passed and 6 skipped with one workspace-artifact-dependent test; its isolation fix and 76 related tests now pass, and a new committed clean-clone rerun is next."
     }
   },
   "verification": {
-    "verified_at": "2026-08-31T20:30:00+08:00",
+    "verified_at": "2026-08-31T21:03:00+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
@@ -110,7 +110,9 @@
       "Phase 5 targeted acceptance passed 274 tests with three Windows symlink-permission skips; provider→observation→API→UI coverage, Python-canonical Rust fallback, optional parity tolerances, independent hash-chain recovery and observation-to-research negative tests are included.",
       "Full Python regression passed 1316 tests with three Windows symlink-permission skips; distribution compliance passed for wheel and sdist, including complete Apache/MIT/MPL texts, vendor manifest hashes and forbidden artifact/secret-shaped path checks.",
       "Final release-contract rerun passed 10 tests; the isolated-cache Phase 6 wheel/sdist build plus audit passed.",
-      "Phase 6 added repository-wide LF checkout policy and explicit CI temp-directory creation after an ordinary Windows clean clone exposed line-ending-sensitive provenance hashes; tests/yeuxq now passes 275 tests with three environment skips and the latest secret scan checked 651 candidates."
+      "Phase 6 added repository-wide LF checkout policy and explicit CI temp-directory creation after an ordinary Windows clean clone exposed line-ending-sensitive provenance hashes; tests/yeuxq now passes 275 tests with three environment skips and the latest secret scan checked 651 candidates.",
+      "An ordinary Windows clean clone of commit 32c7cf4 passed locked install, 282 targeted tests with six environment skips, Ruff, three Rust tests, 13 JavaScript syntax checks, secret scan, distribution build/audit, wheel startup and desktop/mobile/status UI browser smoke.",
+      "The commit 32c7cf4 full clean regression completed with 1313 passed, six skipped and one test-isolation failure: a pipeline test implicitly read an untracked workspace import report. The test now supplies an explicitly missing tmp_path report, asserts the existing WATCH router contract, passes alone, and passes in a 76-test related router/status/CI/distribution suite."
     ]
   },
   "boundaries": {
@@ -351,7 +353,7 @@
       "order": 6,
       "name": "Release, migration and donor deprecation",
       "status": "in_progress",
-      "progress_percent": 50,
+      "progress_percent": 75,
       "started_at": "2026-08-30",
       "completed_at": null,
       "owner": "integration",
@@ -360,8 +362,7 @@
         ".github/workflows/ci.yml",
         "scripts/check_distribution.py",
         "THIRD_PARTY_NOTICES.md",
-        "dist-phase6-final/quantify-0.1.0-py3-none-any.whl",
-        "dist-phase6-final/quantify-0.1.0.tar.gz",
+        "docs/phase6_release_rehearsal.md",
         "tests/test_distribution_compliance.py",
         "tests/test_ci_workflow.py"
       ],
@@ -554,7 +555,7 @@
     {
       "order": 4,
       "phase": "release",
-      "action": "Complete the clean-checkout install, startup and UI smoke rehearsal, then record its evidence in the release phase.",
+      "action": "Commit the isolated router-test correction, then rerun the full regression and release checks from a new ordinary Windows clean clone.",
       "blocking": false
     },
     {

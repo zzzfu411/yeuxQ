@@ -43,6 +43,7 @@ def test_first_million_pipeline_blocks_missing_source_qa_answers(tmp_path: Path)
         config_path=config,
         data_dir=data_dir,
         output_dir=output,
+        latest_import_report_path=tmp_path / "missing_import.json",
         min_symbols=2,
         min_trading_days=2,
         as_of="2024-01-03",
@@ -155,7 +156,7 @@ def test_first_million_pipeline_blocks_missing_source_qa_answers(tmp_path: Path)
     assert any(stage.name == "source_qa_closeout" and stage.status == "BLOCK" for stage in result.stages)
     assert any(stage.name == "data_intake_status" and stage.status == "BLOCK" for stage in result.stages)
     assert any(stage.name == "csv_intake_preview" and stage.status == "PASS" for stage in result.stages)
-    assert any(stage.name == "data_intake_router" and stage.status == "BLOCK" for stage in result.stages)
+    assert any(stage.name == "data_intake_router" and stage.status == "WATCH" for stage in result.stages)
     assert any(
         stage.name == "recent_data_acquisition_plan" and stage.status == "BLOCK"
         for stage in result.stages
