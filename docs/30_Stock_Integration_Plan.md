@@ -25,8 +25,9 @@
   不把“预测”“交易计划”“实时资金流”包装成实盘授权或投资建议。
 
 初始仓库审计和 Phase 1 架构/合同/合规基线已经完成：核心合同、observation store、
-fail-closed secret scan、双包构建与前端只读状态投影均已通过验收。项目 LICENSE 选择和
-donor 中两项凭据轮换仍是最终发布阻塞项，但不再阻塞受控的本地迁移。此处的“完成”只表示
+fail-closed secret scan、双包构建与前端只读状态投影均已通过验收。项目已由所有者确认采用
+Apache-2.0，版权主体为 `zzzfu411`，根 `LICENSE`/`NOTICE` 与发行包元数据审计通过；donor
+再分发权和两项凭据轮换仍是最终发布阻塞项，但不再阻塞受控的本地迁移。此处的“完成”只表示
 边界与工程基线可执行，不表示 donor 已获得第三方再分发许可，也不表示任何策略、数据源或
 实盘能力通过验证。
 
@@ -232,8 +233,8 @@ secret scan 与状态 UI 共 51 个定向测试通过；原有与新增测试合
 diff check 和覆盖 521 个候选文件的 canonical secret scan 通过；wheel/sdist 构建成功且 wheel
 同时包含 `quantify` 与 `yeuxq`；Playwright 在 1440×1000 与 390×844 视口验证页面无横向
 溢出，正常状态控制台零错误，离线请求会把所有证据降为 BLOCK。donor 的 local intel 配置
-单独扫描命中 2 项并完全脱敏；命中项不得迁移且必须轮换。整体 LICENSE 仍由用户选择，
-未决定前最终发布门保持 BLOCK。
+单独扫描命中 2 项并完全脱敏；命中项不得迁移且必须轮换。本阶段当时保留的整体 LICENSE
+决策已在 Phase 6 由用户明确选择为 Apache-2.0。
 
 工作包：
 
@@ -246,8 +247,8 @@ diff check 和覆盖 521 个候选文件的 canonical secret scan 通过；wheel
 - 定义 status JSON 的版本、枚举、阶段、风险、验收证据和 UI 刷新行为。
 
 验收：合同与 store 单测通过；固定安全字段无法被调用者改为 false/true 的危险组合；秘密
-扫描能命中 synthetic fixture 且仓库扫描为 PASS；整体 LICENSE 选择由用户明确决定，未决定前
-发布门保持 BLOCK；状态 JSON 可被标准 JSON parser 读取。
+扫描能命中 synthetic fixture 且仓库扫描为 PASS；整体 LICENSE 后续由用户明确选择为
+Apache-2.0；状态 JSON 可被标准 JSON parser 读取。
 
 ### Phase 2 — Observation platform migration（已完成）
 
@@ -336,13 +337,14 @@ observation、donor/LLM advisory 输出不能改变 canonical `PASS/WATCH/BLOCK`
 精确回退到 canonical Python，source checkout 不再盲信 PATH 中同名外部 CLI；append-only hash
 chain 的篡改、partial line 和独立副本恢复均 fail closed。详细证据见
 `docs/phase5_hardening_acceptance.md`。状态 UI 已同步为 `6/7 · 86%`，Phase 6 release rehearsal
-进入 `in_progress`；donor 再分发权、两项凭据轮换和项目 LICENSE 仍保持发布 BLOCK。
+进入 `in_progress`；Apache-2.0 项目许可证已在 Phase 6 完成，donor 再分发权、两项凭据轮换和
+远端 SHA 仍保持发布 BLOCK。
 
 ### Phase 6 — Release, migration and deprecation（进行中）
 
 工作包：
 
-- 完成用户选择的项目 LICENSE 和第三方 notices；
+- 已完成用户选择的 Apache-2.0 项目 LICENSE、NOTICE、包元数据和第三方 notices；
 - 提供单一安装、启动、配置、升级和回滚文档；
 - 建立 GitHub Actions：lint、test、secret scan、license check、frontend smoke；
 - 从干净 checkout 做 release rehearsal；
@@ -449,8 +451,8 @@ git ls-remote origin refs/heads/main
 
 ## 13. 当前下一步
 
-Phase 5 已完成，当前推进 Phase 6 release rehearsal：在干净 checkout 中复核安装、测试、启动、
-静态/浏览器状态投影和发行包边界，并核对本地、远端与 UI 的提交 SHA。当前定向合同测试、Ruff、
-Rust、first-party JavaScript、secret scan 以及 wheel/sdist 合规审计均已通过；clean-checkout 证据、
-donor 再分发权、项目 LICENSE、两项凭据轮换和 GitHub 有效认证仍在发布门内。v4 与所有运行时/受限
-材料继续严格排除；任何外部授权或凭据未确认前，状态 UI 必须保持 `release_readiness=BLOCK`。
+Phase 5 已完成，当前推进 Phase 6 release rehearsal：干净 checkout 安装、测试、启动、
+静态/浏览器状态投影和发行包边界均已通过。Apache-2.0 根许可证、`NOTICE`、包元数据与归档审计
+已经完成，GitHub 主机认证有效；当前继续处理 donor 再分发权、两项凭据轮换、公开推送批准及
+本地/远端/UI SHA 核对。v4 与所有运行时/受限材料继续严格排除；任何外部授权或凭据未确认前，
+状态 UI 必须保持 `release_readiness=BLOCK`。

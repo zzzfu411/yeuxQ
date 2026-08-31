@@ -1,9 +1,9 @@
 """Audit wheel/sdist contents for release-safe packaging and license provenance.
 
 The check is intentionally offline: it inspects already-built archives, verifies
-the vendored web manifest hashes, and requires the complete SPDX license texts
-that accompany those files.  It never prints archive contents that could contain
-credentials.
+the project Apache-2.0 metadata and notices, checks vendored web manifest hashes,
+and requires the complete SPDX license texts that accompany those files. It
+never prints archive contents that could contain credentials.
 """
 
 from __future__ import annotations
@@ -33,6 +33,27 @@ REQUIRED_LICENSES = {
 }
 REQUIRED_NOTICE = "yeuxq/web/vendor/THIRD_PARTY_NOTICES.md"
 MANIFEST_PATH = "yeuxq/web/vendor/manifest.json"
+PROJECT_DOCUMENTS = {
+    "LICENSE": (
+        "Apache License",
+        "Version 2.0, January 2004",
+        "3. Grant of Patent License.",
+        "END OF TERMS AND CONDITIONS",
+    ),
+    "NOTICE": ("yeuxQ", "Copyright 2026 zzzfu411", "THIRD_PARTY_NOTICES.md"),
+    "THIRD_PARTY_NOTICES.md": (
+        "# Third-Party Notices",
+        "Apache ECharts",
+        "Marked",
+        "DOMPurify",
+    ),
+}
+PROJECT_METADATA_MARKERS = (
+    "License-Expression: Apache-2.0",
+    "License-File: LICENSE",
+    "License-File: NOTICE",
+    "License-File: THIRD_PARTY_NOTICES.md",
+)
 FORBIDDEN_PARTS = {
     ".env",
     "data",
@@ -128,6 +149,42 @@ def _check_manifest(path: Path, members: set[str]) -> list[str]:
     return errors
 
 
+def _project_document_matches(path: Path, members: set[str], filename: str) -> list[str]:
+    if path.suffix == ".whl":
+        return [
+            member
+            for member in members
+            if ".dist-info/licenses/" in member and PurePosixPath(member).name == filename
+        ]
+    return [member for member in members if _relative_member(member) == PurePosixPath(filename)]
+
+
+def _check_project_license(path: Path, members: set[str]) -> list[str]:
+    errors: list[str] = []
+    for filename, markers in PROJECT_DOCUMENTS.items():
+        matches = _project_document_matches(path, members, filename)
+        if len(matches) != 1:
+            errors.append(f"expected exactly one packaged project document: {filename}")
+            continue
+        text = _read_member(path, matches[0]).decode("utf-8", errors="replace")
+        if any(marker not in text for marker in markers):
+            errors.append(f"incomplete project document: {filename}")
+
+    if path.suffix == ".whl":
+        metadata_matches = [member for member in members if member.endswith(".dist-info/METADATA")]
+    else:
+        metadata_matches = [
+            member for member in members if _relative_member(member) == PurePosixPath("PKG-INFO")
+        ]
+    if len(metadata_matches) != 1:
+        errors.append("expected exactly one package metadata document")
+    else:
+        metadata = _read_member(path, metadata_matches[0]).decode("utf-8", errors="replace")
+        if any(marker not in metadata for marker in PROJECT_METADATA_MARKERS):
+            errors.append("package metadata does not declare the complete Apache-2.0 license set")
+    return errors
+
+
 def inspect_archive(path: Path) -> list[str]:
     """Return deterministic, redacted policy findings for one archive."""
     members = set(_member_names(path))
@@ -135,6 +192,7 @@ def inspect_archive(path: Path) -> list[str]:
     for member in sorted(members):
         if _forbidden(member):
             errors.append(f"forbidden artifact or secret-shaped path: {_relative_member(member)}")
+    errors.extend(_check_project_license(path, members))
     notice_matches = [
         member
         for member in members

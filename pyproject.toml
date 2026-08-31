@@ -3,6 +3,8 @@ name = "quantify"
 version = "0.1.0"
 description = "Teaching-grade A-share quant research and simulation system: multi-factor research, paper trading, and deterministic PASS/WATCH/BLOCK release gates."
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
 authors = [
     { name = "zzzfu411", email = "1015328153@qq.com" }
 ]

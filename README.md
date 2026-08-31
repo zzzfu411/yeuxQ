@@ -25,9 +25,25 @@ storage. They cannot upgrade a `PASS/WATCH/BLOCK` research gate; there is no
 broker, account, order, cancel, or automatic trading endpoint.
 
 The current status is `6/7 · 86%`: Phase 5 hardening is complete and the Phase 6
-release rehearsal is active. Public release remains `BLOCK` until donor
-redistribution rights, the two donor-local credential rotations, and a
-project-wide `LICENSE` are resolved by the repository owner.
+release rehearsal is active. Apache-2.0 project licensing is recorded. Public
+release remains `BLOCK` until donor redistribution rights, the two donor-local
+credential rotations, explicit public-disclosure approval, and remote SHA
+verification are resolved by the repository owner.
+
+## License
+
+Copyright 2026 `zzzfu411`.
+
+The canonical yeuxQ project is licensed under the Apache License, Version 2.0;
+see [LICENSE](LICENSE) and [NOTICE](NOTICE). Bundled third-party components keep
+their own licenses and attributions as recorded in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+The project license applies only to material for which `zzzfu411` owns or
+controls the necessary rights. It does not grant rights to donor or
+reference-only material that has not been cleared for redistribution; such
+material remains outside the public release boundary until separately
+authorized or replaced by independently authorized clean-room work.
 
 ## Real Data Handoff Checklist
 

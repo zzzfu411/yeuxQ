@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-08-31T22:03:00+08:00",
+  "updated_at": "2026-08-31T22:17:00+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "zzzfu411/yeuxQ",
@@ -28,7 +28,7 @@
     "total_phases": 7,
     "progress_percent": 86,
     "release_readiness": "BLOCK",
-    "release_block_reason": "Phase 5 hardening passed; Phase 6 release rehearsal is active, while donor redistribution rights, credential rotation and project licensing remain unresolved.",
+    "release_block_reason": "Phase 6 technical rehearsal and Apache-2.0 project licensing passed; donor redistribution rights, credential rotation, explicit public-push approval and remote SHA verification remain unresolved.",
     "operating_boundary": "research_only_advisory_only"
   },
   "frontend_sync": {
@@ -46,11 +46,11 @@
       "last_event": {
       "phase": "release",
       "status": "in_progress",
-      "message": "Host-keyring GitHub authentication for zzzfu411 and the user API now pass with repository/workflow scopes; the verified release rehearsal remains BLOCK pending redistribution rights, credential rotation, project licensing and explicit public-push approval."
+      "message": "Apache-2.0 is now the project license with Copyright 2026 zzzfu411; root LICENSE/NOTICE, PEP 639 metadata, wheel/sdist packaging and strengthened archive audit pass, while donor rights, credential rotation and public push remain BLOCK."
     }
   },
   "verification": {
-    "verified_at": "2026-08-31T22:03:00+08:00",
+    "verified_at": "2026-08-31T22:17:00+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
@@ -74,7 +74,7 @@
     },
     "secret_scan": {
       "status": "PASS",
-      "candidate_files": 652,
+      "candidate_files": 654,
       "scope": "canonical_git_candidates"
     },
     "distribution_build": {
@@ -83,8 +83,8 @@
       "contains_quantify": true,
       "contains_yeuxq": true,
       "artifacts": [
-        "dist-phase6-bbf48a0/quantify-0.1.0.tar.gz",
-        "dist-phase6-bbf48a0/quantify-0.1.0-py3-none-any.whl"
+        "dist-compliance/quantify-0.1.0.tar.gz",
+        "dist-compliance/quantify-0.1.0-py3-none-any.whl"
       ]
     },
     "visual_qa": {
@@ -114,7 +114,8 @@
       "An ordinary Windows clean clone of commit 32c7cf4 passed locked install, 282 targeted tests with six environment skips, Ruff, three Rust tests, 13 JavaScript syntax checks, secret scan, distribution build/audit, wheel startup and desktop/mobile/status UI browser smoke.",
       "The commit 32c7cf4 full clean regression completed with 1313 passed, six skipped and one test-isolation failure: a pipeline test implicitly read an untracked workspace import report. The test now supplies an explicitly missing tmp_path report, asserts the existing WATCH router contract, passes alone, and passes in a 76-test related router/status/CI/distribution suite.",
       "A new ordinary Windows clone of bbf48a0 passed locked install, LF checkout verification, the isolated router case, the full suite with 1314 passed and six environment skips, Ruff lint/format, a 652-candidate secret scan, three Rust tests, 13 JavaScript syntax checks, wheel/sdist build and two-archive distribution compliance.",
-      "GitHub CLI authentication was rechecked in the host environment on 2026-08-31: the Windows keyring authenticated zzzfu411, the user API succeeded, and repository/workflow token scopes were present. Authentication is no longer the push blocker."
+      "GitHub CLI authentication was rechecked in the host environment on 2026-08-31: the Windows keyring authenticated zzzfu411, the user API succeeded, and repository/workflow token scopes were present. Authentication is no longer the push blocker.",
+      "The repository owner selected Apache-2.0 with Copyright 2026 zzzfu411. Root LICENSE/NOTICE, README and pyproject metadata are present; rebuilt wheel/sdist archives package all three declared license files and pass the strengthened offline distribution audit. License-focused acceptance passed 53 tests and the current secret scan checked 654 candidates."
     ]
   },
   "boundaries": {
@@ -221,8 +222,7 @@
         "pyproject.toml"
       ],
       "release_blockers_outside_phase": [
-        "Rotate the two real credentials detected in the donor local intel configuration without copying or exposing them.",
-        "Record the user's project LICENSE decision or keep release blocked."
+        "Rotate the two real credentials detected in the donor local intel configuration without copying or exposing them."
       ],
       "acceptance": [
         "Canonical serialization and SHA-256 are deterministic.",
@@ -355,7 +355,7 @@
       "order": 6,
       "name": "Release, migration and donor deprecation",
       "status": "in_progress",
-      "progress_percent": 75,
+      "progress_percent": 85,
       "started_at": "2026-08-30",
       "completed_at": null,
       "owner": "integration",
@@ -363,7 +363,11 @@
         "docs/30_Stock_Integration_Plan.md#phase-6--release-migration-and-donor-deprecation-进行中",
         ".github/workflows/ci.yml",
         "scripts/check_distribution.py",
+        "LICENSE",
+        "NOTICE",
         "THIRD_PARTY_NOTICES.md",
+        "pyproject.toml",
+        "README.md",
         "docs/phase6_release_rehearsal.md",
         "tests/test_distribution_compliance.py",
         "tests/test_ci_workflow.py"
@@ -551,8 +555,8 @@
     {
       "order": 3,
       "phase": "release",
-      "action": "Ask the repository owner to choose the project LICENSE or retain release BLOCK.",
-      "blocking": true
+      "action": "Keep the selected Apache-2.0 LICENSE, NOTICE, PEP 639 metadata and archive compliance checks passing through the final release commit.",
+      "blocking": false
     },
     {
       "order": 4,

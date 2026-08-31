@@ -6,8 +6,8 @@ Rehearsed commit: `bbf48a0c380ad2d16017dbf0edf539370a676614`
 Canonical branch: `codex/integrate-stock-v2`
 
 This rehearsal validates the committed repository in a new Windows clone. It
-does not grant donor redistribution rights, rotate owner credentials, choose a
-project-wide license, or prove a GitHub push that has not occurred.
+does not grant donor redistribution rights, rotate owner credentials, or prove
+a GitHub push that has not occurred.
 
 ## Clean-checkout correction
 
@@ -42,6 +42,8 @@ In the final `bbf48a0` rehearsal clone, Git reported `core.autocrlf=true` while
 | Secret scan | PASS — 652 candidate files checked |
 | Wheel/sdist build | PASS — both archives built from the clean clone |
 | Distribution compliance | PASS — 2 archives audited |
+| Project license | PASS — Apache-2.0, copyright 2026 `zzzfu411`, root LICENSE/NOTICE and PEP 639 metadata packaged |
+| License-focused acceptance | PASS — 53 tests and 654-candidate secret scan |
 | Wheel import/startup smoke | PASS — `quantify` and `yeuxq` import, bounded v1 app starts with an explicit writable `YEUXQ_DATA_DIR` |
 | Source-checkout UI | PASS — desktop, mobile and integration status projections |
 | Wheel UI | PASS — packaged assets render; source-only integration page fails closed |
@@ -94,6 +96,15 @@ workflow scopes required by the planned push. Authentication is therefore no
 longer a release blocker; public disclosure approval and remote SHA verification
 remain pending.
 
+The repository owner selected Apache-2.0 and explicitly chose GitHub username
+`zzzfu411` as the copyright holder. The complete Apache-2.0 text is stored in
+the root `LICENSE`; `NOTICE` records `Copyright 2026 zzzfu411`; `pyproject.toml`
+declares the SPDX expression and three license files. A rebuilt wheel and sdist
+both passed the strengthened offline audit, and the wheel metadata includes the
+Apache-2.0 expression plus `LICENSE`, `NOTICE`, and
+`THIRD_PARTY_NOTICES.md`. This project license does not clear donor material for
+which redistribution rights remain unestablished.
+
 ## Remaining blockers
 
 Phase 6 remains in progress and public release remains `BLOCK` until all of the
@@ -102,6 +113,5 @@ following are resolved:
 1. the owner confirms donor redistribution rights or the affected material is
    replaced by independently authorized clean-room work;
 2. the owner rotates the two credentials detected only in donor-local config;
-3. the owner selects a project-wide `LICENSE`;
-4. the canonical branch is explicitly approved for public disclosure, pushed,
+3. the canonical branch is explicitly approved for public disclosure, pushed,
    and the local/remote/UI commit SHA is verified.
