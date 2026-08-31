@@ -44,8 +44,14 @@ def default_runtime_data_root() -> Path:
         return _absolute_from_cwd(explicit)
     if PROJECT_ROOT is not None:
         return (PROJECT_ROOT / "data").resolve()
-    if os.name == "nt":
-        base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        # Respect an explicitly supplied Windows-compatible user data root on
+        # every platform. This keeps wheel installs deterministic in CI and
+        # allows operators to select the same portable location cross-platform.
+        base = Path(local_app_data)
+    elif os.name == "nt":
+        base = Path.home() / "AppData" / "Local"
     else:
         base = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
     return (base.expanduser() / "yeuxQ").resolve()

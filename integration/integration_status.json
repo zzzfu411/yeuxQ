@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-09-01T00:07:53+08:00",
+  "updated_at": "2026-09-01T00:22:18+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "zzzfu411/yeuxQ",
@@ -46,11 +46,11 @@
     "last_event": {
       "phase": "release",
       "status": "in_progress",
-      "message": "GitHub Actions run 33404973047 reached the repository but failed before checkout because astral-sh/setup-uv@v10 is not a resolvable tag. The workflow is pinned to the verified v10.0.1 tag and local CI-contract tests pass; rerun remote CI next."
+      "message": "Remote CI run 33412448577 reached full regression but exposed two Linux portability failures: LOCALAPPDATA override handling and a required third-party notice sentence. Both fixes are implemented; focused local regression passes 7 tests and remote CI will rerun."
     }
   },
   "verification": {
-    "verified_at": "2026-09-01T00:07:53+08:00",
+    "verified_at": "2026-09-01T00:22:18+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
@@ -122,7 +122,8 @@
       "Repository owner zzzfu411 completed the machine-readable release attestation on 2026-08-31: stock_v2 redistribution/relicensing rights, rotation of both donor-local credentials, and public disclosure of candidate b59affe plus attestation/release-evidence follow-ups were confirmed; no credential values are recorded. P0-01 and P0-03 are closed. Remote push, SHA/CI verification and the final staged/distribution scan remain release-blocking.",
       "The attested pre-push candidate passed the release-boundary checker, a 658-candidate secret scan, 58 focused release/status/CI/distribution tests, Ruff lint and format verification across 97 files, three JSON parser checks, git diff validation, and wheel/sdist compliance for two rebuilt archives. The first restricted uv build attempt could not access the host cache; the approved host-cache rerun completed successfully without changing source content.",
       "After all attestation/evidence changes were staged, git diff validation and the 658-candidate secret scan passed again. Reference-only controls and the rebuilt wheel/sdist audit remained clean, so P0-02 is closed; only remote push/SHA/CI and final status re-verification remain.",
-      "GitHub Actions run 33404973047 for 52d3b2f failed at action resolution before checkout: astral-sh/setup-uv@v10 is not a resolvable tag. Public tag inspection confirmed v10.0.1; the workflow and CI contract test are now pinned to astral-sh/setup-uv@v10.0.1, and the focused local CI/release/UI suite passed 10 tests with Ruff and diff checks passing."
+      "GitHub Actions run 33404973047 for 52d3b2f failed at action resolution before checkout: astral-sh/setup-uv@v10 is not a resolvable tag. Public tag inspection confirmed v10.0.1; the workflow and CI contract test are now pinned to astral-sh/setup-uv@v10.0.1, and the focused local CI/release/UI suite passed 10 tests with Ruff and diff checks passing.",
+      "GitHub Actions run 33412448577 completed action setup and 1320 tests but found two failures: default_runtime_data_root ignored an explicitly supplied LOCALAPPDATA on Linux, and THIRD_PARTY_NOTICES.md lacked the exact project-license disclaimer asserted by the vendored asset contract. The cross-platform environment override and notice clarification are now fixed; the focused local runtime/assets/distribution suite passes 7 tests with Ruff and diff checks."
     ]
   },
   "boundaries": {
@@ -383,7 +384,8 @@
         "tests/test_distribution_compliance.py",
         "tests/test_release_boundary.py",
         "tests/test_ci_workflow.py",
-        "integration/owner_release_attestation.json"
+        "integration/owner_release_attestation.json",
+        "src/yeuxq/settings.py"
       ],
       "acceptance": [
         "Clean checkout install, test, startup and UI smoke pass.",

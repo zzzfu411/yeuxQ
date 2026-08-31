@@ -4,6 +4,9 @@ The original yeuxQ project is licensed under Apache-2.0 as declared in the
 repository-level `LICENSE` and `NOTICE`. This file identifies third-party
 JavaScript distributed with the yeuxQ web interface; those components remain
 under their respective licenses and are not relicensed by the project license.
+This file does not declare a
+license for the yeuxQ project as a whole; the project-level license is declared
+only by the repository `LICENSE` and `NOTICE` files.
 Exact file hashes are recorded in `src/yeuxq/web/vendor/manifest.json`.
 Complete third-party license texts are shipped in
 `src/yeuxq/web/vendor/licenses/` and are included in both the wheel and source
