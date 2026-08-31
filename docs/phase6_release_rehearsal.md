@@ -46,6 +46,7 @@ In the final `bbf48a0` rehearsal clone, Git reported `core.autocrlf=true` while
 | License-focused acceptance | PASS — 53 tests and 654-candidate secret scan |
 | Release operations runbook | PASS — one install/start/config/upgrade/rollback and donor-deprecation procedure |
 | Canonical/donor boundary | PASS — executable preflight plus 5 focused tests; combined Phase 6 operations suite 57 passed and 657 candidates passed secret scan |
+| Owner closeout contract | PASS — pending rights/rotation/disclosure schema, no credential values, 50 focused tests and 658-candidate secret scan |
 | Wheel import/startup smoke | PASS — `quantify` and `yeuxq` import, bounded v1 app starts with an explicit writable `YEUXQ_DATA_DIR` |
 | Source-checkout UI | PASS — desktop, mobile and integration status projections |
 | Wheel UI | PASS — packaged assets render; source-only integration page fails closed |
@@ -126,6 +127,15 @@ while the verified local release-operations commit was
 ahead; no push occurred. Three legacy root-level pytest temp directories were
 also found and are now covered by `tmp_pytest_*/` so they cannot enter Git
 candidate enumeration or produce release-tool permission warnings.
+
+Because the donor directory has no Git metadata, root license, pyproject author
+or pyproject license metadata, local evidence cannot establish redistribution
+rights. `integration/owner_release_attestation.json` therefore records the
+three remaining owner decisions explicitly. Its pending form keeps identities,
+timestamps, rights basis and candidate commit null, records only that two
+credentials require rotation, and never stores credential values. The schema,
+release preflight and status projection passed 50 focused tests and a
+658-candidate secret scan.
 
 ## Remaining blockers
 

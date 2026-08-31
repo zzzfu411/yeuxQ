@@ -142,6 +142,13 @@ The authoritative lifecycle fields are in
 a runtime dependency or release source and that unresolved owner actions remain
 fail-closed in the status UI.
 
+Owner closeout is recorded in
+`integration/owner_release_attestation.json`. While its status is `pending`, all
+confirmation identities, timestamps, bases and approved commit fields remain
+null and the credential section records only the required count—never token or
+secret values. After the owner supplies the three confirmations below, update
+the attestation to `complete` in the final evidence commit.
+
 ## Final publication
 
 Before pushing a release candidate or merging to `main`, the repository owner

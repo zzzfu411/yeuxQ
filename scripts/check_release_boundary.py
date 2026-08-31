@@ -12,6 +12,7 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNBOOK = "docs/31_Release_Operations.md"
+ATTESTATION = "integration/owner_release_attestation.json"
 
 
 def _load_json(path: Path) -> dict[str, object]:
@@ -45,11 +46,13 @@ def inspect_release_boundary(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     manifest_path = root / "integration" / "donor_migration_manifest.json"
     status_path = root / "integration" / "integration_status.json"
+    attestation_path = root / ATTESTATION
     runbook_path = root / RUNBOOK
 
     try:
         manifest = _load_json(manifest_path)
         status = _load_json(status_path)
+        attestation = _load_json(attestation_path)
         pyproject = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
         return [f"release contract input is unreadable: {exc}"]
@@ -116,6 +119,75 @@ def inspect_release_boundary(root: Path = ROOT) -> list[str]:
     if risks.get("P0-03", {}).get("status") != "open":
         errors.append("donor credential-rotation risk P0-03 must remain open")
 
+    expected_attestation_keys = {
+        "schema_version",
+        "project",
+        "owner",
+        "candidate_branch",
+        "status",
+        "donor_redistribution_rights",
+        "credential_rotation",
+        "public_disclosure",
+    }
+    if set(attestation) != expected_attestation_keys:
+        errors.append("owner release attestation has unsupported fields")
+    if attestation.get("schema_version") != "1.0.0":
+        errors.append("owner release attestation schema_version must be 1.0.0")
+    if attestation.get("project") != "zzzfu411/yeuxQ" or attestation.get("owner") != "zzzfu411":
+        errors.append("owner release attestation identity does not match the canonical repository")
+    if attestation.get("candidate_branch") != "codex/integrate-stock-v2":
+        errors.append("owner release attestation targets the wrong branch")
+
+    rights = attestation.get("donor_redistribution_rights", {})
+    rotation = attestation.get("credential_rotation", {})
+    disclosure = attestation.get("public_disclosure", {})
+    if (
+        rotation.get("required_count") != 2
+        or rotation.get("credential_values_recorded") is not False
+    ):
+        errors.append("credential attestation must track two rotations without storing values")
+    if attestation.get("status") == "pending":
+        if (
+            any(
+                item.get("confirmed") is not False
+                for item in (rights, rotation)
+                if isinstance(item, dict)
+            )
+            or disclosure.get("approved") is not False
+        ):
+            errors.append("pending owner attestation cannot contain completed approvals")
+        pending_values = (
+            rights.get("confirmed_by"),
+            rights.get("confirmed_at"),
+            rights.get("basis"),
+            rotation.get("confirmed_by"),
+            rotation.get("confirmed_at"),
+            disclosure.get("approved_by"),
+            disclosure.get("approved_at"),
+            disclosure.get("approved_candidate_commit"),
+        )
+        if any(value is not None for value in pending_values):
+            errors.append("pending owner attestation fields must remain null")
+    elif attestation.get("status") == "complete":
+        if rights.get("confirmed") is not True or rotation.get("confirmed") is not True:
+            errors.append("complete owner attestation requires rights and rotation confirmations")
+        if disclosure.get("approved") is not True:
+            errors.append("complete owner attestation requires public-disclosure approval")
+        required_values = (
+            rights.get("confirmed_by"),
+            rights.get("confirmed_at"),
+            rights.get("basis"),
+            rotation.get("confirmed_by"),
+            rotation.get("confirmed_at"),
+            disclosure.get("approved_by"),
+            disclosure.get("approved_at"),
+            disclosure.get("approved_candidate_commit"),
+        )
+        if any(not isinstance(value, str) or not value.strip() for value in required_values):
+            errors.append("complete owner attestation requires non-empty audit fields")
+    else:
+        errors.append("owner release attestation status must be pending or complete")
+
     if not runbook_path.is_file():
         errors.append(f"missing release operations runbook: {RUNBOOK}")
     else:
@@ -129,6 +201,7 @@ def inspect_release_boundary(root: Path = ROOT) -> list[str]:
             "## Donor deprecation",
             "scripts/check_release_boundary.py",
             "scripts/check_distribution.py",
+            "integration/owner_release_attestation.json",
         )
         if any(marker not in runbook for marker in required_markers):
             errors.append("release operations runbook is missing a required procedure")

@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "project": "zzzfu411/yeuxQ",
+  "owner": "zzzfu411",
+  "candidate_branch": "codex/integrate-stock-v2",
+  "status": "pending",
+  "donor_redistribution_rights": {
+    "confirmed": false,
+    "confirmed_by": null,
+    "confirmed_at": null,
+    "basis": null
+  },
+  "credential_rotation": {
+    "required_count": 2,
+    "confirmed": false,
+    "confirmed_by": null,
+    "confirmed_at": null,
+    "credential_values_recorded": false
+  },
+  "public_disclosure": {
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "approved_candidate_commit": null
+  }
+}

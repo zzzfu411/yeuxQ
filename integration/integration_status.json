@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-08-31T22:30:00+08:00",
+  "updated_at": "2026-08-31T22:35:00+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "zzzfu411/yeuxQ",
@@ -46,11 +46,11 @@
       "last_event": {
       "phase": "release",
       "status": "in_progress",
-      "message": "GitHub read-only audit confirms zzzfu411/yeuxQ is public and the remote integration branch is behind the verified local candidate; legacy pytest temp roots are now ignored, while owner rights, credential rotation and public push remain BLOCK."
+      "message": "A machine-readable owner release attestation now captures the only remaining closeout actions without storing credential values: donor rights, two rotations and approval of the public candidate commit all remain pending/BLOCK."
     }
   },
   "verification": {
-    "verified_at": "2026-08-31T22:30:00+08:00",
+    "verified_at": "2026-08-31T22:35:00+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
@@ -74,7 +74,7 @@
     },
     "secret_scan": {
       "status": "PASS",
-      "candidate_files": 657,
+      "candidate_files": 658,
       "scope": "canonical_git_candidates"
     },
     "distribution_build": {
@@ -117,7 +117,8 @@
       "GitHub CLI authentication was rechecked in the host environment on 2026-08-31: the Windows keyring authenticated zzzfu411, the user API succeeded, and repository/workflow token scopes were present. Authentication is no longer the push blocker.",
       "The repository owner selected Apache-2.0 with Copyright 2026 zzzfu411. Root LICENSE/NOTICE, README and pyproject metadata are present; rebuilt wheel/sdist archives package all three declared license files and pass the strengthened offline distribution audit. License-focused acceptance passed 53 tests and the current secret scan checked 654 candidates.",
       "Phase 6 now has a single source/wheel install, startup, configuration, upgrade, rollback and donor-deprecation runbook. The donor manifest marks stock_v2 as read-only evidence and never a runtime or release source; an executable preflight and five focused tests enforce the contract. The combined Phase 6 operations suite passed 57 tests and the secret scan checked 657 candidates.",
-      "A read-only GitHub audit confirmed zzzfu411/yeuxQ is PUBLIC with default branch main; remote codex/integrate-stock-v2 was 02471852469229c0744a51d7f2c186bbb6fa1da9 while verified local commit bc9a6f2b0b2a9def28891f341ae02c3bc0b1e102 was eight commits ahead. No push occurred. Root tmp_pytest_* artifacts are now ignored."
+      "A read-only GitHub audit confirmed zzzfu411/yeuxQ is PUBLIC with default branch main; remote codex/integrate-stock-v2 was 02471852469229c0744a51d7f2c186bbb6fa1da9 while verified local commit bc9a6f2b0b2a9def28891f341ae02c3bc0b1e102 was eight commits ahead. No push occurred. Root tmp_pytest_* artifacts are now ignored.",
+      "The donor source has no Git metadata, root license file, pyproject author or pyproject license metadata, so redistribution rights cannot be inferred locally. integration/owner_release_attestation.json now records pending rights, two credential rotations and public-candidate approval without storing credential values. Its focused status/release suite passed 50 tests and the secret scan checked 658 candidates."
     ]
   },
   "boundaries": {
@@ -246,6 +247,7 @@
       "evidence": [
         "docs/30_Stock_Integration_Plan.md#phase-2--observation-platform-migration-已完成",
         "integration/donor_migration_manifest.json",
+        "integration/owner_release_attestation.json",
         "src/yeuxq/providers/status.py",
         "src/yeuxq/providers/http_client.py",
         "src/yeuxq/services/observation.py",
