@@ -174,8 +174,9 @@ brokerEnabled.boundaries.execution.broker_integration = true;
 expectBlocked(brokerEnabled, "broker boundary violation");
 
 const falsePass = clone(valid);
+falsePass.risks.find((risk) => risk.id === "P0-02").status = "mitigated";
 falsePass.overall.release_readiness = "PASS";
-expectBlocked(falsePass, "open release risk with PASS readiness");
+expectBlocked(falsePass, "release-blocking risk with PASS readiness");
 """
     completed = subprocess.run(
         [node, "-e", smoke, str(JS_PATH), str(STATUS_PATH)],

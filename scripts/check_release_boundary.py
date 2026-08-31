@@ -84,12 +84,12 @@ def inspect_release_boundary(root: Path = ROOT) -> list[str]:
         "preserve_original": True,
         "delete_original": False,
         "accept_new_runtime_data": False,
-        "redistribution_rights": "unresolved",
-        "credential_rotation_required": True,
-        "deprecation_status": "migration_complete_release_blocked",
+        "redistribution_rights": "owner_confirmed",
+        "credential_rotation_required": False,
+        "deprecation_status": "migration_complete_release_candidate",
     }
     if lifecycle != required_lifecycle:
-        errors.append("donor lifecycle is not the exact read-only release-blocked contract")
+        errors.append("donor lifecycle is not the exact read-only release-candidate contract")
 
     project = pyproject.get("project", {})
     build = pyproject.get("tool", {}).get("uv", {}).get("build-backend", {})
@@ -109,15 +109,9 @@ def inspect_release_boundary(root: Path = ROOT) -> list[str]:
             errors.append("pytest root temp directories must be ignored")
 
     overall = status.get("overall", {})
-    if overall.get("release_readiness") != "BLOCK":
-        errors.append(
-            "release readiness must remain BLOCK while donor owner actions are unresolved"
-        )
+    if overall.get("release_readiness") not in {"BLOCK", "PASS"}:
+        errors.append("release readiness must be BLOCK or PASS")
     risks = {risk.get("id"): risk for risk in status.get("risks", []) if isinstance(risk, dict)}
-    if risks.get("P0-01", {}).get("status") != "open":
-        errors.append("donor redistribution-rights risk P0-01 must remain open")
-    if risks.get("P0-03", {}).get("status") != "open":
-        errors.append("donor credential-rotation risk P0-03 must remain open")
 
     expected_attestation_keys = {
         "schema_version",
@@ -185,6 +179,10 @@ def inspect_release_boundary(root: Path = ROOT) -> list[str]:
         )
         if any(not isinstance(value, str) or not value.strip() for value in required_values):
             errors.append("complete owner attestation requires non-empty audit fields")
+        if risks.get("P0-01", {}).get("status") != "closed":
+            errors.append("completed rights attestation requires P0-01 to be closed")
+        if risks.get("P0-03", {}).get("status") != "closed":
+            errors.append("completed credential rotation requires P0-03 to be closed")
     else:
         errors.append("owner release attestation status must be pending or complete")
 
@@ -220,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
         for finding in findings:
             print(f"- {finding}", file=sys.stderr)
         return 1
-    print("release boundary contract passed: canonical source only; owner actions remain BLOCK")
+    print("release boundary contract passed: canonical source only; owner attestation verified")
     return 0
 
 

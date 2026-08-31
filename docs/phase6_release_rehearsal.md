@@ -5,9 +5,10 @@ Evidence date: 2026-08-31
 Rehearsed commit: `bbf48a0c380ad2d16017dbf0edf539370a676614`
 Canonical branch: `codex/integrate-stock-v2`
 
-This rehearsal validates the committed repository in a new Windows clone. It
-does not grant donor redistribution rights, rotate owner credentials, or prove
-a GitHub push that has not occurred.
+This rehearsal validates the committed repository in a new Windows clone.
+Owner rights, credential rotation and public-disclosure approval are now
+recorded in the machine-readable attestation. A GitHub push and remote CI/SHA
+verification have not yet occurred for the attested follow-up commit.
 
 ## Clean-checkout correction
 
@@ -46,7 +47,8 @@ In the final `bbf48a0` rehearsal clone, Git reported `core.autocrlf=true` while
 | License-focused acceptance | PASS — 53 tests and 654-candidate secret scan |
 | Release operations runbook | PASS — one install/start/config/upgrade/rollback and donor-deprecation procedure |
 | Canonical/donor boundary | PASS — executable preflight plus 5 focused tests; combined Phase 6 operations suite 57 passed and 657 candidates passed secret scan |
-| Owner closeout contract | PASS — pending rights/rotation/disclosure schema, no credential values, 50 focused tests and 658-candidate secret scan |
+| Owner closeout contract | PASS — rights, both credential rotations and public disclosure confirmed by `zzzfu411`; no credential values recorded |
+| Attested pre-push acceptance | PASS — 58 focused tests, 658-candidate secret scan, Ruff over 97 files, JSON/diff checks and 2 rebuilt archives audited |
 | Wheel import/startup smoke | PASS — `quantify` and `yeuxq` import, bounded v1 app starts with an explicit writable `YEUXQ_DATA_DIR` |
 | Source-checkout UI | PASS — desktop, mobile and integration status projections |
 | Wheel UI | PASS — packaged assets render; source-only integration page fails closed |
@@ -96,8 +98,8 @@ GitHub CLI authentication was then rechecked outside the restricted execution
 environment on 2026-08-31. The host keyring authenticated account `zzzfu411`,
 the GitHub user API succeeded, and the active token reported the repository and
 workflow scopes required by the planned push. Authentication is therefore no
-longer a release blocker; public disclosure approval and remote SHA verification
-remain pending.
+longer a release blocker. Public disclosure is approved; the remaining external
+evidence is the branch push plus remote SHA and GitHub Actions verification.
 
 The repository owner selected Apache-2.0 and explicitly chose GitHub username
 `zzzfu411` as the copyright holder. The complete Apache-2.0 text is stored in
@@ -105,8 +107,9 @@ the root `LICENSE`; `NOTICE` records `Copyright 2026 zzzfu411`; `pyproject.toml`
 declares the SPDX expression and three license files. A rebuilt wheel and sdist
 both passed the strengthened offline audit, and the wheel metadata includes the
 Apache-2.0 expression plus `LICENSE`, `NOTICE`, and
-`THIRD_PARTY_NOTICES.md`. This project license does not clear donor material for
-which redistribution rights remain unestablished.
+`THIRD_PARTY_NOTICES.md`. Repository owner `zzzfu411` subsequently confirmed
+ownership or sufficient redistribution and relicensing rights for the donor
+source and migrated results in the release attestation.
 
 Phase 6 now has one canonical operations runbook at
 `docs/31_Release_Operations.md`. It covers source and wheel installation,
@@ -115,9 +118,9 @@ release preflight and final publication. The donor manifest records `stock_v2`
 as read-only migration evidence, prohibits feature changes, runtime dependency,
 release use and new runtime data, and preserves the original directory without
 allowing release automation to delete it. `scripts/check_release_boundary.py`
-validates this contract, rejects canonical `stock_v2` imports and keeps the UI
-at BLOCK while owner actions remain unresolved; its focused suite passed five
-tests.
+validates this contract, rejects canonical `stock_v2` imports and verifies the
+owner attestation while the UI remains BLOCK for remote publication evidence;
+its focused suite passed five tests before the final attestation update.
 
 A read-only GitHub audit on 2026-08-31 confirmed that `zzzfu411/yeuxQ` is
 public, its default branch is `main`, and remote branch
@@ -129,21 +132,21 @@ also found and are now covered by `tmp_pytest_*/` so they cannot enter Git
 candidate enumeration or produce release-tool permission warnings.
 
 Because the donor directory has no Git metadata, root license, pyproject author
-or pyproject license metadata, local evidence cannot establish redistribution
-rights. `integration/owner_release_attestation.json` therefore records the
-three remaining owner decisions explicitly. Its pending form keeps identities,
-timestamps, rights basis and candidate commit null, records only that two
-credentials require rotation, and never stores credential values. The schema,
-release preflight and status projection passed 50 focused tests and a
-658-candidate secret scan.
+or pyproject license metadata, local files alone could not establish
+redistribution rights. Repository owner `zzzfu411` therefore completed
+`integration/owner_release_attestation.json` at
+`2026-08-31T22:41:07+08:00`, confirming ownership or sufficient redistribution
+and relicensing rights, rotation of both donor-local credentials, and public
+disclosure approval for candidate `b59affe` plus attestation/release-evidence
+follow-ups. The record contains identities, timestamps, basis and candidate SHA
+but no credential values. P0-01 and P0-03 are closed.
 
 ## Remaining blockers
 
-Phase 6 remains in progress and public release remains `BLOCK` until all of the
-following are resolved:
+Phase 6 is now `98%` and public release remains `BLOCK` until all of the
+following evidence is complete:
 
-1. the owner confirms donor redistribution rights or the affected material is
-   replaced by independently authorized clean-room work;
-2. the owner rotates the two credentials detected only in donor-local config;
-3. the canonical branch is explicitly approved for public disclosure, pushed,
-   and the local/remote/UI commit SHA is verified.
+1. `codex/integrate-stock-v2` is pushed and the local and remote branch SHAs
+   match;
+2. GitHub Actions passes for the exact remote commit, after which the final
+   `7 / 7`, `100%`, `PASS` status commit is pushed and reverified.

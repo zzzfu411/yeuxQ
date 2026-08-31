@@ -176,9 +176,9 @@ def test_donor_migration_manifest_is_complete_and_release_safe() -> None:
         "preserve_original": True,
         "delete_original": False,
         "accept_new_runtime_data": False,
-        "redistribution_rights": "unresolved",
-        "credential_rotation_required": True,
-        "deprecation_status": "migration_complete_release_blocked",
+        "redistribution_rights": "owner_confirmed",
+        "credential_rotation_required": False,
+        "deprecation_status": "migration_complete_release_candidate",
     }
 
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))

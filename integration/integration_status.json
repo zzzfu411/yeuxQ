@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-08-31T22:35:00+08:00",
+  "updated_at": "2026-08-31T22:48:28+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "zzzfu411/yeuxQ",
@@ -28,7 +28,7 @@
     "total_phases": 7,
     "progress_percent": 86,
     "release_readiness": "BLOCK",
-    "release_block_reason": "Phase 6 technical rehearsal and Apache-2.0 project licensing passed; donor redistribution rights, credential rotation, explicit public-push approval and remote SHA verification remain unresolved.",
+    "release_block_reason": "Owner attestation and final local candidate checks are complete; the release remains blocked only until the branch is pushed, the remote SHA matches, GitHub Actions passes, and the final 7/7 status evidence is pushed and reverified.",
     "operating_boundary": "research_only_advisory_only"
   },
   "frontend_sync": {
@@ -43,14 +43,14 @@
     "unknown_or_invalid_state": "BLOCK",
     "refresh_strategy": "etag_or_updated_at_polling",
     "update_rule": "implementation_tests_evidence_and_status_change_must_share_one_commit",
-      "last_event": {
+    "last_event": {
       "phase": "release",
       "status": "in_progress",
-      "message": "A machine-readable owner release attestation now captures the only remaining closeout actions without storing credential values: donor rights, two rotations and approval of the public candidate commit all remain pending/BLOCK."
+      "message": "Final staged-content, 658-file secret, diff, lint, focused-test and two-archive distribution checks passed; P0-02 is closed. Phase 6 is 98%; branch push plus remote SHA/GitHub Actions verification remain BLOCK."
     }
   },
   "verification": {
-    "verified_at": "2026-08-31T22:35:00+08:00",
+    "verified_at": "2026-08-31T22:48:28+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
@@ -96,7 +96,7 @@
       "offline_fail_closed": true
     },
     "diff_check": "PASS",
-      "notes": [
+    "notes": [
       "Pytest cache writes were disabled for the acceptance run; no cache warning was emitted.",
       "Phase 4 targeted acceptance passed 266 tests; the full Python regression passed 1305 tests with three Windows symlink-permission skips.",
       "Playwright verified the static projection on desktop and mobile; controlled API failures reset all displayed evidence to UNAVAILABLE/BLOCK.",
@@ -118,7 +118,10 @@
       "The repository owner selected Apache-2.0 with Copyright 2026 zzzfu411. Root LICENSE/NOTICE, README and pyproject metadata are present; rebuilt wheel/sdist archives package all three declared license files and pass the strengthened offline distribution audit. License-focused acceptance passed 53 tests and the current secret scan checked 654 candidates.",
       "Phase 6 now has a single source/wheel install, startup, configuration, upgrade, rollback and donor-deprecation runbook. The donor manifest marks stock_v2 as read-only evidence and never a runtime or release source; an executable preflight and five focused tests enforce the contract. The combined Phase 6 operations suite passed 57 tests and the secret scan checked 657 candidates.",
       "A read-only GitHub audit confirmed zzzfu411/yeuxQ is PUBLIC with default branch main; remote codex/integrate-stock-v2 was 02471852469229c0744a51d7f2c186bbb6fa1da9 while verified local commit bc9a6f2b0b2a9def28891f341ae02c3bc0b1e102 was eight commits ahead. No push occurred. Root tmp_pytest_* artifacts are now ignored.",
-      "The donor source has no Git metadata, root license file, pyproject author or pyproject license metadata, so redistribution rights cannot be inferred locally. integration/owner_release_attestation.json now records pending rights, two credential rotations and public-candidate approval without storing credential values. Its focused status/release suite passed 50 tests and the secret scan checked 658 candidates."
+      "The donor source has no Git metadata, root license file, pyproject author or pyproject license metadata, so redistribution rights cannot be inferred locally. integration/owner_release_attestation.json now records pending rights, two credential rotations and public-candidate approval without storing credential values. Its focused status/release suite passed 50 tests and the secret scan checked 658 candidates.",
+      "Repository owner zzzfu411 completed the machine-readable release attestation on 2026-08-31: stock_v2 redistribution/relicensing rights, rotation of both donor-local credentials, and public disclosure of candidate b59affe plus attestation/release-evidence follow-ups were confirmed; no credential values are recorded. P0-01 and P0-03 are closed. Remote push, SHA/CI verification and the final staged/distribution scan remain release-blocking.",
+      "The attested pre-push candidate passed the release-boundary checker, a 658-candidate secret scan, 58 focused release/status/CI/distribution tests, Ruff lint and format verification across 97 files, three JSON parser checks, git diff validation, and wheel/sdist compliance for two rebuilt archives. The first restricted uv build attempt could not access the host cache; the approved host-cache rerun completed successfully without changing source content.",
+      "After all attestation/evidence changes were staged, git diff validation and the 658-candidate secret scan passed again. Reference-only controls and the rebuilt wheel/sdist audit remained clean, so P0-02 is closed; only remote push/SHA/CI and final status re-verification remain."
     ]
   },
   "boundaries": {
@@ -359,7 +362,7 @@
       "order": 6,
       "name": "Release, migration and donor deprecation",
       "status": "in_progress",
-      "progress_percent": 90,
+      "progress_percent": 98,
       "started_at": "2026-08-30",
       "completed_at": null,
       "owner": "integration",
@@ -378,7 +381,8 @@
         "integration/donor_migration_manifest.json",
         "tests/test_distribution_compliance.py",
         "tests/test_release_boundary.py",
-        "tests/test_ci_workflow.py"
+        "tests/test_ci_workflow.py",
+        "integration/owner_release_attestation.json"
       ],
       "acceptance": [
         "Clean checkout install, test, startup and UI smoke pass.",
@@ -394,28 +398,28 @@
       "id": "P0-01",
       "priority": "P0",
       "title": "Donor redistribution rights are not established",
-      "status": "open",
+      "status": "closed",
       "owner": "repository_owner",
       "release_blocking": true,
-      "closure": "Obtain rights confirmation or use only clean-room rewrites with per-file provenance."
+      "closure": "Repository owner zzzfu411 confirmed ownership or sufficient redistribution and relicensing rights in integration/owner_release_attestation.json on 2026-08-31."
     },
     {
       "id": "P0-02",
       "priority": "P0",
       "title": "v4 license-bound and vendored material could be copied accidentally",
-      "status": "mitigated",
+      "status": "closed",
       "owner": "compliance",
       "release_blocking": true,
-      "closure": "Keep reference-only controls and staged-content scans passing through release."
+      "closure": "Reference-only controls remained intact; the final staged-content and 658-candidate secret scan, wheel/sdist rebuild, and two-archive distribution audit passed on 2026-08-31."
     },
     {
       "id": "P0-03",
       "priority": "P0",
       "title": "Donor local configuration contains real LLM or MCP credentials",
-      "status": "open",
+      "status": "closed",
       "owner": "repository_owner",
       "release_blocking": true,
-      "closure": "Rotate credentials and prove ignore plus secret scanner coverage without exposing values."
+      "closure": "Repository owner zzzfu411 confirmed rotation of both donor-local credentials on 2026-08-31; no credential values are stored in release evidence."
     },
     {
       "id": "P0-04",
@@ -551,31 +555,13 @@
     {
       "order": 1,
       "phase": "release",
-      "action": "Confirm redistribution rights for the donor source or replace source-derived files with independently authorized clean-room implementations.",
+      "action": "Push codex/integrate-stock-v2, verify the remote branch SHA equals local HEAD, and require GitHub Actions to pass for that exact commit.",
       "blocking": true
     },
     {
       "order": 2,
       "phase": "release",
-      "action": "Rotate the two donor-exposed credentials without copying or displaying their values.",
-      "blocking": true
-    },
-    {
-      "order": 3,
-      "phase": "release",
-      "action": "Keep the selected Apache-2.0 LICENSE, NOTICE, PEP 639 metadata and archive compliance checks passing through the final release commit.",
-      "blocking": false
-    },
-    {
-      "order": 4,
-      "phase": "release",
-      "action": "Preserve the passing clean-clone rehearsal, release runbook and donor-deprecation contract while completing credential rotation, rights confirmation and remote-SHA prerequisites.",
-      "blocking": false
-    },
-    {
-      "order": 5,
-      "phase": "release",
-      "action": "After explicit public-disclosure approval, push codex/integrate-stock-v2 and verify that the local, remote and UI commit SHA agree before any main-branch merge.",
+      "action": "Commit the final 7/7, 100% PASS status evidence, push it, rerun CI, and verify the remote status payload matches the local UI source of truth before any main-branch merge.",
       "blocking": true
     }
   ]

@@ -131,23 +131,22 @@ after smoke verification. Retain the failed release checkout and logs for audit.
 - canonical runtime code must not import `stock_v2`;
 - the original donor directory is preserved and is not deleted by release
   automation;
-- any filesystem archival/read-only change is owner-managed after credential
-  rotation and rights review;
-- redistribution rights remain an explicit external blocker until the owner
-  confirms them or affected code is independently replaced.
+- any filesystem archival/read-only change remains owner-managed;
+- repository owner `zzzfu411` confirmed sufficient redistribution and
+  relicensing rights and rotation of both donor-local credentials on
+  2026-08-31 in the machine-readable owner attestation.
 
 The authoritative lifecycle fields are in
 `integration/donor_migration_manifest.json`. CI executes
 `scripts/check_release_boundary.py`, which verifies that the donor cannot become
-a runtime dependency or release source and that unresolved owner actions remain
-fail-closed in the status UI.
+a runtime dependency or release source and that the completed owner attestation
+is consistent with the release-risk state.
 
 Owner closeout is recorded in
-`integration/owner_release_attestation.json`. While its status is `pending`, all
-confirmation identities, timestamps, bases and approved commit fields remain
-null and the credential section records only the required count—never token or
-secret values. After the owner supplies the three confirmations below, update
-the attestation to `complete` in the final evidence commit.
+`integration/owner_release_attestation.json`. Its status is `complete`; it
+records the confirming GitHub username, timestamps, rights basis and approved
+candidate commit. The credential section records only the required rotation
+count and confirmation—never token or secret values.
 
 ## Final publication
 
@@ -158,5 +157,8 @@ must record:
 2. rotation of both donor-local credentials without exposing their values;
 3. explicit approval for public disclosure of the exact candidate SHA.
 
-Then push the canonical branch, compare local and remote SHAs, rerun CI, and
-update `integration/integration_status.json` in the same final evidence commit.
+These three owner confirmations were recorded on 2026-08-31 for candidate
+`b59affe` and its attestation/release-evidence follow-ups. Run the complete
+preflight, push the canonical branch, compare local and remote SHAs, require CI
+to pass, and update `integration/integration_status.json` in the final evidence
+commit. Do not merge `main` without a separate owner instruction.

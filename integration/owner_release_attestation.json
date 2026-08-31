@@ -3,24 +3,24 @@
   "project": "zzzfu411/yeuxQ",
   "owner": "zzzfu411",
   "candidate_branch": "codex/integrate-stock-v2",
-  "status": "pending",
+  "status": "complete",
   "donor_redistribution_rights": {
-    "confirmed": false,
-    "confirmed_by": null,
-    "confirmed_at": null,
-    "basis": null
+    "confirmed": true,
+    "confirmed_by": "zzzfu411",
+    "confirmed_at": "2026-08-31T22:41:07+08:00",
+    "basis": "Repository owner confirms ownership or sufficient redistribution and relicensing rights for the stock_v2 donor source and its migrated results."
   },
   "credential_rotation": {
     "required_count": 2,
-    "confirmed": false,
-    "confirmed_by": null,
-    "confirmed_at": null,
+    "confirmed": true,
+    "confirmed_by": "zzzfu411",
+    "confirmed_at": "2026-08-31T22:41:07+08:00",
     "credential_values_recorded": false
   },
   "public_disclosure": {
-    "approved": false,
-    "approved_by": null,
-    "approved_at": null,
-    "approved_candidate_commit": null
+    "approved": true,
+    "approved_by": "zzzfu411",
+    "approved_at": "2026-08-31T22:41:07+08:00",
+    "approved_candidate_commit": "b59affee29baa48c9953b2d6485693caa41f0558"
   }
 }
