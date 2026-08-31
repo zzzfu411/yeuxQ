@@ -2,10 +2,11 @@
 
 > **用途**:本文档用于把"给项目增加可视化仪表盘 + 配套理论手册"这项工作交接给
 > 另一个 AI 或另一个会话。读完即可对齐上下文、无歧义地继续实施。
-> **状态**:方案已定稿并获用户确认。经 2026-07-15 复核,
+> **状态**:方案已定稿并获用户确认。T6–T10 已于 2026-09-01 完成：
 > `src/quantify/analytics/dashboard.py`、`examples/build_report_dashboard.py`、
-> `tests/test_dashboard.py` 和 `docs/可视化与指标理论手册.md` 仍不存在,
-> 因此 dashboard 代码和配套理论手册尚未实现。
+> `tests/test_dashboard.py` 和 `docs/可视化与指标理论手册.md` 已落盘并通过定向
+> 测试、Ruff、HTML 解析与 demo fixture smoke。下方设计与数据边界仍作为维护规范；
+> Phase 6 的远端发布阻塞与本任务独立。
 
 ---
 
@@ -177,9 +178,9 @@ ab3164c Initial baseline: teaching-grade A-share quant research system
 包含多处已修改代码、测试和未跟踪文件,且有其他 Agent 同时工作。接手者必须保留这些
 并行改动,不得为了实施 dashboard 而 reset、checkout 或清理工作区。
 
-**可视化 + 理论手册相关代码/文档仍未实现。**
-`src/quantify/analytics/dashboard.py`、`examples/build_report_dashboard.py`、
-`tests/test_dashboard.py`、`docs/可视化与指标理论手册.md` **均不存在**。
+上述四个文件在原始复核时尚未实现；当前版本已经完成并接入 README、上手指南和
+`docs/03_如何阅读研究报告.md`。仪表盘只读报告目录，缺失/未知证据安全降级，
+不会改变确定性门或产生交易许可。
 
 ---
 
@@ -187,23 +188,24 @@ ab3164c Initial baseline: teaching-grade A-share quant research system
 
 按依赖顺序:
 
-- [ ] **T6 写 dashboard 模块** `src/quantify/analytics/dashboard.py`
+- [x] **T6 写 dashboard 模块** `src/quantify/analytics/dashboard.py`
       纯函数读结果目录 → 自包含 dashboard.html(内联 SVG:净值/回撤/因子IC/换手/拒单;
       KPI 卡片按阈值上色;门徽章)。零新依赖。文件缺失需容错。
-- [ ] **T7 写 CLI** `examples/build_report_dashboard.py`
+- [x] **T7 写 CLI** `examples/build_report_dashboard.py`
       `--report-dir`(必填)/`--output`(默认 report-dir/dashboard.html)/`--open`。
       argparse + loguru,风格对齐 examples/run_llm_review.py。
-- [ ] **T8 写测试** `tests/test_dashboard.py`
+- [x] **T8 写测试** `tests/test_dashboard.py`
       用最小 result 目录 fixture(可参考 tests/test_research.py 造 summary.json+CSV)
       验证:dashboard.html 生成、含关键 KPI 文本、含 `<svg`、含风险提示；
       llm_review.json 缺失时不报错；CLI smoke(写出文件)。
-- [ ] **T9 写理论手册** `docs/可视化与指标理论手册.md`（章节见 §3.2，口径对齐 §2.4）。
-- [ ] **T10 验证并接入**
+- [x] **T9 写理论手册** `docs/可视化与指标理论手册.md`（章节见 §3.2，口径对齐 §2.4）。
+- [x] **T10 验证并接入**
       - 先用 §6 的 demo-contaminated UI fixture 验证 dashboard.html 的解析与渲染;
         不得把该步骤写成真实研究验证。
       - 跑测试 + `ruff check .`(注意 §6 pytest 坑）。
       - 在 README 和 docs/GETTING_STARTED.md 链接新命令与手册。
-      - 提交(建议拆两个 commit:代码+测试一个，手册一个）。
+      - 已提交代码/测试/文档并保留 demo fixture 仅作 UI smoke；完整验证记录在当前会话
+        的 goal 收尾报告中。
 
 ---
 

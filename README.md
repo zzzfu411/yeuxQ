@@ -19,6 +19,7 @@ plan, migration manifest, and machine-readable UI status are maintained in:
 - [docs/31_Release_Operations.md](docs/31_Release_Operations.md)
 - [integration/integration_status.json](integration/integration_status.json)
 - [integration/index.html](integration/index.html)
+- [docs/可视化与指标理论手册.md](docs/可视化与指标理论手册.md)
 
 The application is research-only and advisory-only. Live observations are
 append-only, hash-chained and physically separate from canonical research
@@ -26,10 +27,11 @@ storage. They cannot upgrade a `PASS/WATCH/BLOCK` research gate; there is no
 broker, account, order, cancel, or automatic trading endpoint.
 
 The current status is `6/7 · 86%`: Phase 5 hardening is complete and the Phase 6
-release rehearsal is active. Apache-2.0 project licensing is recorded. Public
-release remains `BLOCK` until donor redistribution rights, the two donor-local
-credential rotations, explicit public-disclosure approval, and remote SHA
-verification are resolved by the repository owner.
+release rehearsal is active. Apache-2.0 project licensing, donor-rights
+attestation, credential rotation and public-disclosure approval are recorded.
+Public release remains `BLOCK` until the exact remote commit passes GitHub
+Actions and the final `7/7 · 100% · PASS` status evidence is pushed and
+reverified by the repository owner.
 
 ## License
 
@@ -324,6 +326,15 @@ results/research/<timestamp>/
 - `factor_ic.csv`: 因子 RankIC
 - `drawdown.png`: 净值与回撤图
 - `html_report.html`: 可用浏览器打开的报告
+- `dashboard.html`: 零依赖、自包含的 SVG 仪表盘（由 `build_report_dashboard.py` 生成）
+
+想用浏览器一次查看净值、回撤、RankIC、换手、拒单和最近持仓，可运行:
+
+```powershell
+uv run python examples/build_report_dashboard.py --report-dir results/research/<timestamp> --open
+```
+
+仪表盘是只读研究视图；缺失或未知证据按不可用/BLOCK 展示，不能升级研究门或产生交易许可。
 
 如果要做真实 A 股研究,先导入真实缓存:
 
@@ -783,6 +794,7 @@ never a broker basket.
 - [docs/01_核心概念.md](docs/01_核心概念.md)
 - [docs/02_运行第一个研究实验.md](docs/02_运行第一个研究实验.md)
 - [docs/03_如何阅读研究报告.md](docs/03_如何阅读研究报告.md)
+- [docs/可视化与指标理论手册.md](docs/可视化与指标理论手册.md)
 - [docs/04_修改参数与常见错误.md](docs/04_修改参数与常见错误.md)
 - [docs/05_量化实盘交易心智模型.md](docs/05_量化实盘交易心智模型.md)
 - [docs/06_LLM_For_Quantify.md](docs/06_LLM_For_Quantify.md)
@@ -809,7 +821,7 @@ never a broker basket.
 - 多因子研究: 动量、低波动、估值、质量、流动性,截面去极值和标准化。
 - 月度调仓策略: 因子综合打分,前 N 只股票,等权配置,单票上限。
 - 纸面交易: 目标权重转订单,T+1,涨跌停/停牌不可交易,整百股,手续费,印花税,滑点,现金约束。
-- 文件化报告: JSON、CSV、PNG、HTML。
+- 文件化报告: JSON、CSV、PNG、HTML，以及零依赖自包含的 SVG 仪表盘。
 - LLM-ready 审查: 读取研究报告,输出 PASS/WATCH/BLOCK、缺失证据、下一步实验、外部 LLM 提示词,并可选调用 OpenAI-compatible advisory 模型。
 - 小额实盘准备骨架: 数据审计、稳健性实验、模拟盘日报、人工审批记录、`micro_live_ready` 准备门和人工参考表; 准备门会读取目标组合风险标记,阻断 ST、退市、停牌、涨跌停和缺价行。
 - 资金目标筛选: 把 100 万元目标转成年化收益、回撤预算和候选策略评分,拒绝不现实或证据不足的策略。

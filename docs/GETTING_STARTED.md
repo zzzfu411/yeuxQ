@@ -84,12 +84,26 @@ uv run python examples/run_research.py --config config/research.yaml
 | `factor_ic.csv` | 因子 RankIC(因子有没有预测力) |
 | `drawdown.png` | 净值与回撤图 |
 | `html_report.html` | 浏览器打开的汇总报告 |
+| `dashboard.html` | 可离线分享的自包含 SVG 仪表盘（需单独生成） |
 | `data_audit.json` | 数据质量审计结论(PASS/WATCH/BLOCK) |
 | `run_manifest.json` | 配置哈希、缓存哈希、样本窗口——**可复现性凭证** |
 
 **学习重点:** 不要只看 `total_return`。真正决定能否实盘的是**回撤、换手、
 拒单率、样本外表现、因子 IC 是否长期为正**。这正是 `docs/03_如何阅读研究报告.md`
 展开讲的内容。
+
+### 1a. 生成可视化仪表盘
+
+如果想把同一份报告的关键证据放在一张可离线打开的页面里:
+
+```powershell
+uv run python examples/build_report_dashboard.py --report-dir results\research\<时间戳> --open
+```
+
+它生成 `dashboard.html`，内嵌净值/回撤、RankIC、换手、拒单原因和持仓快照的 SVG，
+不依赖 CDN 或新安装的图表框架。`summary.json` 是必需输入；缺失、损坏或未知的审查
+状态会按不可用/BLOCK 显示。详细的指标口径和阅读方法见
+[docs/可视化与指标理论手册.md](可视化与指标理论手册.md)。
 
 ---
 
@@ -209,7 +223,8 @@ walk-forward 滚动验证 → 候选筛选 → 模拟盘日报 → 稳定性审�
 **先跑,再读概念,最后看数学**,不会一上来被公式劝退:
 
 1. 跑通本指南第 1-2 步。
-2. 读 `docs/00_从零开始.md` → `docs/01_核心概念.md` → `docs/03_如何阅读研究报告.md`。
+2. 读 `docs/00_从零开始.md` → `docs/01_核心概念.md` → `docs/03_如何阅读研究报告.md` →
+   `docs/可视化与指标理论手册.md`。
 3. 读 `docs/05_量化实盘交易心智模型.md`(整个项目的哲学总纲)。
 4. 跑本指南第 4-5 步,对照 `docs/08_第一桶金策略研究路线.md` 和
    `docs/12_Agent_Team_Execution.md` 看真实实验结论。

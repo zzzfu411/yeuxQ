@@ -27,9 +27,10 @@
 初始仓库审计和 Phase 1 架构/合同/合规基线已经完成：核心合同、observation store、
 fail-closed secret scan、双包构建与前端只读状态投影均已通过验收。项目已由所有者确认采用
 Apache-2.0，版权主体为 `zzzfu411`，根 `LICENSE`/`NOTICE` 与发行包元数据审计通过；donor
-再分发权和两项凭据轮换仍是最终发布阻塞项，但不再阻塞受控的本地迁移。此处的“完成”只表示
-边界与工程基线可执行，不表示 donor 已获得第三方再分发许可，也不表示任何策略、数据源或
-实盘能力通过验证。
+再分发权、两项凭据轮换和公开披露已由所有者写入
+`integration/owner_release_attestation.json`；当前剩余发布阻塞是远端 CI/SHA 核对和最终
+状态证据回写。此处的“完成”只表示边界与工程基线可执行，不表示任何策略、数据源或实盘
+能力通过验证。
 
 ## 2. 项目目标与成功标准
 
@@ -337,8 +338,8 @@ observation、donor/LLM advisory 输出不能改变 canonical `PASS/WATCH/BLOCK`
 精确回退到 canonical Python，source checkout 不再盲信 PATH 中同名外部 CLI；append-only hash
 chain 的篡改、partial line 和独立副本恢复均 fail closed。详细证据见
 `docs/phase5_hardening_acceptance.md`。状态 UI 已同步为 `6/7 · 86%`，Phase 6 release rehearsal
-进入 `in_progress`；Apache-2.0 项目许可证已在 Phase 6 完成，donor 再分发权、两项凭据轮换和
-远端 SHA 仍保持发布 BLOCK。
+进入 `in_progress`；Apache-2.0 项目许可证、donor 权利、两项凭据轮换和公开披露已完成，
+当前仅等待远端 CI 对 exact SHA 通过并回写最终状态证据。
 
 ### Phase 6 — Release, migration and deprecation（进行中）
 
@@ -361,9 +362,9 @@ chain 的篡改、partial line 和独立副本恢复均 fail closed。详细证�
 
 | ID | 风险 | 当前状态 | 关闭条件 |
 | --- | --- | --- | --- |
-| P0-01 | donor 整体许可证缺失，公开再分发权不清 | open | 用户/权利人确认，或仅 clean-room 重写并保留逐文件 provenance |
-| P0-02 | v4 含 license/material/vendor bundle，误复制会产生合规与秘密风险 | mitigated | reference-only 规则、扫描与 diff 审查持续通过 |
-| P0-03 | donor 本地配置含真实 LLM/MCP 凭据 | open | 凭据轮换；ignore 与 secret scanner 测试通过；历史无泄露 |
+| P0-01 | donor 整体许可证缺失，公开再分发权不清 | closed（owner attestation） | 用户/权利人确认，或仅 clean-room 重写并保留逐文件 provenance |
+| P0-02 | v4 含 license/material/vendor bundle，误复制会产生合规与秘密风险 | closed | reference-only 规则、扫描与 diff 审查持续通过 |
+| P0-03 | donor 本地配置含真实 LLM/MCP 凭据 | closed（owner attestation） | 凭据轮换；ignore 与 secret scanner 测试通过；历史无泄露 |
 | P0-04 | 实时 observation 污染研究 cache/证据链 | closed | 物理存储隔离、无隐式 promotion、反向安全测试通过 |
 | P0-05 | trade plan/预测被误解为实盘指令 | closed | 合同、API、UI 固定 research-only；无 broker/order 能力 |
 | P0-06 | 双回测/双 gate 产生互相矛盾的晋级结论 | closed | canonical gate 唯一权威；donor 输出只能 advisory |
@@ -373,14 +374,14 @@ chain 的篡改、partial line 和独立副本恢复均 fail closed。详细证�
 
 | ID | 风险 | 当前状态 | 关闭条件 |
 | --- | --- | --- | --- |
-| P1-01 | symbol/市场代码规则不一致 | open | canonical SymbolId + 跨市场 fixture |
+| P1-01 | symbol/市场代码规则不一致 | mitigated | canonical SymbolId + 跨市场 fixture |
 | P1-02 | 时区、交易日历、复权与停牌语义不一致 | open | 数据字典、边界测试与显式 unavailable |
-| P1-03 | provider 限流/失败导致旧缓存冒充实时 | open | TTL、stale、fallback reason 和 UI 标签 |
+| P1-03 | provider 限流/失败导致旧缓存冒充实时 | mitigated | TTL、stale、fallback reason 和 UI 标签 |
 | P1-04 | SQLite 并发/锁与 schema 演进 | closed | 独立 DB、迁移版本、并发与恢复测试 |
 | P1-05 | Python 与 Rust 指标漂移 | closed | parity suite、容差定义和自动 fallback |
-| P1-06 | API 文件读取、URL 代理或富文本产生安全面 | open | allowlist、路径约束、无任意代理、输出净化 |
+| P1-06 | API 文件读取、URL 代理或富文本产生安全面 | mitigated | allowlist、路径约束、无任意代理、输出净化 |
 | P1-07 | web vendor 版本与 notices 不完整 | closed | 锁版本、保留来源与许可证文本、自动核查 |
-| P1-08 | donor 构建/运行产物扩大仓库与泄露数据 | open | denylist、ignore、staged secret/artifact scan |
+| P1-08 | donor 构建/运行产物扩大仓库与泄露数据 | mitigated | denylist、ignore、staged secret/artifact scan |
 | P1-09 | README/命令和 UI 对“实时”能力过度承诺 | mitigated | 能力矩阵、降级语义和 research-only 文案审查 |
 
 ## 9. 前端进度同步合同
@@ -453,7 +454,8 @@ git ls-remote origin refs/heads/main
 ## 13. 当前下一步
 
 Phase 5 已完成，当前推进 Phase 6 release rehearsal：干净 checkout 安装、测试、启动、
-静态/浏览器状态投影和发行包边界均已通过。Apache-2.0 根许可证、`NOTICE`、包元数据与归档审计
-已经完成，GitHub 主机认证有效；当前继续处理 donor 再分发权、两项凭据轮换、公开推送批准及
-本地/远端/UI SHA 核对。v4 与所有运行时/受限材料继续严格排除；任何外部授权或凭据未确认前，
-状态 UI 必须保持 `release_readiness=BLOCK`。
+静态/浏览器状态投影和发行包边界均已通过。Apache-2.0 根许可证、`NOTICE`、包元数据、归档
+审计和 owner attestation 已完成；远端分支当前与本地候选 SHA 一致，但最近 exact-SHA
+GitHub Actions 运行仍失败，因此状态 UI 继续保持 `release_readiness=BLOCK`。下一步是修复或
+确认 CI 失败原因、重新运行并在 CI 通过后提交最终 `7/7 · 100% · PASS` 证据；v4 与所有
+运行时/受限材料继续严格排除。

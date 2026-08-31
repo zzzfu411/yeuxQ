@@ -498,7 +498,7 @@
       "source": "src/stock_v2/settings.py",
       "target": "src/yeuxq/settings.py",
       "source_sha256": "bcd2c8d2939fb92ae8fda9c9182f484e5805427ff54e60f29060f33d1b05734b",
-      "target_sha256": "346b71b37c7ff89e310095257be5bd2d0cd6cb56a90e91b55a05801b4f0d83d5",
+      "target_sha256": "5b1f9e5881f777f1ff3e157199749a6c0c481ea6551ee4fc70bfbe70a2ced79f",
       "disposition": "migrated_namespace_config_security_and_runtime_hardening"
     },
     {
