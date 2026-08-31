@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "donor": "stock_v2",
-  "generated_on": "2026-08-30",
+  "generated_on": "2026-08-31",
   "release_boundary": {
     "python_wheel": {
       "package_modules": [
@@ -22,7 +22,27 @@
       "canonical_runtime": "python",
       "parity_required_before_default": true
     },
-    "project_license": "not_selected_by_migration",
+    "project_license": {
+      "spdx": "Apache-2.0",
+      "copyright": "Copyright 2026 zzzfu411",
+      "license_file": "LICENSE",
+      "notice_file": "NOTICE",
+      "third_party_notice_file": "THIRD_PARTY_NOTICES.md",
+      "scope": "canonical_material_with_confirmed_redistribution_rights"
+    },
+    "donor_lifecycle": {
+      "role": "read_only_migration_evidence",
+      "feature_changes_allowed": false,
+      "runtime_dependency_allowed": false,
+      "release_source": false,
+      "canonical_release_source": "zzzfu411/yeuxQ",
+      "preserve_original": true,
+      "delete_original": false,
+      "accept_new_runtime_data": false,
+      "redistribution_rights": "unresolved",
+      "credential_rotation_required": true,
+      "deprecation_status": "migration_complete_release_blocked"
+    },
     "design_evidence": [
       {
         "id": "security_and_secret_isolation",

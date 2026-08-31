@@ -16,6 +16,7 @@ it is not a second runtime, release source, or bulk-copied tree. The integration
 plan, migration manifest, and machine-readable UI status are maintained in:
 
 - [docs/30_Stock_Integration_Plan.md](docs/30_Stock_Integration_Plan.md)
+- [docs/31_Release_Operations.md](docs/31_Release_Operations.md)
 - [integration/integration_status.json](integration/integration_status.json)
 - [integration/index.html](integration/index.html)
 

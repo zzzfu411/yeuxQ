@@ -35,6 +35,7 @@ def test_ci_workflow_is_read_only_locked_and_covers_release_checks() -> None:
         "uv run ruff check .",
         "uv run ruff format --check src/yeuxq tests/yeuxq scripts",
         "uv run python scripts/check_secrets.py --root .",
+        "uv run python scripts/check_release_boundary.py",
         "mkdir -p ./tmp",
         "uv run pytest tests -q",
         "--basetemp ./tmp/pytest-ci",

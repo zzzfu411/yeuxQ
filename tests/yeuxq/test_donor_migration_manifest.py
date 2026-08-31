@@ -159,7 +159,27 @@ def test_donor_migration_manifest_is_complete_and_release_safe() -> None:
         "canonical_runtime": "python",
         "parity_required_before_default": True,
     }
-    assert release["project_license"] == "not_selected_by_migration"
+    assert release["project_license"] == {
+        "spdx": "Apache-2.0",
+        "copyright": "Copyright 2026 zzzfu411",
+        "license_file": "LICENSE",
+        "notice_file": "NOTICE",
+        "third_party_notice_file": "THIRD_PARTY_NOTICES.md",
+        "scope": "canonical_material_with_confirmed_redistribution_rights",
+    }
+    assert release["donor_lifecycle"] == {
+        "role": "read_only_migration_evidence",
+        "feature_changes_allowed": False,
+        "runtime_dependency_allowed": False,
+        "release_source": False,
+        "canonical_release_source": "zzzfu411/yeuxQ",
+        "preserve_original": True,
+        "delete_original": False,
+        "accept_new_runtime_data": False,
+        "redistribution_rights": "unresolved",
+        "credential_rotation_required": True,
+        "deprecation_status": "migration_complete_release_blocked",
+    }
 
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     assert pyproject["tool"]["uv"]["build-backend"]["module-name"] == ["quantify", "yeuxq"]

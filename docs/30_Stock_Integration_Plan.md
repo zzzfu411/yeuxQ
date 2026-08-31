@@ -345,10 +345,11 @@ chain 的篡改、partial line 和独立副本恢复均 fail closed。详细证�
 工作包：
 
 - 已完成用户选择的 Apache-2.0 项目 LICENSE、NOTICE、包元数据和第三方 notices；
-- 提供单一安装、启动、配置、升级和回滚文档；
+- 已提供 `docs/31_Release_Operations.md`，统一安装、启动、配置、升级和回滚流程；
 - 建立 GitHub Actions：lint、test、secret scan、license check、frontend smoke；
 - 从干净 checkout 做 release rehearsal；
-- 将 donor 设置为只读归档/迁移说明，保留 provenance，不删除原目录；
+- 已在 donor manifest 固化只读迁移证据生命周期，并由 CI 验证 canonical 是唯一 release source；
+  原 donor 由所有者保留，不由 release automation 删除或写入；
 - 推送 canonical 分支、核对远端 SHA，再合并到 `main`。
 
 验收：干净环境演练通过；所有阶段完成；P0 为 0；状态 UI 显示完成且提交 SHA 与远端一致；

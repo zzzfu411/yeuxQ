@@ -44,6 +44,8 @@ In the final `bbf48a0` rehearsal clone, Git reported `core.autocrlf=true` while
 | Distribution compliance | PASS — 2 archives audited |
 | Project license | PASS — Apache-2.0, copyright 2026 `zzzfu411`, root LICENSE/NOTICE and PEP 639 metadata packaged |
 | License-focused acceptance | PASS — 53 tests and 654-candidate secret scan |
+| Release operations runbook | PASS — one install/start/config/upgrade/rollback and donor-deprecation procedure |
+| Canonical/donor boundary | PASS — executable preflight plus 5 focused tests; combined Phase 6 operations suite 57 passed and 657 candidates passed secret scan |
 | Wheel import/startup smoke | PASS — `quantify` and `yeuxq` import, bounded v1 app starts with an explicit writable `YEUXQ_DATA_DIR` |
 | Source-checkout UI | PASS — desktop, mobile and integration status projections |
 | Wheel UI | PASS — packaged assets render; source-only integration page fails closed |
@@ -104,6 +106,17 @@ both passed the strengthened offline audit, and the wheel metadata includes the
 Apache-2.0 expression plus `LICENSE`, `NOTICE`, and
 `THIRD_PARTY_NOTICES.md`. This project license does not clear donor material for
 which redistribution rights remain unestablished.
+
+Phase 6 now has one canonical operations runbook at
+`docs/31_Release_Operations.md`. It covers source and wheel installation,
+runtime configuration, immutable-environment upgrades, executable rollback,
+release preflight and final publication. The donor manifest records `stock_v2`
+as read-only migration evidence, prohibits feature changes, runtime dependency,
+release use and new runtime data, and preserves the original directory without
+allowing release automation to delete it. `scripts/check_release_boundary.py`
+validates this contract, rejects canonical `stock_v2` imports and keeps the UI
+at BLOCK while owner actions remain unresolved; its focused suite passed five
+tests.
 
 ## Remaining blockers
 

@@ -50,6 +50,9 @@ jobs:
       - name: Scan repository candidates for secrets
         run: uv run python scripts/check_secrets.py --root .
 
+      - name: Validate canonical release and donor deprecation boundary
+        run: uv run python scripts/check_release_boundary.py
+
       - name: Run Python and integration tests
         shell: bash
         run: |
