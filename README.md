@@ -1,8 +1,33 @@
-# quantify
+# yeuxQ
+
+> Python distribution name remains `quantify`; `yeuxQ` is the canonical
+> integrated repository and application name.
 
 > **新手入口:** 想学习量化完整流程,先读 [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) ——
 > 它把"研究报告 → 审查门 → 真实数据 → 周度流水线"的学习主线串成了可复制命令。
 > 本 README 其余部分是完整的操作 runbook。
+
+## Unified project boundary
+
+`yeuxQ` is the single canonical project that combines the existing
+`src/quantify` research core with the reviewed, clean-room `src/yeuxq`
+observation/advisory workbench. The local `stock_v2` checkout is a donor only;
+it is not a second runtime, release source, or bulk-copied tree. The integration
+plan, migration manifest, and machine-readable UI status are maintained in:
+
+- [docs/30_Stock_Integration_Plan.md](docs/30_Stock_Integration_Plan.md)
+- [integration/integration_status.json](integration/integration_status.json)
+- [integration/index.html](integration/index.html)
+
+The application is research-only and advisory-only. Live observations are
+append-only, hash-chained and physically separate from canonical research
+storage. They cannot upgrade a `PASS/WATCH/BLOCK` research gate; there is no
+broker, account, order, cancel, or automatic trading endpoint.
+
+The current status is `6/7 · 86%`: Phase 5 hardening is complete and the Phase 6
+release rehearsal is active. Public release remains `BLOCK` until donor
+redistribution rights, the two donor-local credential rotations, and a
+project-wide `LICENSE` are resolved by the repository owner.
 
 ## Real Data Handoff Checklist
 

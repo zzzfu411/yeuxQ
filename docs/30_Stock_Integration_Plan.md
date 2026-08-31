@@ -12,7 +12,7 @@
 两个项目采用“**单一 canonical 仓库 + donor 逐组件迁移 + 契约隔离**”的方式集成，
 不做目录覆盖、全量复制或 Git 历史拼接：
 
-- `quantify/yeuxQ` 是唯一 canonical repository、唯一发布源和唯一问题追踪入口；
+- `zzzfu411/yeuxQ` 是唯一 canonical repository、唯一发布源和唯一问题追踪入口；
 - `src/quantify` 继续作为研究数据、可复现实验、回测、证据链和
   `PASS/WATCH/BLOCK` 晋级门的权威实现；
 - `stock_v2` 仅作为 FastAPI、实时行情观察、技术分析、可视化和可选 Rust 计算核的
@@ -317,7 +317,7 @@ order/account/broker endpoint；实时 endpoint 响应固定含 advisory 边界�
 回归为 1305 passed、3 skipped；桌面 `1440x1000` 与移动 `390x844` 均无横向溢出，浏览器
 请求只落在 bounded `/api/v1/*` GET 合同，生成、扫描、订单流和 AI 看图保持 fail-closed。
 
-### Phase 5 — Research integration and regression hardening（进行中）
+### Phase 5 — Research integration and regression hardening（已完成）
 
 工作包：
 
@@ -328,12 +328,17 @@ order/account/broker endpoint；实时 endpoint 响应固定含 advisory 边界�
 - 新增端到端用例：provider → observation → API → UI；
 - 新增反向安全用例：observation 无法升级 gate、LLM 无法升级 gate、API 无法下单。
 
-当前入口：Phase 4 已切换为 `completed`，状态 UI 显示 `5/7 · 71%`，本阶段负责将已有边界
-固化为 CI、parity、存储恢复、发行包合规和反向安全门禁。验收：原有 quantify 测试无回归；
-新增合同/集成测试通过；P0 风险关闭；P1 风险都有 owner、期限或显式接受记录；关键结果包含
-可复查的命令、提交 SHA 和输出摘要。
+验收结果：本阶段已将边界固化为 CI、parity、存储恢复、发行包合规和反向安全门禁。`tests/yeuxq`
+为 274 passed、3 skipped；完整 Python 回归为 1316 passed、3 skipped；Rust workspace 为 3
+passed；13 个 first-party JavaScript 模块通过 `node --check`；secret scan 检查 649 个候选文件；
+wheel/sdist 均通过离线发行包审计。新增 provider → observation → API → UI 端到端测试，明确
+observation、donor/LLM advisory 输出不能改变 canonical `PASS/WATCH/BLOCK`。Rust 在显式失败时
+精确回退到 canonical Python，source checkout 不再盲信 PATH 中同名外部 CLI；append-only hash
+chain 的篡改、partial line 和独立副本恢复均 fail closed。详细证据见
+`docs/phase5_hardening_acceptance.md`。状态 UI 已同步为 `6/7 · 86%`，Phase 6 release rehearsal
+进入 `in_progress`；donor 再分发权、两项凭据轮换和项目 LICENSE 仍保持发布 BLOCK。
 
-### Phase 6 — Release, migration and deprecation（未开始）
+### Phase 6 — Release, migration and deprecation（进行中）
 
 工作包：
 
@@ -356,10 +361,10 @@ order/account/broker endpoint；实时 endpoint 响应固定含 advisory 边界�
 | P0-01 | donor 整体许可证缺失，公开再分发权不清 | open | 用户/权利人确认，或仅 clean-room 重写并保留逐文件 provenance |
 | P0-02 | v4 含 license/material/vendor bundle，误复制会产生合规与秘密风险 | mitigated | reference-only 规则、扫描与 diff 审查持续通过 |
 | P0-03 | donor 本地配置含真实 LLM/MCP 凭据 | open | 凭据轮换；ignore 与 secret scanner 测试通过；历史无泄露 |
-| P0-04 | 实时 observation 污染研究 cache/证据链 | open | 物理存储隔离、无隐式 promotion、反向安全测试通过 |
-| P0-05 | trade plan/预测被误解为实盘指令 | open | 合同、API、UI 固定 research-only；无 broker/order 能力 |
-| P0-06 | 双回测/双 gate 产生互相矛盾的晋级结论 | open | canonical gate 唯一权威；donor 输出只能 advisory |
-| P0-07 | UI 进度与仓库状态分叉 | open | status JSON 单一真相源；阶段变更与证据同提交并有校验 |
+| P0-04 | 实时 observation 污染研究 cache/证据链 | closed | 物理存储隔离、无隐式 promotion、反向安全测试通过 |
+| P0-05 | trade plan/预测被误解为实盘指令 | closed | 合同、API、UI 固定 research-only；无 broker/order 能力 |
+| P0-06 | 双回测/双 gate 产生互相矛盾的晋级结论 | closed | canonical gate 唯一权威；donor 输出只能 advisory |
+| P0-07 | UI 进度与仓库状态分叉 | closed | status JSON 单一真相源；阶段变更与证据同提交并有校验 |
 
 ### 8.2 P1：应在发布前解决或明确接受
 
@@ -368,12 +373,12 @@ order/account/broker endpoint；实时 endpoint 响应固定含 advisory 边界�
 | P1-01 | symbol/市场代码规则不一致 | open | canonical SymbolId + 跨市场 fixture |
 | P1-02 | 时区、交易日历、复权与停牌语义不一致 | open | 数据字典、边界测试与显式 unavailable |
 | P1-03 | provider 限流/失败导致旧缓存冒充实时 | open | TTL、stale、fallback reason 和 UI 标签 |
-| P1-04 | SQLite 并发/锁与 schema 演进 | open | 独立 DB、迁移版本、并发与恢复测试 |
-| P1-05 | Python 与 Rust 指标漂移 | open | parity suite、容差定义和自动 fallback |
+| P1-04 | SQLite 并发/锁与 schema 演进 | closed | 独立 DB、迁移版本、并发与恢复测试 |
+| P1-05 | Python 与 Rust 指标漂移 | closed | parity suite、容差定义和自动 fallback |
 | P1-06 | API 文件读取、URL 代理或富文本产生安全面 | open | allowlist、路径约束、无任意代理、输出净化 |
-| P1-07 | web vendor 版本与 notices 不完整 | open | 锁版本、保留来源与许可证文本、自动核查 |
+| P1-07 | web vendor 版本与 notices 不完整 | closed | 锁版本、保留来源与许可证文本、自动核查 |
 | P1-08 | donor 构建/运行产物扩大仓库与泄露数据 | open | denylist、ignore、staged secret/artifact scan |
-| P1-09 | README/命令和 UI 对“实时”能力过度承诺 | open | 能力矩阵、降级语义和 research-only 文案审查 |
+| P1-09 | README/命令和 UI 对“实时”能力过度承诺 | mitigated | 能力矩阵、降级语义和 research-only 文案审查 |
 
 ## 9. 前端进度同步合同
 
@@ -390,8 +395,10 @@ order/account/broker endpoint；实时 endpoint 响应固定含 advisory 边界�
 9. merge/rebase 后重新计算 overall counts，禁止只改百分比；
 10. release 证据额外记录本地、远端和 UI 展示的 commit SHA。
 
-当前快照必须明确显示：`audit=completed`、`contracts=in_progress`，其余阶段
-`not_started`。随着并行任务落地，由负责该工作包的 agent/owner 更新 evidence 和状态。
+当前快照必须明确显示：`audit=completed`、`contracts=completed`、`observation_platform=completed`、
+`unified_api=completed`、`frontend=completed`、`hardening=completed`、`release=in_progress`；
+进度由阶段状态重算为 `6/7 · 86%`。随着后续发行演练落地，由负责该工作包的 agent/owner 更新
+evidence 和状态。
 
 ## 10. 排除清单
 
@@ -442,9 +449,8 @@ git ls-remote origin refs/heads/main
 
 ## 13. 当前下一步
 
-Phase 3 已完成，当前推进 Phase 4：让 clean-room 工作台只调用 `/api/v1` bounded facade，统一
-observation、canonical readiness 与 integration status 的来源、时间、新鲜度和不可用状态，并把
-“买入、卖出、扫描”等 donor 文案收窄为分析标签而非交易指令。桌面与移动端均需验证无溢出、
-无重叠、离线 fail closed、无任意 URL/HTML 注入和无 broker/account/order surface。v4 与所有
-运行时/受限材料继续严格排除；donor 再分发权、项目 LICENSE 与两项凭据轮换持续作为发布阻塞
-项展示，不能因工程阶段完成而自动解除。
+Phase 5 已完成，当前推进 Phase 6 release rehearsal：在干净 checkout 中复核安装、测试、启动、
+静态/浏览器状态投影和发行包边界，并核对本地、远端与 UI 的提交 SHA。当前定向合同测试、Ruff、
+Rust、first-party JavaScript、secret scan 以及 wheel/sdist 合规审计均已通过；clean-checkout 证据、
+donor 再分发权、项目 LICENSE、两项凭据轮换和 GitHub 有效认证仍在发布门内。v4 与所有运行时/受限
+材料继续严格排除；任何外部授权或凭据未确认前，状态 UI 必须保持 `release_readiness=BLOCK`。

@@ -51,8 +51,16 @@ def _find_cli() -> Optional[Path]:
     for p in project_candidates:
         if p.is_file():
             return p
-    which = shutil.which("trendlab")
-    return Path(which) if which else None
+    # A source checkout must never silently pick up an unrelated executable
+    # with the same basename from PATH (for example a donor/developer build).
+    # That executable may implement a different schema or decision chain and
+    # would make the optional adapter look healthy while returning drifted
+    # results.  In a wheel/runtime install there is no project target tree, so
+    # an explicitly installed ``trendlab`` on PATH remains a useful opt-in.
+    if PROJECT_ROOT is None:
+        which = shutil.which("trendlab")
+        return Path(which).resolve() if which else None
+    return None
 
 
 def _call_json(cmd: str, payload: dict[str, Any]) -> dict[str, Any]:

@@ -3,7 +3,9 @@
 This file identifies third-party JavaScript distributed with the yeuxQ web
 interface. It is a notice for those bundled files only; it does not declare a
 license for the yeuxQ project as a whole. Exact file hashes are also recorded
-in `src/yeuxq/web/vendor/manifest.json`.
+in `src/yeuxq/web/vendor/manifest.json`. Complete license texts are shipped in
+`src/yeuxq/web/vendor/licenses/` and are included in both the wheel and source
+distribution. This notice does not select a project-wide LICENSE.
 
 | Component | Version | Bundled file | SPDX expression | SHA-256 |
 | --- | --- | --- | --- | --- |
@@ -16,6 +18,7 @@ in `src/yeuxq/web/vendor/manifest.json`.
 - Upstream: https://github.com/apache/echarts
 - Release: https://github.com/apache/echarts/releases/tag/5.5.0
 - License text: https://github.com/apache/echarts/blob/5.5.0/LICENSE
+- Packaged text: `src/yeuxq/web/vendor/licenses/Apache-2.0.txt`
 - Notice: Licensed to the Apache Software Foundation under one or more
   contributor license agreements and distributed under the Apache License,
   Version 2.0. The bundled minified file retains the upstream license header.
@@ -25,6 +28,7 @@ in `src/yeuxq/web/vendor/manifest.json`.
 - Upstream: https://github.com/markedjs/marked
 - Release: https://github.com/markedjs/marked/releases/tag/v12.0.2
 - License text: https://github.com/markedjs/marked/blob/v12.0.2/LICENSE.md
+- Packaged text: `src/yeuxq/web/vendor/licenses/MIT.txt`
 - Notice: Copyright (c) 2011-2024, Christopher Jeffrey and contributors.
   Distributed under the MIT License. The bundled minified file retains the
   upstream copyright and license header.
@@ -34,6 +38,8 @@ in `src/yeuxq/web/vendor/manifest.json`.
 - Upstream: https://github.com/cure53/DOMPurify
 - Release: https://github.com/cure53/DOMPurify/releases/tag/3.1.6
 - License text: https://github.com/cure53/DOMPurify/blob/3.1.6/LICENSE
+- Packaged texts: `src/yeuxq/web/vendor/licenses/Apache-2.0.txt` and
+  `src/yeuxq/web/vendor/licenses/MPL-2.0.txt`
 - Notice: Copyright Cure53 and other contributors. Upstream offers DOMPurify
   under the Apache License 2.0 or Mozilla Public License 2.0. The bundled
   minified file retains the upstream dual-license header.

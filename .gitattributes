@@ -1,0 +1,26 @@
+# Keep provenance and vendor hashes stable across platforms.
+# Explicit LF checkout also makes clean Windows clones match the byte hashes
+# recorded in integration/donor_migration_manifest.json and vendor/manifest.json.
+* text=auto eol=lf
+
+# Never normalize binary assets or archives.
+*.7z binary
+*.avif binary
+*.bmp binary
+*.dll binary
+*.dylib binary
+*.gif binary
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.mp3 binary
+*.mp4 binary
+*.pdf binary
+*.png binary
+*.so binary
+*.tar binary
+*.tgz binary
+*.wav binary
+*.webp binary
+*.whl binary
+*.zip binary

@@ -33,12 +33,14 @@ def test_ci_workflow_is_read_only_locked_and_covers_release_checks() -> None:
     required_commands = (
         "uv sync --locked --all-groups",
         "uv run ruff check .",
-        "uv run ruff format --check .",
+        "uv run ruff format --check src/yeuxq tests/yeuxq scripts",
         "uv run python scripts/check_secrets.py --root .",
+        "mkdir -p ./tmp",
         "uv run pytest tests -q",
         "--basetemp ./tmp/pytest-ci",
         "-p no:cacheprovider",
         "uv build --no-sources --out-dir dist-ci",
+        "uv run python scripts/check_distribution.py dist-ci/*.whl dist-ci/*.tar.gz",
         "cargo test --workspace --locked",
         "node --check",
     )

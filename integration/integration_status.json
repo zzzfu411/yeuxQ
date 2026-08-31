@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-08-30T23:59:00+08:00",
+  "updated_at": "2026-08-31T20:30:00+08:00",
   "project": {
     "name": "yeuxQ",
-    "canonical_repo_id": "quantify/yeuxQ",
+    "canonical_repo_id": "zzzfu411/yeuxQ",
     "canonical_local_path": "D:\\Develop\\claude\\quantify",
     "canonical_remote": "https://github.com/zzzfu411/yeuxQ",
     "canonical_python_core": "src/quantify",
@@ -23,12 +23,12 @@
   },
   "overall": {
     "status": "in_progress",
-    "active_phase": "hardening",
-    "completed_phases": 5,
+    "active_phase": "release",
+    "completed_phases": 6,
     "total_phases": 7,
-    "progress_percent": 71,
+    "progress_percent": 86,
     "release_readiness": "BLOCK",
-    "release_block_reason": "Phase 4 frontend and bounded advisory acceptance passed; Phase 5/6 hardening and donor redistribution rights, credential rotation and project licensing remain open.",
+    "release_block_reason": "Phase 5 hardening passed; Phase 6 release rehearsal is active, while donor redistribution rights, credential rotation and project licensing remain unresolved.",
     "operating_boundary": "research_only_advisory_only"
   },
   "frontend_sync": {
@@ -43,19 +43,19 @@
     "unknown_or_invalid_state": "BLOCK",
     "refresh_strategy": "etag_or_updated_at_polling",
     "update_rule": "implementation_tests_evidence_and_status_change_must_share_one_commit",
-    "last_event": {
-      "phase": "frontend",
-      "status": "completed",
-      "message": "Clean-room frontend, bounded advisory GET facades, root-confined historical reads, responsive desktop/mobile layout and fail-closed browser acceptance passed Phase 4; hardening is now active."
+      "last_event": {
+      "phase": "release",
+      "status": "in_progress",
+      "message": "Release rehearsal checks pass locally and the Windows clean-checkout failure is fixed with repository-wide LF policy plus explicit CI temp-directory creation; ordinary clean-clone verification remains active."
     }
   },
   "verification": {
-    "verified_at": "2026-08-30T23:59:00+08:00",
+    "verified_at": "2026-08-31T20:30:00+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
       "status": "PASS",
-      "passed": 266,
+      "passed": 275,
       "failed": 0,
       "skipped": 3,
       "scope": [
@@ -64,17 +64,17 @@
     },
     "full_tests": {
       "status": "PASS",
-      "passed": 1305,
+      "passed": 1316,
       "failed": 0,
       "skipped": 3,
-      "duration_seconds": 1195.35,
+      "duration_seconds": 1423.88,
       "scope": [
         "tests"
       ]
     },
     "secret_scan": {
       "status": "PASS",
-      "candidate_files": 723,
+      "candidate_files": 651,
       "scope": "canonical_git_candidates"
     },
     "distribution_build": {
@@ -83,8 +83,8 @@
       "contains_quantify": true,
       "contains_yeuxq": true,
       "artifacts": [
-        "dist-phase4/quantify-0.1.0.tar.gz",
-        "dist-phase4/quantify-0.1.0-py3-none-any.whl"
+        "dist-phase6-final/quantify-0.1.0.tar.gz",
+        "dist-phase6-final/quantify-0.1.0-py3-none-any.whl"
       ]
     },
     "visual_qa": {
@@ -96,7 +96,7 @@
       "offline_fail_closed": true
     },
     "diff_check": "PASS",
-    "notes": [
+      "notes": [
       "Pytest cache writes were disabled for the acceptance run; no cache warning was emitted.",
       "Phase 4 targeted acceptance passed 266 tests; the full Python regression passed 1305 tests with three Windows symlink-permission skips.",
       "Playwright verified the static projection on desktop and mobile; controlled API failures reset all displayed evidence to UNAVAILABLE/BLOCK.",
@@ -106,7 +106,11 @@
       "Python is canonical by default; Rust is development-only, explicitly selected and falls back without exposing internal errors.",
       "A wheel-like extraction smoke test served the packaged Web UI and kept writable data outside site-packages.",
       "The production app mounts only bounded v1 observation, integration-status and canonical readiness facades; OpenAPI contains no account, broker, order, cancel, trade or execution endpoint.",
-      "Rust workspace tests passed 3 cases and all 10 first-party browser JavaScript modules passed node syntax checks; one Starlette TestClient deprecation warning remains tracked for hardening."
+      "Rust workspace tests passed 3 cases and all 13 first-party browser JavaScript modules passed node syntax checks; one Starlette TestClient deprecation warning remains tracked for release rehearsal.",
+      "Phase 5 targeted acceptance passed 274 tests with three Windows symlink-permission skips; provider→observation→API→UI coverage, Python-canonical Rust fallback, optional parity tolerances, independent hash-chain recovery and observation-to-research negative tests are included.",
+      "Full Python regression passed 1316 tests with three Windows symlink-permission skips; distribution compliance passed for wheel and sdist, including complete Apache/MIT/MPL texts, vendor manifest hashes and forbidden artifact/secret-shaped path checks.",
+      "Final release-contract rerun passed 10 tests; the isolated-cache Phase 6 wheel/sdist build plus audit passed.",
+      "Phase 6 added repository-wide LF checkout policy and explicit CI temp-directory creation after an ordinary Windows clean clone exposed line-ending-sensitive provenance hashes; tests/yeuxq now passes 275 tests with three environment skips and the latest secret scan checked 651 candidates."
     ]
   },
   "boundaries": {
@@ -317,34 +321,50 @@
       "id": "hardening",
       "order": 5,
       "name": "Research integration and regression hardening",
-      "status": "in_progress",
-      "progress_percent": 0,
+      "status": "completed",
+      "progress_percent": 100,
       "started_at": "2026-08-30",
-      "completed_at": null,
+      "completed_at": "2026-08-30",
       "owner": "integration",
       "evidence": [
-        "docs/30_Stock_Integration_Plan.md#phase-5--research-integration-and-regression-hardening-进行中",
+        "docs/30_Stock_Integration_Plan.md#phase-5--research-integration-and-regression-hardening-已完成",
         ".github/workflows/ci.yml",
-        "tests/test_ci_workflow.py"
+        "scripts/check_distribution.py",
+        "tests/test_ci_workflow.py",
+        "tests/test_distribution_compliance.py",
+        "tests/yeuxq/test_phase5_parity_recovery.py",
+        "tests/yeuxq/test_phase5_end_to_end.py",
+        "docs/phase5_hardening_acceptance.md",
+        "src/yeuxq/analysis/rust_bridge.py",
+        "integration/donor_migration_manifest.json"
       ],
       "acceptance": [
         "Existing quantify regression suite passes.",
         "Observation cannot upgrade research gates.",
         "Donor backtest and LLM outputs remain advisory only.",
         "Python and optional Rust parity tests pass.",
-        "All P0 risks are closed."
+        "Full regression, distribution compliance, secret scan, Rust and first-party JavaScript checks pass; unresolved external release blockers remain explicitly tracked."
       ]
     },
     {
       "id": "release",
       "order": 6,
       "name": "Release, migration and donor deprecation",
-      "status": "not_started",
-      "progress_percent": 0,
-      "started_at": null,
+      "status": "in_progress",
+      "progress_percent": 50,
+      "started_at": "2026-08-30",
       "completed_at": null,
-      "owner": "unassigned",
-      "evidence": [],
+      "owner": "integration",
+      "evidence": [
+        "docs/30_Stock_Integration_Plan.md#phase-6--release-migration-and-donor-deprecation-进行中",
+        ".github/workflows/ci.yml",
+        "scripts/check_distribution.py",
+        "THIRD_PARTY_NOTICES.md",
+        "dist-phase6-final/quantify-0.1.0-py3-none-any.whl",
+        "dist-phase6-final/quantify-0.1.0.tar.gz",
+        "tests/test_distribution_compliance.py",
+        "tests/test_ci_workflow.py"
+      ],
       "acceptance": [
         "Clean checkout install, test, startup and UI smoke pass.",
         "Project LICENSE and third-party notices are complete.",
@@ -386,37 +406,37 @@
       "id": "P0-04",
       "priority": "P0",
       "title": "Live observations could contaminate research data or evidence",
-      "status": "mitigated",
+      "status": "closed",
       "owner": "data_boundary",
       "release_blocking": true,
-      "closure": "Independent append-only observation storage, explicit capture and negative promotion-boundary tests are in place; retain them through full hardening before closing."
+      "closure": "Independent append-only observation storage, explicit capture, tamper/recovery tests and negative promotion-boundary tests passed Phase 5."
     },
     {
       "id": "P0-05",
       "priority": "P0",
       "title": "Trend plans or predictions could be interpreted as live trading instructions",
-      "status": "open",
+      "status": "closed",
       "owner": "api_ui",
       "release_blocking": true,
-      "closure": "Lock contract, API and UI to research-only with no broker or order capability."
+      "closure": "Contract, API, OpenAPI and UI checks passed with research-only wording and no broker/order capability."
     },
     {
       "id": "P0-06",
       "priority": "P0",
       "title": "Duplicate backtests or gates could issue contradictory promotion results",
-      "status": "mitigated",
+      "status": "closed",
       "owner": "research",
       "release_blocking": true,
-      "closure": "The v1 research facade reads only canonical src/quantify readiness artifacts and strips donor, LLM and observation promotion fields; retain negative tests through hardening before closing."
+      "closure": "Canonical readiness remains the only gate authority; donor, LLM and observation promotion fields are stripped and negative tests passed Phase 5."
     },
     {
       "id": "P0-07",
       "priority": "P0",
       "title": "Frontend integration progress could diverge from repository evidence",
-      "status": "mitigated",
+      "status": "closed",
       "owner": "integration_ui",
       "release_blocking": true,
-      "closure": "Validate and project this file read-only; commit status updates with implementation and tests."
+      "closure": "Status JSON is validated/projected read-only and Phase 5 evidence/status updates are committed with implementation and tests."
     },
     {
       "id": "P1-01",
@@ -449,19 +469,19 @@
       "id": "P1-04",
       "priority": "P1",
       "title": "SQLite locking and schema evolution may be unsafe",
-      "status": "open",
+      "status": "closed",
       "owner": "storage",
       "release_blocking": false,
-      "closure": "Separate databases, version schemas and pass concurrency plus recovery tests."
+      "closure": "Separate storage roots, versioned records, concurrent append, tamper detection and independent-copy recovery tests passed."
     },
     {
       "id": "P1-05",
       "priority": "P1",
       "title": "Python and Rust analysis may drift",
-      "status": "open",
+      "status": "closed",
       "owner": "analysis",
       "release_blocking": false,
-      "closure": "Pass parity fixtures and retain deterministic Python fallback."
+      "closure": "Deterministic Python fallback and optional Rust parity fixtures passed with documented tolerances."
     },
     {
       "id": "P1-06",
@@ -476,10 +496,10 @@
       "id": "P1-07",
       "priority": "P1",
       "title": "Third-party web dependency notices may be incomplete",
-      "status": "mitigated",
+      "status": "closed",
       "owner": "compliance",
       "release_blocking": false,
-      "closure": "Bundled web dependencies have pinned versions, SHA-256 values, upstream sources and SPDX notices; retain automated manifest verification through release."
+      "closure": "Bundled web dependencies have pinned versions, SHA-256 values, upstream sources, complete SPDX texts and automated archive verification."
     },
     {
       "id": "P1-08",
@@ -494,10 +514,10 @@
       "id": "P1-09",
       "priority": "P1",
       "title": "Documentation or UI may overstate real-time capability",
-      "status": "open",
+      "status": "mitigated",
       "owner": "documentation_ui",
       "release_blocking": false,
-      "closure": "Review capability matrix, fallback semantics and research-only wording."
+      "closure": "Capability matrix, fallback semantics and research-only wording are covered by the integrated frontend and contract tests; retain review through release rehearsal."
     }
   ],
   "excluded_scope": [
@@ -533,15 +553,15 @@
     },
     {
       "order": 4,
-      "phase": "frontend",
-      "action": "Complete Phase 5 parity, storage/recovery, distribution-compliance and reverse-boundary tests while retaining research-only semantics.",
+      "phase": "release",
+      "action": "Complete the clean-checkout install, startup and UI smoke rehearsal, then record its evidence in the release phase.",
       "blocking": false
     },
     {
       "order": 5,
-      "phase": "hardening",
-      "action": "Keep legacy micro-live readiness semantics behind the canonical offline research boundary and add negative exposure tests before release.",
-      "blocking": false
+      "phase": "release",
+      "action": "Re-authenticate GitHub, push codex/integrate-stock-v2, and verify the remote SHA before any main-branch merge.",
+      "blocking": true
     }
   ]
 }

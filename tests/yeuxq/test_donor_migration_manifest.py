@@ -163,3 +163,13 @@ def test_donor_migration_manifest_is_complete_and_release_safe() -> None:
 
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     assert pyproject["tool"]["uv"]["build-backend"]["module-name"] == ["quantify", "yeuxq"]
+
+
+def test_hash_controlled_checkout_uses_lf_bytes() -> None:
+    attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+    assert "* text=auto eol=lf" in attributes
+
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    for entry in manifest["entries"]:
+        target = ROOT / entry["target"]
+        assert b"\r\n" not in target.read_bytes(), entry["target"]

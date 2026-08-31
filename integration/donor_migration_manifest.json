@@ -233,7 +233,7 @@
       "source": "src/stock_v2/analysis/rust_bridge.py",
       "target": "src/yeuxq/analysis/rust_bridge.py",
       "source_sha256": "fe4c6b68ce4282a7d388f2a9959e2981ec67d3ed5c6be48d9ab470c0fcb4b8bb",
-      "target_sha256": "5e460f35161dbfaa85935e5663628dcfb77c05d3eebc0891b2cf6211626d7b9a",
+      "target_sha256": "039ef2052e830ccd174b31ba331493fe8cf960099b6f3d63693cdb754946e0f8",
       "disposition": "migrated_namespace_runtime_and_rust_opt_in_hardening"
     },
     {
