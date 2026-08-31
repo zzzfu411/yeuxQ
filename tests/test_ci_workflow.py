@@ -22,7 +22,7 @@ def test_ci_workflow_is_read_only_locked_and_covers_release_checks() -> None:
     required_actions = (
         "actions/checkout@v7",
         "actions/setup-python@v7",
-        "astral-sh/setup-uv@v10",
+        "astral-sh/setup-uv@v10.0.1",
         "dtolnay/rust-toolchain@stable",
         "Swatinem/rust-cache@v2",
         "actions/setup-node@v7",
