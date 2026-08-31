@@ -87,6 +87,13 @@ was served again and inspected in the in-app browser. It projected Phase 6 as
 1280-pixel viewport, document width remained within the viewport and no console
 warning or error was recorded.
 
+GitHub CLI authentication was then rechecked outside the restricted execution
+environment on 2026-08-31. The host keyring authenticated account `zzzfu411`,
+the GitHub user API succeeded, and the active token reported the repository and
+workflow scopes required by the planned push. Authentication is therefore no
+longer a release blocker; public disclosure approval and remote SHA verification
+remain pending.
+
 ## Remaining blockers
 
 Phase 6 remains in progress and public release remains `BLOCK` until all of the
@@ -96,5 +103,5 @@ following are resolved:
    replaced by independently authorized clean-room work;
 2. the owner rotates the two credentials detected only in donor-local config;
 3. the owner selects a project-wide `LICENSE`;
-4. GitHub authentication is repaired, the canonical branch is pushed, and the
-   local/remote/UI commit SHA is verified.
+4. the canonical branch is explicitly approved for public disclosure, pushed,
+   and the local/remote/UI commit SHA is verified.
