@@ -159,8 +159,10 @@ must record:
 
 These three owner confirmations were recorded on 2026-08-31 for candidate
 `b59affe` and its attestation/release-evidence follow-ups. The approved
-follow-up candidate `e998be3149e3198ed7ec2584589c8be46e11aff7` is pushed on
-`codex/integrate-stock-v2`; local and remote SHAs match, and GitHub Actions run
-`33467767571` passed for that exact SHA. The final status evidence is recorded
+follow-up candidate `e998be3149e3198ed7ec2584589c8be46e11aff7` was pushed on
+`codex/integrate-stock-v2`; local and remote SHAs matched, and GitHub Actions
+run `33467767571` passed for that exact SHA. The final evidence commit
+`d794cc4ec4143b4b7b2ba7a1c23ed83323532586` was pushed afterward; run
+`33469734584` passed for its exact SHA, and the final status evidence is recorded
 in `integration/integration_status.json`. Do not merge `main` without a
 separate owner instruction.

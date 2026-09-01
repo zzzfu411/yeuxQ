@@ -60,6 +60,7 @@ In the final `bbf48a0` rehearsal clone, Git reported `core.autocrlf=true` while
 | Exact branch SHA | PASS — at candidate push verification, local `HEAD` and `origin/codex/integrate-stock-v2` both resolved to `e998be3149e3198ed7ec2584589c8be46e11aff7` |
 | Exact-SHA GitHub Actions | PASS — run `33467767571`; Python/contracts/secrets/build and Rust/JavaScript jobs succeeded |
 | Final status projection | PASS — `integration/integration_status.json` and `integration/index.html` project `7 / 7`, `100%`, `PASS` |
+| Final evidence commit CI | PASS — `d794cc4ec4143b4b7b2ba7a1c23ed83323532586` and run `33469734584` passed the complete workflow |
 
 The single full-suite failure was not a product-path regression. The test did
 not provide `latest_import_report_path`, so its expected router result depended
@@ -156,6 +157,8 @@ verification, local `HEAD` and `origin/codex/integrate-stock-v2` both resolved
 to `e998be3149e3198ed7ec2584589c8be46e11aff7`, and GitHub Actions run
 `33467767571` passed that exact SHA across Python, contracts, secret scanning,
 release-boundary, distribution, Rust and first-party JavaScript checks. The
+final evidence commit `d794cc4ec4143b4b7b2ba7a1c23ed83323532586` was then
+pushed and run `33469734584` passed the same complete workflow. The
 machine-readable status and its static UI projection now show `7 / 7`, `100%`,
 `PASS`.
 

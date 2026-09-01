@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-09-01T12:08:23+08:00",
+  "updated_at": "2026-09-01T12:37:06+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "zzzfu411/yeuxQ",
@@ -28,7 +28,7 @@
     "total_phases": 7,
     "progress_percent": 100,
     "release_readiness": "PASS",
-    "release_block_reason": "候选提交 e998be3149e3198ed7ec2584589c8be46e11aff7 已完成本地、远端和精确 SHA CI 核验；如需合并 main，仍须仓库所有者单独指令。",
+    "release_block_reason": "候选提交 e998be3149e3198ed7ec2584589c8be46e11aff7 及最终证据提交 d794cc4ec4143b4b7b2ba7a1c23ed83323532586 均已完成本地、远端和精确 SHA CI 核验；如需合并 main，仍须仓库所有者单独指令。",
     "operating_boundary": "research_only_advisory_only"
   },
   "frontend_sync": {
@@ -46,11 +46,11 @@
     "last_event": {
       "phase": "release",
       "status": "completed",
-      "message": "Exact SHA e998be3149e3198ed7ec2584589c8be46e11aff7 已推送；GitHub Actions run 33467767571 的 Python、Rust/JavaScript、secret、release-boundary 和 distribution checks 全部通过；最终 7/7 · 100% · PASS 证据已回写。"
+      "message": "候选提交 e998be3149e3198ed7ec2584589c8be46e11aff7 与最终证据提交 d794cc4ec4143b4b7b2ba7a1c23ed83323532586 均已推送；GitHub Actions runs 33467767571 和 33469734584 的 Python、Rust/JavaScript、secret、release-boundary 和 distribution checks 全部通过；最终 7/7 · 100% · PASS 证据已回写。"
     }
   },
   "verification": {
-    "verified_at": "2026-09-01T12:08:23+08:00",
+    "verified_at": "2026-09-01T12:37:06+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
@@ -125,7 +125,8 @@
       "GitHub Actions run 33404973047 for 52d3b2f failed at action resolution before checkout: astral-sh/setup-uv@v10 is not a resolvable tag. Public tag inspection confirmed v10.0.1; the workflow and CI contract test are now pinned to astral-sh/setup-uv@v10.0.1, and the focused local CI/release/UI suite passed 10 tests with Ruff and diff checks passing.",
       "GitHub Actions run 33412448577 completed action setup and 1320 tests but found two failures: default_runtime_data_root ignored an explicitly supplied LOCALAPPDATA on Linux, and THIRD_PARTY_NOTICES.md lacked the exact project-license disclaimer asserted by the vendored asset contract. The cross-platform environment override and notice clarification are fixed; the follow-up exact-SHA run 33467767571 passed 1329 tests, 662 secret-scan candidates, both archive checks and all jobs.",
       "Final local regression and release checks passed on 2026-09-01: 1329 passed, 3 skipped, 1 tracked Starlette/httpx deprecation warning; Ruff, Rust (3 tests), 16 first-party JavaScript syntax checks, secret scan and wheel/sdist compliance all passed.",
-      "Exact release evidence: candidate verification recorded local HEAD and origin/codex/integrate-stock-v2 at e998be3149e3198ed7ec2584589c8be46e11aff7; GitHub Actions run 33467767571 (https://github.com/zzzfu411/yeuxQ/actions/runs/33467767571) completed successfully; integration/index.html projects this status source as 7/7 · 100% · PASS."
+      "Exact release evidence: candidate verification recorded local HEAD and origin/codex/integrate-stock-v2 at e998be3149e3198ed7ec2584589c8be46e11aff7; GitHub Actions run 33467767571 (https://github.com/zzzfu411/yeuxQ/actions/runs/33467767571) completed successfully; integration/index.html projects this status source as 7/7 · 100% · PASS.",
+      "Final evidence commit d794cc4ec4143b4b7b2ba7a1c23ed83323532586 was pushed after the status/test closeout; exact-SHA GitHub Actions run 33469734584 (https://github.com/zzzfu411/yeuxQ/actions/runs/33469734584) passed 1329 tests, 3 skipped, 662 secret-scan candidates, both archives, release boundary, Rust and JavaScript checks."
     ]
   },
   "boundaries": {
@@ -391,7 +392,8 @@
         "tested release candidate e998be3149e3198ed7ec2584589c8be46e11aff7 (local HEAD at candidate verification)",
         "origin/codex/integrate-stock-v2 = e998be3149e3198ed7ec2584589c8be46e11aff7 at candidate push verification",
         "GitHub Actions CI run 33467767571 passed for the exact SHA (Python/Rust/JavaScript, secret, boundary and distribution checks)",
-        "integration/index.html projects this source as 7/7 · 100% · PASS"
+        "integration/index.html projects this source as 7/7 · 100% · PASS",
+        "Final evidence commit d794cc4ec4143b4b7b2ba7a1c23ed83323532586 pushed; GitHub Actions CI run 33469734584 passed for that exact SHA"
       ],
       "acceptance": [
         "Clean checkout install, test, startup and UI smoke pass.",
