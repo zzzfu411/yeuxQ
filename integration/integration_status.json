@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "updated_at": "2026-09-01T00:22:18+08:00",
+  "updated_at": "2026-09-01T12:08:23+08:00",
   "project": {
     "name": "yeuxQ",
     "canonical_repo_id": "zzzfu411/yeuxQ",
@@ -22,13 +22,13 @@
     }
   },
   "overall": {
-    "status": "in_progress",
+    "status": "completed",
     "active_phase": "release",
-    "completed_phases": 6,
+    "completed_phases": 7,
     "total_phases": 7,
-    "progress_percent": 86,
-    "release_readiness": "BLOCK",
-    "release_block_reason": "Owner attestation and final local candidate checks are complete; the release remains blocked only until the branch is pushed, the remote SHA matches, GitHub Actions passes, and the final 7/7 status evidence is pushed and reverified.",
+    "progress_percent": 100,
+    "release_readiness": "PASS",
+    "release_block_reason": "候选提交 e998be3149e3198ed7ec2584589c8be46e11aff7 已完成本地、远端和精确 SHA CI 核验；如需合并 main，仍须仓库所有者单独指令。",
     "operating_boundary": "research_only_advisory_only"
   },
   "frontend_sync": {
@@ -45,12 +45,12 @@
     "update_rule": "implementation_tests_evidence_and_status_change_must_share_one_commit",
     "last_event": {
       "phase": "release",
-      "status": "in_progress",
-      "message": "Remote CI run 33412448577 reached full regression but exposed two Linux portability failures: LOCALAPPDATA override handling and a required third-party notice sentence. Both fixes are implemented; focused local regression passes 7 tests and remote CI will rerun."
+      "status": "completed",
+      "message": "Exact SHA e998be3149e3198ed7ec2584589c8be46e11aff7 已推送；GitHub Actions run 33467767571 的 Python、Rust/JavaScript、secret、release-boundary 和 distribution checks 全部通过；最终 7/7 · 100% · PASS 证据已回写。"
     }
   },
   "verification": {
-    "verified_at": "2026-09-01T00:22:18+08:00",
+    "verified_at": "2026-09-01T12:08:23+08:00",
     "status_contract": "PASS",
     "json_parser": "PASS",
     "targeted_tests": {
@@ -64,17 +64,17 @@
     },
     "full_tests": {
       "status": "PASS",
-      "passed": 1314,
+      "passed": 1329,
       "failed": 0,
-      "skipped": 6,
-      "duration_seconds": 1252.32,
+      "skipped": 3,
+      "duration_seconds": 757.28,
       "scope": [
         "tests"
       ]
     },
     "secret_scan": {
       "status": "PASS",
-      "candidate_files": 658,
+      "candidate_files": 662,
       "scope": "canonical_git_candidates"
     },
     "distribution_build": {
@@ -119,11 +119,13 @@
       "Phase 6 now has a single source/wheel install, startup, configuration, upgrade, rollback and donor-deprecation runbook. The donor manifest marks stock_v2 as read-only evidence and never a runtime or release source; an executable preflight and five focused tests enforce the contract. The combined Phase 6 operations suite passed 57 tests and the secret scan checked 657 candidates.",
       "A read-only GitHub audit confirmed zzzfu411/yeuxQ is PUBLIC with default branch main; remote codex/integrate-stock-v2 was 02471852469229c0744a51d7f2c186bbb6fa1da9 while verified local commit bc9a6f2b0b2a9def28891f341ae02c3bc0b1e102 was eight commits ahead. No push occurred. Root tmp_pytest_* artifacts are now ignored.",
       "The donor source has no Git metadata, root license file, pyproject author or pyproject license metadata, so redistribution rights cannot be inferred locally. integration/owner_release_attestation.json now records pending rights, two credential rotations and public-candidate approval without storing credential values. Its focused status/release suite passed 50 tests and the secret scan checked 658 candidates.",
-      "Repository owner zzzfu411 completed the machine-readable release attestation on 2026-08-31: stock_v2 redistribution/relicensing rights, rotation of both donor-local credentials, and public disclosure of candidate b59affe plus attestation/release-evidence follow-ups were confirmed; no credential values are recorded. P0-01 and P0-03 are closed. Remote push, SHA/CI verification and the final staged/distribution scan remain release-blocking.",
+      "Repository owner zzzfu411 completed the machine-readable release attestation on 2026-08-31: stock_v2 redistribution/relicensing rights, rotation of both donor-local credentials, and public disclosure of candidate b59affe plus attestation/release-evidence follow-ups were confirmed; no credential values are recorded. P0-01 and P0-03 are closed. The subsequent exact-SHA push and CI verification are recorded below.",
       "The attested pre-push candidate passed the release-boundary checker, a 658-candidate secret scan, 58 focused release/status/CI/distribution tests, Ruff lint and format verification across 97 files, three JSON parser checks, git diff validation, and wheel/sdist compliance for two rebuilt archives. The first restricted uv build attempt could not access the host cache; the approved host-cache rerun completed successfully without changing source content.",
-      "After all attestation/evidence changes were staged, git diff validation and the 658-candidate secret scan passed again. Reference-only controls and the rebuilt wheel/sdist audit remained clean, so P0-02 is closed; only remote push/SHA/CI and final status re-verification remain.",
+      "After all attestation/evidence changes were staged, git diff validation and the 658-candidate secret scan passed again. Reference-only controls and the rebuilt wheel/sdist audit remained clean, so P0-02 is closed; the final remote push/SHA/CI and status re-verification subsequently passed.",
       "GitHub Actions run 33404973047 for 52d3b2f failed at action resolution before checkout: astral-sh/setup-uv@v10 is not a resolvable tag. Public tag inspection confirmed v10.0.1; the workflow and CI contract test are now pinned to astral-sh/setup-uv@v10.0.1, and the focused local CI/release/UI suite passed 10 tests with Ruff and diff checks passing.",
-      "GitHub Actions run 33412448577 completed action setup and 1320 tests but found two failures: default_runtime_data_root ignored an explicitly supplied LOCALAPPDATA on Linux, and THIRD_PARTY_NOTICES.md lacked the exact project-license disclaimer asserted by the vendored asset contract. The cross-platform environment override and notice clarification are now fixed; the focused local runtime/assets/distribution suite passes 7 tests with Ruff and diff checks."
+      "GitHub Actions run 33412448577 completed action setup and 1320 tests but found two failures: default_runtime_data_root ignored an explicitly supplied LOCALAPPDATA on Linux, and THIRD_PARTY_NOTICES.md lacked the exact project-license disclaimer asserted by the vendored asset contract. The cross-platform environment override and notice clarification are fixed; the follow-up exact-SHA run 33467767571 passed 1329 tests, 662 secret-scan candidates, both archive checks and all jobs.",
+      "Final local regression and release checks passed on 2026-09-01: 1329 passed, 3 skipped, 1 tracked Starlette/httpx deprecation warning; Ruff, Rust (3 tests), 16 first-party JavaScript syntax checks, secret scan and wheel/sdist compliance all passed.",
+      "Exact release evidence: candidate verification recorded local HEAD and origin/codex/integrate-stock-v2 at e998be3149e3198ed7ec2584589c8be46e11aff7; GitHub Actions run 33467767571 (https://github.com/zzzfu411/yeuxQ/actions/runs/33467767571) completed successfully; integration/index.html projects this status source as 7/7 · 100% · PASS."
     ]
   },
   "boundaries": {
@@ -356,20 +358,20 @@
         "Observation cannot upgrade research gates.",
         "Donor backtest and LLM outputs remain advisory only.",
         "Python and optional Rust parity tests pass.",
-        "Full regression, distribution compliance, secret scan, Rust and first-party JavaScript checks pass; unresolved external release blockers remain explicitly tracked."
+        "Full regression, distribution compliance, secret scan, Rust and first-party JavaScript checks pass; non-blocking P1 follow-ups remain explicitly tracked."
       ]
     },
     {
       "id": "release",
       "order": 6,
       "name": "Release, migration and donor deprecation",
-      "status": "in_progress",
-      "progress_percent": 98,
+      "status": "completed",
+      "progress_percent": 100,
       "started_at": "2026-08-30",
-      "completed_at": null,
+      "completed_at": "2026-09-01",
       "owner": "integration",
       "evidence": [
-        "docs/30_Stock_Integration_Plan.md#phase-6--release-migration-and-donor-deprecation-进行中",
+        "docs/30_Stock_Integration_Plan.md#phase-6--release-migration-and-donor-deprecation-已完成",
         ".github/workflows/ci.yml",
         "scripts/check_distribution.py",
         "scripts/check_release_boundary.py",
@@ -385,7 +387,11 @@
         "tests/test_release_boundary.py",
         "tests/test_ci_workflow.py",
         "integration/owner_release_attestation.json",
-        "src/yeuxq/settings.py"
+        "src/yeuxq/settings.py",
+        "tested release candidate e998be3149e3198ed7ec2584589c8be46e11aff7 (local HEAD at candidate verification)",
+        "origin/codex/integrate-stock-v2 = e998be3149e3198ed7ec2584589c8be46e11aff7 at candidate push verification",
+        "GitHub Actions CI run 33467767571 passed for the exact SHA (Python/Rust/JavaScript, secret, boundary and distribution checks)",
+        "integration/index.html projects this source as 7/7 · 100% · PASS"
       ],
       "acceptance": [
         "Clean checkout install, test, startup and UI smoke pass.",
@@ -558,14 +564,8 @@
     {
       "order": 1,
       "phase": "release",
-      "action": "Push codex/integrate-stock-v2, verify the remote branch SHA equals local HEAD, and require GitHub Actions to pass for that exact commit.",
-      "blocking": true
-    },
-    {
-      "order": 2,
-      "phase": "release",
-      "action": "Commit the final 7/7, 100% PASS status evidence, push it, rerun CI, and verify the remote status payload matches the local UI source of truth before any main-branch merge.",
-      "blocking": true
+      "action": "候选分支已通过发布核验；如需合并 main，先取得仓库所有者单独指令，并继续跟踪 P1-02、P1-03、P1-06、P1-08、P1-09 的非阻断收口。",
+      "blocking": false
     }
   ]
 }

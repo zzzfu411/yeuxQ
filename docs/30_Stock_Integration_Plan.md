@@ -1,6 +1,6 @@
 # yeuxQ × stock_v2 集成与完善计划
 
-> 状态：执行中
+> 状态：候选发布核验完成（持续维护）
 > 计划基线：2026-08-30
 > Canonical repository：`D:\Develop\claude\quantify` / `https://github.com/zzzfu411/yeuxQ`
 > Donor：`D:\Develop\grok\stock\stock_v2`
@@ -28,8 +28,8 @@
 fail-closed secret scan、双包构建与前端只读状态投影均已通过验收。项目已由所有者确认采用
 Apache-2.0，版权主体为 `zzzfu411`，根 `LICENSE`/`NOTICE` 与发行包元数据审计通过；donor
 再分发权、两项凭据轮换和公开披露已由所有者写入
-`integration/owner_release_attestation.json`；当前剩余发布阻塞是远端 CI/SHA 核对和最终
-状态证据回写。此处的“完成”只表示边界与工程基线可执行，不表示任何策略、数据源或实盘
+`integration/owner_release_attestation.json`；候选分支的远端 SHA、精确 SHA CI 和最终状态
+证据均已回写。此处的“完成”只表示边界与工程基线可执行，不表示任何策略、数据源或实盘
 能力通过验证。
 
 ## 2. 项目目标与成功标准
@@ -59,7 +59,8 @@ Apache-2.0，版权主体为 `zzzfu411`，根 `LICENSE`/`NOTICE` 与发行包元
 - 不存在 broker SDK、订单端点、账户资产端点、自动交易开关或隐藏的 live-order 路径；
 - secrets 扫描、第三方许可证检查、单元测试、合同测试、集成测试和离线启动测试通过；
 - `integration/integration_status.json` 中所有必需阶段为 `completed`，P0 风险全部关闭；
-- 本地 HEAD、`origin/main` 和发布证据中的提交 SHA 一致。
+- 候选分支本地 HEAD、对应远端候选分支和发布证据中的提交 SHA 一致；合并到
+  `main` 需另行取得仓库所有者指令。
 
 ## 3. 已完成的仓库审计
 
@@ -331,17 +332,17 @@ order/account/broker endpoint；实时 endpoint 响应固定含 advisory 边界�
 - 新增反向安全用例：observation 无法升级 gate、LLM 无法升级 gate、API 无法下单。
 
 验收结果：本阶段已将边界固化为 CI、parity、存储恢复、发行包合规和反向安全门禁。`tests/yeuxq`
-为 274 passed、3 skipped；完整 Python 回归为 1316 passed、3 skipped；Rust workspace 为 3
-passed；13 个 first-party JavaScript 模块通过 `node --check`；secret scan 检查 649 个候选文件；
+为 275 passed、3 skipped；完整 Python 回归为 1329 passed、3 skipped；Rust workspace 为 3
+passed；16 个 first-party JavaScript 模块通过 `node --check`；secret scan 检查 662 个候选文件；
 wheel/sdist 均通过离线发行包审计。新增 provider → observation → API → UI 端到端测试，明确
 observation、donor/LLM advisory 输出不能改变 canonical `PASS/WATCH/BLOCK`。Rust 在显式失败时
 精确回退到 canonical Python，source checkout 不再盲信 PATH 中同名外部 CLI；append-only hash
 chain 的篡改、partial line 和独立副本恢复均 fail closed。详细证据见
-`docs/phase5_hardening_acceptance.md`。状态 UI 已同步为 `6/7 · 86%`，Phase 6 release rehearsal
-进入 `in_progress`；Apache-2.0 项目许可证、donor 权利、两项凭据轮换和公开披露已完成，
-当前仅等待远端 CI 对 exact SHA 通过并回写最终状态证据。
+`docs/phase5_hardening_acceptance.md`。状态 UI 与 JSON 现已同步为 `7/7 · 100% · PASS`；
+Phase 6 release rehearsal 已完成，精确 SHA `e998be3149e3198ed7ec2584589c8be46e11aff7` 的
+GitHub Actions run `33467767571` 全部通过。非阻断 P1 数据语义与持续审查项仍保留在风险登记中。
 
-### Phase 6 — Release, migration and deprecation（进行中）
+### Phase 6 — Release, migration and deprecation（已完成）
 
 工作包：
 
@@ -351,7 +352,8 @@ chain 的篡改、partial line 和独立副本恢复均 fail closed。详细证�
 - 从干净 checkout 做 release rehearsal；
 - 已在 donor manifest 固化只读迁移证据生命周期，并由 CI 验证 canonical 是唯一 release source；
   原 donor 由所有者保留，不由 release automation 删除或写入；
-- 推送 canonical 分支、核对远端 SHA，再合并到 `main`。
+- 已推送 canonical 候选分支并核对远端 SHA；精确 SHA 的 GitHub Actions、发行包和状态投影均通过。
+  合并到 `main` 仍须仓库所有者单独指令。
 
 验收：干净环境演练通过；所有阶段完成；P0 为 0；状态 UI 显示完成且提交 SHA 与远端一致；
 旧 donor 不再接受功能变更。
@@ -400,9 +402,9 @@ chain 的篡改、partial line 和独立副本恢复均 fail closed。详细证�
 10. release 证据额外记录本地、远端和 UI 展示的 commit SHA。
 
 当前快照必须明确显示：`audit=completed`、`contracts=completed`、`observation_platform=completed`、
-`unified_api=completed`、`frontend=completed`、`hardening=completed`、`release=in_progress`；
-进度由阶段状态重算为 `6/7 · 86%`。随着后续发行演练落地，由负责该工作包的 agent/owner 更新
-evidence 和状态。
+`unified_api=completed`、`frontend=completed`、`hardening=completed`、`release=completed`；
+进度由阶段状态重算为 `7/7 · 100%`，发布就绪度为 `PASS`。后续只在新增实现、测试或证据时
+更新对应阶段，并保持非阻断风险的跟踪。
 
 ## 10. 排除清单
 
@@ -453,9 +455,10 @@ git ls-remote origin refs/heads/main
 
 ## 13. 当前下一步
 
-Phase 5 已完成，当前推进 Phase 6 release rehearsal：干净 checkout 安装、测试、启动、
-静态/浏览器状态投影和发行包边界均已通过。Apache-2.0 根许可证、`NOTICE`、包元数据、归档
-审计和 owner attestation 已完成；远端分支当前与本地候选 SHA 一致，但最近 exact-SHA
-GitHub Actions 运行仍失败，因此状态 UI 继续保持 `release_readiness=BLOCK`。下一步是修复或
-确认 CI 失败原因、重新运行并在 CI 通过后提交最终 `7/7 · 100% · PASS` 证据；v4 与所有
-运行时/受限材料继续严格排除。
+Phase 5 和 Phase 6 release rehearsal 均已完成：干净 checkout 安装、测试、启动、静态/浏览器
+状态投影和发行包边界均已通过。Apache-2.0 根许可证、`NOTICE`、包元数据、归档审计和 owner
+attestation 已完成；候选分支推送核验时本地与远端 SHA 均为
+`e998be3149e3198ed7ec2584589c8be46e11aff7`，GitHub Actions run `33467767571` 对该精确 SHA
+通过，状态 UI 已提交 `7/7 · 100% · PASS` 投影。下一步仅为按所有者指令决定是否合并 `main`，
+并继续关闭 P1-02、P1-03、P1-06、P1-08、P1-09 等非发布阻断跟踪项；v4 与所有运行时/受限
+材料继续严格排除。

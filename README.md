@@ -26,12 +26,13 @@ append-only, hash-chained and physically separate from canonical research
 storage. They cannot upgrade a `PASS/WATCH/BLOCK` research gate; there is no
 broker, account, order, cancel, or automatic trading endpoint.
 
-The current status is `6/7 · 86%`: Phase 5 hardening is complete and the Phase 6
-release rehearsal is active. Apache-2.0 project licensing, donor-rights
-attestation, credential rotation and public-disclosure approval are recorded.
-Public release remains `BLOCK` until the exact remote commit passes GitHub
-Actions and the final `7/7 · 100% · PASS` status evidence is pushed and
-reverified by the repository owner.
+The current candidate status is `7/7 · 100% · PASS`: all integration phases,
+including the Phase 6 release rehearsal, are complete. Apache-2.0 project
+licensing, donor-rights attestation, credential rotation, public-disclosure
+approval, remote SHA equality and exact-SHA GitHub Actions verification are
+recorded in `integration/integration_status.json`. This is a verified candidate
+branch state; merging to `main` still requires a separate repository-owner
+instruction.
 
 ## License
 

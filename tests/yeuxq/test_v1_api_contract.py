@@ -107,7 +107,7 @@ def test_normal_v1_contract_uses_only_explicit_bounded_facades() -> None:
     status = client.get("/api/v1/integration/status", headers=headers)
     assert status.status_code == 200
     assert status.json()["data"]["valid"] is True
-    assert status.json()["data"]["release_readiness"] == "BLOCK"
+    assert status.json()["data"]["release_readiness"] == provider.status["release_readiness"]
     _assert_envelope(status.json(), "contract-test-001")
 
     captured = client.post(

@@ -162,7 +162,8 @@ def test_provider_observation_api_and_ui_share_one_fail_closed_boundary(
         )
         assert status.status_code == 200
         assert status.json()["data"]["valid"] is True
-        assert status.json()["data"]["release_readiness"] == "BLOCK"
+        expected_status = v1_provider.get_integration_status()
+        assert status.json()["data"]["release_readiness"] == expected_status["release_readiness"]
 
         readiness = client.get(
             "/api/v1/research/readiness/missing-run",

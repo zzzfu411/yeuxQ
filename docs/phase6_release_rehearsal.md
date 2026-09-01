@@ -1,14 +1,15 @@
 # Phase 6 release rehearsal
 
-Status: in progress
-Evidence date: 2026-08-31
-Rehearsed commit: `bbf48a0c380ad2d16017dbf0edf539370a676614`
+Status: complete
+Evidence date: 2026-09-01
+Rehearsed commit: `e998be3149e3198ed7ec2584589c8be46e11aff7`
 Canonical branch: `codex/integrate-stock-v2`
 
 This rehearsal validates the committed repository in a new Windows clone.
-Owner rights, credential rotation and public-disclosure approval are now
-recorded in the machine-readable attestation. A GitHub push and remote CI/SHA
-verification have not yet occurred for the attested follow-up commit.
+Owner rights, credential rotation and public-disclosure approval are recorded in
+the machine-readable attestation. The candidate branch is pushed, its local and
+remote SHA values match, and the exact-SHA remote CI run is green. The attested
+candidate `b59affe` is an ancestor of this release-evidence follow-up commit.
 
 ## Clean-checkout correction
 
@@ -55,6 +56,10 @@ In the final `bbf48a0` rehearsal clone, Git reported `core.autocrlf=true` while
 | Full clean regression at `32c7cf4` | INVESTIGATED — 1313 passed, 6 skipped, 1 test-isolation failure |
 | Isolated router correction | PASS — failing case passed alone; related router/status/CI/distribution suite passed 76 tests |
 | Final full clean regression at `bbf48a0` | PASS — 1314 passed, 6 skipped, 1 tracked deprecation warning |
+| Final local regression at `e998be3` | PASS — 1329 passed, 3 skipped, 1 tracked Starlette/httpx deprecation warning |
+| Exact branch SHA | PASS — at candidate push verification, local `HEAD` and `origin/codex/integrate-stock-v2` both resolved to `e998be3149e3198ed7ec2584589c8be46e11aff7` |
+| Exact-SHA GitHub Actions | PASS — run `33467767571`; Python/contracts/secrets/build and Rust/JavaScript jobs succeeded |
+| Final status projection | PASS — `integration/integration_status.json` and `integration/index.html` project `7 / 7`, `100%`, `PASS` |
 
 The single full-suite failure was not a product-path regression. The test did
 not provide `latest_import_report_path`, so its expected router result depended
@@ -78,8 +83,8 @@ browser:
 - unavailable scan, morning brief, backtest, compare, order-flow, news,
   earnings and AI-image controls remain disabled;
 - the integration page showed the then-current `6 / 7`, `86%`, `release`,
-  Phase 6 `50%`, and `BLOCK` snapshot; the checked-in status is advanced only
-  as later evidence is committed.
+  Phase 6 `50%`, and `BLOCK` snapshot; that output is retained as historical
+  pre-push evidence, not the final candidate status.
 
 The wheel-installed app was started with a temporary explicit
 `YEUXQ_DATA_DIR`. Its main workbench rendered the packaged JavaScript/CSS,
@@ -88,18 +93,21 @@ console warnings/errors. `/integration/` returned the intentional source-only
 `503` JSON response rather than inventing packaged status evidence.
 
 After recording the final `bbf48a0` clean-clone results, the source status page
-was served again and inspected in the in-app browser. It projected Phase 6 as
-`75% / IN PROGRESS`, full regression as `1314 passed / 0 failed`, secret scan as
-`652 candidate files`, and release readiness as `BLOCK`. At the browser's
-1280-pixel viewport, document width remained within the viewport and no console
-warning or error was recorded.
+was served again and inspected in the in-app browser. That historical snapshot
+projected Phase 6 as `75% / IN PROGRESS`, full regression as `1314 passed / 0
+failed`, secret scan as `652 candidate files`, and release readiness as `BLOCK`.
+At the browser's 1280-pixel viewport, document width remained within the
+viewport and no console warning or error was recorded. The final status source
+was subsequently updated and rechecked at desktop `1440x1000` and mobile
+`390x844`: it projects `7 / 7`, `100%`, `PASS`, with no horizontal overflow,
+console errors or external requests.
 
 GitHub CLI authentication was then rechecked outside the restricted execution
 environment on 2026-08-31. The host keyring authenticated account `zzzfu411`,
 the GitHub user API succeeded, and the active token reported the repository and
 workflow scopes required by the planned push. Authentication is therefore no
-longer a release blocker. Public disclosure is approved; the remaining external
-evidence is the branch push plus remote SHA and GitHub Actions verification.
+longer a release blocker. The candidate branch push, remote SHA comparison and
+exact-SHA GitHub Actions verification are now complete (run `33467767571`).
 
 The repository owner selected Apache-2.0 and explicitly chose GitHub username
 `zzzfu411` as the copyright holder. The complete Apache-2.0 text is stored in
@@ -119,8 +127,8 @@ as read-only migration evidence, prohibits feature changes, runtime dependency,
 release use and new runtime data, and preserves the original directory without
 allowing release automation to delete it. `scripts/check_release_boundary.py`
 validates this contract, rejects canonical `stock_v2` imports and verifies the
-owner attestation while the UI remains BLOCK for remote publication evidence;
-its focused suite passed five tests before the final attestation update.
+owner attestation. Its focused suite passed five tests before the final
+attestation update and the exact-SHA CI run passed the same boundary check.
 
 A read-only GitHub audit on 2026-08-31 confirmed that `zzzfu411/yeuxQ` is
 public, its default branch is `main`, and remote branch
@@ -141,12 +149,24 @@ disclosure approval for candidate `b59affe` plus attestation/release-evidence
 follow-ups. The record contains identities, timestamps, basis and candidate SHA
 but no credential values. P0-01 and P0-03 are closed.
 
-## Remaining blockers
+## Final closeout and non-blocking follow-ups
 
-Phase 6 is now `98%` and public release remains `BLOCK` until all of the
-following evidence is complete:
+Phase 6 is complete for the verified candidate branch. At candidate push
+verification, local `HEAD` and `origin/codex/integrate-stock-v2` both resolved
+to `e998be3149e3198ed7ec2584589c8be46e11aff7`, and GitHub Actions run
+`33467767571` passed that exact SHA across Python, contracts, secret scanning,
+release-boundary, distribution, Rust and first-party JavaScript checks. The
+machine-readable status and its static UI projection now show `7 / 7`, `100%`,
+`PASS`.
 
-1. `codex/integrate-stock-v2` is pushed and the local and remote branch SHAs
-   match;
-2. GitHub Actions passes for the exact remote commit, after which the final
-   `7 / 7`, `100%`, `PASS` status commit is pushed and reverified.
+The following are intentionally non-release-blocking follow-ups, not failed
+closeout checks:
+
+1. Complete the real-data boundary dictionary/fixtures for timezone, calendar,
+   adjustment and suspension semantics (P1-02).
+2. Finish the planned visible freshness, versioned API, artifact-denylist and
+   capability-matrix re-audits before changing the corresponding P1 risks from
+   `mitigated` to `closed` (P1-03, P1-06, P1-08, P1-09).
+3. Do not merge `main` or publish a release tag without a separate instruction
+   from the repository owner; the current PASS is candidate-branch readiness,
+   not an authorization for live trading or investment use.

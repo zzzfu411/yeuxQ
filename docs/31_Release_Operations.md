@@ -158,7 +158,9 @@ must record:
 3. explicit approval for public disclosure of the exact candidate SHA.
 
 These three owner confirmations were recorded on 2026-08-31 for candidate
-`b59affe` and its attestation/release-evidence follow-ups. Run the complete
-preflight, push the canonical branch, compare local and remote SHAs, require CI
-to pass, and update `integration/integration_status.json` in the final evidence
-commit. Do not merge `main` without a separate owner instruction.
+`b59affe` and its attestation/release-evidence follow-ups. The approved
+follow-up candidate `e998be3149e3198ed7ec2584589c8be46e11aff7` is pushed on
+`codex/integrate-stock-v2`; local and remote SHAs match, and GitHub Actions run
+`33467767571` passed for that exact SHA. The final status evidence is recorded
+in `integration/integration_status.json`. Do not merge `main` without a
+separate owner instruction.
