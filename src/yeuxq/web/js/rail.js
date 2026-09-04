@@ -1,7 +1,7 @@
 /* 右栏渲染：Hero 判断卡 + 决策/结构各栏 */
 import { state, LS } from './state.js';
 import { $, jget, jset, setTxt, clip, cls, tone, esc } from './util.js';
-import { setDot } from './cells.js';
+import { setDot } from './cells.js?v=20260904-3';
 
 const RING_LEN = 226.2; // 2πr, r=36
 
@@ -54,8 +54,14 @@ export function renderEngineTag(engine) {
 export function renderAnalysisUnavailable(symbol, reason = 'UNAVAILABLE') {
   renderQuote(null);
   const message = `${symbol || '当前标的'} · ${reason === 'LOADING' ? '加载中' : 'UNAVAILABLE · ' + reason}`;
+  const name = $('quoteBar')?.querySelector('.qh-name');
   const code = $('quoteBar')?.querySelector('.qh-code');
+  const price = $('quoteBar')?.querySelector('.px');
+  const change = $('quoteBar')?.querySelector('.chg');
+  if (name) name.textContent = symbol ? `标的 ${symbol}` : '等待标的';
   if (code) code.textContent = message;
+  if (price) price.textContent = reason === 'LOADING' ? '…' : '—';
+  if (change) change.textContent = reason === 'LOADING' ? '只读快照载入中' : '可信数据不足';
   renderEngineTag(null);
   $('sumBadge').className = 'badge watch';
   $('sumBadge').textContent = reason === 'LOADING' ? '加载中' : 'UNAVAILABLE';

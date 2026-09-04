@@ -8,7 +8,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'" />
 <title>yeuxQ · Quant Research Workbench</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23121418'/%3E%3Cpath d='M3 10.5 6 7l2.5 2.5L13 5' stroke='%2362d0c0' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="static/css/app.css" />
+<link rel="stylesheet" href="static/css/app.css?v=20260904-6" />
 <script src="static/vendor/echarts.min.js"></script>
 <script src="static/vendor/marked.min.js"></script>
 <script src="static/vendor/purify.min.js"></script>
@@ -16,19 +16,23 @@
 <body class="mode-pro">
 <div class="app">
   <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark"></span>
-      <span class="brand-name">yeuxQ<em>量化研究工作台</em></span>
+    <div class="brand" aria-label="yeuxQ 量化研究工作台">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-copy">
+        <span class="brand-name">yeuxQ</span>
+        <span class="brand-sub">RESEARCH WORKBENCH</span>
+      </span>
     </div>
     <div class="search-row">
       <div class="search-box">
         <svg class="search-ico" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.6"/><path d="M10.6 10.6 14 14"/></svg>
-        <input id="kw" placeholder="代码 / 名称，回车研判" autocomplete="off" spellcheck="false" />
+        <label class="sr-only" for="kw">输入股票代码或名称</label>
+        <input id="kw" placeholder="输入代码或名称" autocomplete="off" spellcheck="false" inputmode="search" />
         <kbd>/</kbd>
         <div id="suggest" class="suggest" style="display:none"></div>
       </div>
-      <button class="btn primary" id="btnAnalyze">研判</button>
-      <nav class="hot">
+      <button class="btn primary analyze-btn" id="btnAnalyze"><span>开始研判</span><span aria-hidden="true">↗</span></button>
+      <nav class="hot" aria-label="常用研究标的">
         <button class="chip" data-s="600519">茅台</button>
         <button class="chip" data-s="300750">宁德</button>
         <button class="chip" data-s="601318">平安</button>
@@ -37,25 +41,29 @@
       </nav>
     </div>
     <div class="top-actions">
-      <a class="status-link" href="/integration/" aria-label="查看只读集成状态">集成状态</a>
-      <button class="btn" id="btnEvidence" title="查看 bounded facade 的来源与新鲜度">证据</button>
-      <button class="btn" id="btnScan" disabled aria-disabled="true" title="UNAVAILABLE：扫描尚未进入只读 advisory 合同">扫描</button>
-      <button class="btn accent" id="btnBrief" disabled aria-disabled="true" title="UNAVAILABLE：晨报生成已关闭，仅可读取历史报告">晨报</button>
-      <div class="seg" id="modeSeg">
+      <a class="status-link" href="/integration/" aria-label="查看只读集成状态"><span class="status-orb" aria-hidden="true"></span><span>集成状态</span></a>
+      <button class="btn evidence-btn" id="btnEvidence" title="查看 bounded facade 的来源与新鲜度">证据链</button>
+      <div class="seg mode-seg" id="modeSeg" aria-label="信息密度">
         <button class="on" id="mt-pro">专家</button>
         <button id="mt-simple">小白</button>
       </div>
-      <button class="btn icon" id="btnStar" title="加入/移出自选">☆</button>
-      <button class="btn" id="btnWatch">自选</button>
-      <button class="btn" id="btnHist">历史</button>
+      <div class="utility-actions">
+        <button class="btn icon" id="btnStar" title="加入或移出自选" aria-label="加入或移出自选">☆</button>
+        <button class="btn" id="btnWatch">自选</button>
+        <button class="btn" id="btnHist">历史</button>
+      </div>
     </div>
   </header>
 
   <div class="scope-band" role="status">
-    <strong>RESEARCH ONLY</strong>
-    <span>NO BROKER · 只读观察与回放，不连接实盘账户，不提供交易执行</span>
-    <span id="v1BoundaryStatus">BOUNDED FACADE · UNAVAILABLE · freshness UNKNOWN</span>
-    <a href="/integration/">查看集成状态</a>
+    <div class="scope-lock">
+      <strong>RESEARCH ONLY</strong>
+      <span>只读观察与回放 · 不连接账户 · 不提供交易执行</span>
+    </div>
+    <div class="scope-meta">
+      <span id="v1BoundaryStatus">BOUNDED FACADE · UNAVAILABLE · freshness UNKNOWN</span>
+      <a href="/integration/">审计详情 <span aria-hidden="true">↗</span></a>
+    </div>
   </div>
 
   <div class="tape" id="marketBar">
@@ -86,38 +94,73 @@
         </div>
       </div>
       <div class="tools">
-        <div class="seg" id="viewSeg">
-          <button class="on" data-view="day">日K</button>
-          <button data-view="week">周K</button>
-          <button data-view="minute">分时</button>
+        <div class="tool-cluster" aria-label="图表视图">
+          <span class="tool-label">周期</span>
+          <div class="seg" id="viewSeg">
+            <button class="on" data-view="day">日K</button>
+            <button data-view="week">周K</button>
+            <button data-view="minute">分时</button>
+          </div>
         </div>
-        <div class="seg" id="rangeSeg">
-          <button data-range="60">3月</button>
-          <button class="on" data-range="250">1年</button>
-          <button data-range="0">全部</button>
+        <div class="tool-cluster" aria-label="时间范围">
+          <span class="tool-label">范围</span>
+          <div class="seg" id="rangeSeg">
+            <button data-range="60">3月</button>
+            <button class="on" data-range="250">1年</button>
+            <button data-range="0">全部</button>
+          </div>
         </div>
-        <div class="seg" id="indSeg">
-          <button class="on" data-ind="macd">MACD</button>
-          <button data-ind="rsi">RSI</button>
-          <button data-ind="kdj">KDJ</button>
-          <button data-ind="boll">BOLL</button>
-          <button data-ind="wr">WR</button>
+        <div class="tool-cluster indicator-cluster" aria-label="技术指标">
+          <span class="tool-label">指标</span>
+          <div class="seg" id="indSeg">
+            <button class="on" data-ind="macd">MACD</button>
+            <button data-ind="rsi">RSI</button>
+            <button data-ind="kdj">KDJ</button>
+            <button data-ind="boll">BOLL</button>
+            <button data-ind="wr">WR</button>
+          </div>
         </div>
-        <span class="tools-gap"></span>
-        <button class="tool" id="btnBacktest" disabled aria-disabled="true" title="UNAVAILABLE：donor 回测未接入 canonical gate">回测</button>
-        <button class="tool" id="btnCompare" disabled aria-disabled="true" title="UNAVAILABLE：donor 对照未接入 canonical gate">对照</button>
-        <button class="tool" id="btnOrderFlow" disabled aria-disabled="true" title="UNAVAILABLE：订单流未进入 advisory 合同">大单</button>
-        <button class="tool" id="btnNews" disabled aria-disabled="true" title="UNAVAILABLE：生成已关闭，仅可读取历史报告">资讯</button>
-        <button class="tool" id="btnReport" disabled aria-disabled="true" title="UNAVAILABLE：生成已关闭，仅可读取历史报告">速报</button>
-        <button class="tool" id="btnEarnings" disabled aria-disabled="true" title="UNAVAILABLE：生成已关闭，仅可读取历史报告">财报</button>
-        <button class="tool" id="btnVision" disabled aria-disabled="true" title="UNAVAILABLE：看图生成已关闭，仅可读取历史报告">AI 看图</button>
-        <button class="tool" id="btnCaptureObs" title="仅保存本地 research observation，不触发交易">保存本地观察</button>
-        <label class="check"><input type="checkbox" id="deepMode" disabled aria-disabled="true" /> 深检索</label>
-        <span id="status" class="status"></span>
+        <div class="tool-actions">
+          <button class="tool capture-tool" id="btnCaptureObs" title="仅保存本地 research observation，不触发交易">保存观察</button>
+          <details class="capability-drawer">
+            <summary>封存能力 <span aria-hidden="true">＋</span></summary>
+            <div class="capability-panel">
+              <div class="capability-head">
+                <strong>当前不可用</strong>
+                <span>未进入只读 advisory 合同的能力保持关闭</span>
+              </div>
+              <div class="capability-grid">
+                <button class="tool" id="btnScan" disabled aria-disabled="true" title="UNAVAILABLE：扫描尚未进入只读 advisory 合同">扫描</button>
+                <button class="tool" id="btnBrief" disabled aria-disabled="true" title="UNAVAILABLE：晨报生成已关闭，仅可读取历史报告">晨报</button>
+                <button class="tool" id="btnBacktest" disabled aria-disabled="true" title="UNAVAILABLE：donor 回测未接入 canonical gate">回测</button>
+                <button class="tool" id="btnCompare" disabled aria-disabled="true" title="UNAVAILABLE：donor 对照未接入 canonical gate">对照</button>
+                <button class="tool" id="btnOrderFlow" disabled aria-disabled="true" title="UNAVAILABLE：订单流未进入 advisory 合同">大单</button>
+                <button class="tool" id="btnNews" disabled aria-disabled="true" title="UNAVAILABLE：生成已关闭，仅可读取历史报告">资讯</button>
+                <button class="tool" id="btnReport" disabled aria-disabled="true" title="UNAVAILABLE：生成已关闭，仅可读取历史报告">速报</button>
+                <button class="tool" id="btnEarnings" disabled aria-disabled="true" title="UNAVAILABLE：生成已关闭，仅可读取历史报告">财报</button>
+                <button class="tool" id="btnVision" disabled aria-disabled="true" title="UNAVAILABLE：看图生成已关闭，仅可读取历史报告">AI 看图</button>
+                <label class="check"><input type="checkbox" id="deepMode" disabled aria-disabled="true" /> 深检索</label>
+              </div>
+            </div>
+          </details>
+        </div>
+        <span id="status" class="status" role="status" aria-live="polite"></span>
       </div>
       <div id="kHud" class="khud"></div>
-      <div id="chart" class="chart"></div>
-      <div id="flowChart" class="flowchart"></div>
+      <div class="chart-shell" id="chartShell" data-state="idle">
+        <div class="chart-state" id="chartState" role="status" aria-live="polite">
+          <div class="state-orbit" aria-hidden="true"><i></i><i></i><i></i></div>
+          <span class="chart-state-kicker">ADVISORY DATA FEED</span>
+          <h2 id="chartStateTitle">等待研究数据</h2>
+          <p id="chartStateBody">输入代码开始研判。数据不可用时会明确显示原因，不会用推测结果填充图表。</p>
+          <div class="chart-state-actions">
+            <button class="btn primary" id="btnRetryAnalysis" type="button">重新研判</button>
+            <button class="btn" id="btnOpenEvidence" type="button">查看证据链</button>
+          </div>
+        </div>
+        <div id="chart" class="chart" aria-label="价格与技术指标图表"></div>
+      </div>
+      <div id="flowChart" class="flowchart" aria-label="主力净流入图表"></div>
     </section>
 
     <aside class="rail" id="rail">
@@ -144,7 +187,15 @@
         <div class="hero-foot" id="sumFoot">研究观察 · 不连接经纪商 · 非投资建议</div>
       </section>
 
-      <div class="g-label">决策</div>
+      <nav class="rail-tabs" id="railTabs" aria-label="研究结果分区">
+        <button class="on" type="button" data-rail-tab="decision" aria-selected="true">决策</button>
+        <button type="button" data-rail-tab="structure" aria-selected="false">结构</button>
+        <button type="button" data-rail-tab="evidence" aria-selected="false">证据</button>
+      </nav>
+
+      <div class="rail-sections">
+      <section class="rail-section is-active" data-rail-section="decision">
+      <div class="g-label"><span>01</span> 决策框架</div>
       <div class="group">
         <article class="cell" data-key="plan" id="planCard">
           <button type="button" class="cell-h" aria-expanded="false">
@@ -171,8 +222,10 @@
           <div class="cell-b"><div class="inner" id="predBody">—</div></div>
         </article>
       </div>
+      </section>
 
-      <div class="g-label">结构</div>
+      <section class="rail-section" data-rail-section="structure" hidden>
+      <div class="g-label"><span>02</span> 技术结构</div>
       <div class="group">
         <article class="cell pro" data-key="mod" id="modCard">
           <button type="button" class="cell-h" aria-expanded="false">
@@ -223,8 +276,10 @@
           <div class="cell-b"><div class="inner" id="clmBody">—</div></div>
         </article>
       </div>
+      </section>
 
-      <div class="g-label">资金与研究</div>
+      <section class="rail-section" data-rail-section="evidence" hidden>
+      <div class="g-label"><span>03</span> 证据与研究记录</div>
       <div class="group">
         <article class="cell" data-key="evidence" id="evidenceCard">
           <button type="button" class="cell-h" aria-expanded="false">
@@ -300,6 +355,8 @@
           <div class="cell-b"><div class="inner disc" id="trackBody">同一股票分析两次才有对照。非投资建议。</div></div>
         </article>
       </div>
+      </section>
+      </div>
       <div class="rail-foot">yeuxQ · RESEARCH ONLY · NO BROKER · 公开行情 · 非投资建议</div>
     </aside>
   </div>
@@ -321,6 +378,6 @@
     </div>
   </div>
 </div>
-<script type="module" src="static/js/main.js"></script>
+<script type="module" src="static/js/main.js?v=20260904-3"></script>
 </body>
 </html>

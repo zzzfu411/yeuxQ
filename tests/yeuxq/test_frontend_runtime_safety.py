@@ -19,6 +19,7 @@ JS = WEB / "js"
 EVIDENCE_JS = JS / "evidence.js"
 PANELS_JS = JS / "panels.js"
 MAIN_JS = JS / "main.js"
+CELLS_JS = JS / "cells.js"
 RESEARCH_JS = JS / "research.js"
 VISION_JS = JS / "vision.js"
 ORDERFLOW_JS = JS / "orderflow.js"
@@ -318,6 +319,13 @@ def test_generation_scan_and_orderflow_stubs_cannot_make_network_calls() -> None
     assert not findings, (
         "Fail-closed generation/scan/orderflow stubs must not make requests: " + ", ".join(findings)
     )
+
+
+def test_focus_controls_are_not_nested_inside_card_header_buttons() -> None:
+    bind_focus = _js_function(_read(CELLS_JS), "bindFocusButtons")
+
+    assert ".cell-trail" not in bind_focus
+    assert "else el.appendChild(b);" in bind_focus
 
 
 def test_advisory_report_history_exposes_get_only() -> None:

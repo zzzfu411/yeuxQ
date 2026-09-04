@@ -65,7 +65,7 @@ export function bindCells() {
 
 function bindFocusButtons() {
   document.querySelectorAll('.cell, .hero').forEach((el) => {
-    if (el.querySelector(':scope > .focus-btn') || el.querySelector('.cell-trail .focus-btn')) return;
+    if (el.querySelector(':scope > .focus-btn')) return;
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'focus-btn';
@@ -75,11 +75,7 @@ function bindFocusButtons() {
     b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggleFocus(el); });
     b.addEventListener('mousedown', (e) => e.stopPropagation());
     if (el.classList.contains('hero')) el.appendChild(b);
-    else {
-      const trail = el.querySelector('.cell-trail');
-      if (trail) trail.insertBefore(b, trail.querySelector('.chev'));
-      else el.appendChild(b);
-    }
+    else el.appendChild(b);
   });
   const scrim = $('focusScrim');
   if (scrim && !scrim._bound) {

@@ -18,7 +18,7 @@ import {
   timestampFreshness,
 } from './evidence.js';
 import { chart, renderKline, renderMinute, renderFlow, applyRange, paintHud } from './charts.js';
-import { bindCells } from './cells.js';
+import { bindCells } from './cells.js?v=20260904-3';
 import {
   renderQuote,
   renderAll,
@@ -26,7 +26,7 @@ import {
   renderChanlunMinute,
   renderEngineTag,
   updateTrack,
-} from './rail.js';
+} from './rail.js?v=20260904-3';
 import { bindPanels, bindScan, renderWatch, addHist, loadMarket } from './panels.js';
 import { loadSavedAI, loadSavedBrief } from './research.js';
 import { loadSavedVision } from './vision.js';
@@ -35,9 +35,36 @@ import { loadSavedVision } from './vision.js';
 const deck = document.querySelector('.deck');
 const deckLoadingEl = document.createElement('div');
 deckLoadingEl.className = 'deck-loading';
-deckLoadingEl.innerHTML = '<div class="spinner"></div>';
+deckLoadingEl.innerHTML = '<div class="spinner"></div><span>正在建立研究快照</span>';
 deck.appendChild(deckLoadingEl);
 function deckLoading(on) { deckLoadingEl.classList.toggle('show', !!on); }
+
+const chartShell = $('chartShell');
+const chartState = $('chartState');
+
+function setChartState(mode, symbol = '', reason = '') {
+  const safeMode = ['idle', 'loading', 'unavailable', 'ready'].includes(mode)
+    ? mode
+    : 'unavailable';
+  chartShell.dataset.state = safeMode;
+  chartState.setAttribute('aria-hidden', safeMode === 'ready' ? 'true' : 'false');
+  if (safeMode === 'ready') return;
+
+  const title = $('chartStateTitle');
+  const body = $('chartStateBody');
+  if (safeMode === 'loading') {
+    title.textContent = `${symbol || '当前标的'} · 正在建立研究快照`;
+    body.textContent = '正在核验只读行情、技术结构与证据新鲜度。旧标的响应会被自动丢弃。';
+    return;
+  }
+  if (safeMode === 'unavailable') {
+    title.textContent = '当前无法形成可信图表';
+    body.textContent = `${symbol || '当前标的'} · ${reason || 'DATA_UNAVAILABLE'}。页面保持空白证据态，不会用缓存猜测或模拟数据替代。`;
+    return;
+  }
+  title.textContent = '等待研究数据';
+  body.textContent = '输入代码开始研判。数据不可用时会明确显示原因，不会用推测结果填充图表。';
+}
 
 /* ---------- /api/v1 bounded facade：状态、观察、canonical gate ---------- */
 let v1Ctrl = null;
@@ -102,6 +129,7 @@ function renderV1Workspace() {
   $('evidenceChip').classList.add(gate === 'PASS' ? 'up' : 'warn');
   $('evidencePrev').textContent = `${view.available ? 'AVAILABLE' : 'UNAVAILABLE'} · freshness ${overallFreshness}`;
   $('v1BoundaryStatus').textContent = `BOUNDED FACADE · ${gate} · freshness ${overallFreshness} · provenance ${readiness?.authority || 'UNKNOWN'}`;
+  document.querySelector('.scope-band')?.setAttribute('data-gate', gate);
 }
 
 async function loadV1Workspace() {
@@ -203,6 +231,7 @@ function clearInstrumentView(code, reason) {
   chart.clear();
   renderFlow([]);
   renderAnalysisUnavailable(code, reason);
+  setChartState(reason === 'LOADING' ? 'loading' : 'unavailable', code, reason);
   paintHud(-1);
 }
 
@@ -251,7 +280,13 @@ async function analyze(symbol) {
       ...(a.meta || {}),
       advisory_evidence: a._evidence,
     });
-    renderKline();
+    if (state.klines.length) {
+      setChartState('ready', code);
+      renderKline();
+    } else {
+      chart.clear();
+      setChartState('unavailable', code, 'NO_KLINE_DATA');
+    }
     renderFlow(a.flows || []);
     renderWatch();
     setStatus('');
@@ -279,7 +314,12 @@ async function loadMinute() {
     if (gen !== analyzeGen || symbol !== state.symbol) return;
     if (snapshot.error) throw new Error(snapshot.error);
     state.minute = snapshot.minute;
-    renderMinute();
+    if ((snapshot.minute?.prices || []).length) {
+      setChartState('ready', symbol);
+      renderMinute();
+    } else {
+      setChartState('unavailable', symbol, 'NO_MINUTE_DATA');
+    }
     renderChanlunMinute(snapshot.chanlun || null);
     setStatus('');
   } catch (error) {
@@ -287,6 +327,7 @@ async function loadMinute() {
     if (gen !== analyzeGen || symbol !== state.symbol) return;
     state.minute = null;
     chart.clear();
+    setChartState('unavailable', symbol, error?.code || error?.message || 'NO_DATA');
     paintHud(-1);
     renderChanlunMinute(null);
     setStatus(`${symbol} 分时 · UNAVAILABLE · ${error?.code || error?.message || 'NO_DATA'}`);
@@ -367,11 +408,37 @@ document.querySelectorAll('#indSeg [data-ind]').forEach((b) => {
 
 $('btnCaptureObs').onclick = captureObservation;
 $('btnEvidenceRefresh').onclick = loadV1Workspace;
-$('btnEvidence').onclick = () => {
+$('btnRetryAnalysis').onclick = () => analyze($('kw').value.trim() || state.symbol || '600519');
+
+function setRailTab(tab) {
+  const normalized = ['decision', 'structure', 'evidence'].includes(tab) ? tab : 'decision';
+  document.querySelectorAll('[data-rail-tab]').forEach((button) => {
+    const selected = button.dataset.railTab === normalized;
+    button.classList.toggle('on', selected);
+    button.setAttribute('aria-selected', selected ? 'true' : 'false');
+  });
+  document.querySelectorAll('[data-rail-section]').forEach((section) => {
+    const selected = section.dataset.railSection === normalized;
+    section.hidden = !selected;
+    section.classList.toggle('is-active', selected);
+  });
+}
+
+document.querySelectorAll('[data-rail-tab]').forEach((button) => {
+  button.onclick = () => setRailTab(button.dataset.railTab);
+});
+
+function openEvidence() {
+  setRailTab('evidence');
   const card = $('evidenceCard');
   const header = card?.querySelector('.cell-h');
   if (header && header.getAttribute('aria-expanded') !== 'true') header.click();
-  card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+$('btnOpenEvidence').onclick = openEvidence;
+$('btnEvidence').onclick = () => {
+  openEvidence();
 };
 
 /* ---------- 专家 / 小白 ---------- */
@@ -404,6 +471,7 @@ setMode(jget(LS.mode) || 'pro');
 bindCells();
 bindPanels();
 bindScan();
+setRailTab('decision');
 renderWatch();
 loadMarket();
 loadSavedBrief();

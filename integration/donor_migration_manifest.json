@@ -589,14 +589,14 @@
       "source": "web/css/app.css",
       "target": "src/yeuxq/web/css/app.css",
       "source_sha256": "fbfe9edd2c8e0e9d42bbe85b00c5934d07259227667768fecfb323823977aeca",
-      "target_sha256": "3f3b0c3f02298ab9a7ab16db105fe159c1e85be627637a7d1a1ce1fa142b7a78",
+      "target_sha256": "3726b8a2354f81a6210235b42f405371ce46d47740e423337e469e2d0e4fab99",
       "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/index.html",
       "target": "src/yeuxq/web/index.html",
       "source_sha256": "a767ad6f08103205e90b5833f9ab11b2262739c51e5b7f655ed82ca9ec39b0af",
-      "target_sha256": "e33b7c556081cbd00328bf6cb70fc9c36dc83cb154fe7a15c83d81660c38f65f",
+      "target_sha256": "af1f6a4aece48d977fa7d3af42c6237d87fa578510066cb588722055e6827a61",
       "disposition": "migrated_web_first_party_hardened"
     },
     {
@@ -610,8 +610,8 @@
       "source": "web/js/cells.js",
       "target": "src/yeuxq/web/js/cells.js",
       "source_sha256": "2beddb1298b9ffb6d3b7d167bcea71361d1d608c24ff71600787e052afeebeae",
-      "target_sha256": "2beddb1298b9ffb6d3b7d167bcea71361d1d608c24ff71600787e052afeebeae",
-      "disposition": "migrated_web_first_party_verbatim"
+      "target_sha256": "25127fc284b7c6cd552908d261bfd684c3c328befef0c4ab5c39d5888018a15b",
+      "disposition": "migrated_web_first_party_hardened"
     },
     {
       "source": "web/js/charts.js",
@@ -624,7 +624,7 @@
       "source": "web/js/main.js",
       "target": "src/yeuxq/web/js/main.js",
       "source_sha256": "7f4c77559e7eca38e75a5cedd827f7e285cf325c269160ec9982e4d1622b173d",
-      "target_sha256": "f27407a51973add7bd2af581ca5816f9829164248729e4140ccd3ebf87e3169f",
+      "target_sha256": "98a89883973149cdba9b04380708d01d8e5c653c77a62cc1c26c4c008427160c",
       "disposition": "migrated_web_first_party_hardened"
     },
     {
@@ -645,7 +645,7 @@
       "source": "web/js/rail.js",
       "target": "src/yeuxq/web/js/rail.js",
       "source_sha256": "7090180936014098815d14baaf2176127d0933aa603a19894980a6eb3a851f1d",
-      "target_sha256": "11b94d8819c7770f4a3ee85c019421085d2eaa0e2b623b378ae30520f0d02d63",
+      "target_sha256": "cd495ef5d01f178187ff2a515fcfe9a4bedbc719b399e9c8e4d605a2d71ca710",
       "disposition": "migrated_web_first_party_hardened"
     },
     {
